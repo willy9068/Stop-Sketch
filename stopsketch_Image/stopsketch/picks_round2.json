@@ -1,0 +1,130 @@
+{
+ "bg_a": {
+  "source": "candidates/bg_a_c1.png",
+  "final_size": [
+   1920,
+   1080
+  ],
+  "process": "구름만 분리해 종이 바탕만 좌우 이음매 처리(구름 복제 방지)"
+ },
+ "bg_b": {
+  "source": "candidates/bg_b_c2.png",
+  "final_size": [
+   1920,
+   1080
+  ],
+  "process": "왼쪽 12%(빨간 여백선) 잘라냄, 좌우 이음매 처리(교차 혼합)"
+ },
+ "bg_plain": {
+  "source": "candidates/bg_plain_c4.png",
+  "final_size": [
+   1920,
+   1080
+  ],
+  "process": "좌우 이음매 처리(교차 혼합)"
+ },
+ "ground_top": {
+  "source": "candidates/ground_top_c1.png",
+  "final_size": [
+   512,
+   96
+  ],
+  "process": "왼쪽 절반을 좌우 대칭으로 이어 이음매 제거, 흰 배경 색 따기"
+ },
+ "ground_fill": {
+  "source": "candidates/ground_fill_c4.png",
+  "final_size": [
+   256,
+   256
+  ],
+  "process": "사방 이음매 처리"
+ },
+ "prop_wall": {
+  "source": "candidates/prop_wall_c1.png",
+  "final_size": [
+   256,
+   256
+  ],
+  "process": "바깥 흰 배경만 제거(안쪽 불투명), 안쪽 흰색을 종이색으로, 칸 가득 늘림"
+ },
+ "prop_platform": {
+  "source": "candidates/prop_platform_c4.png",
+  "final_size": [
+   256,
+   64
+  ],
+  "process": "바깥 흰 배경만 제거(안쪽 불투명), 안쪽 흰색을 종이색으로, 칸 가득 늘림"
+ },
+ "char_fall": {
+  "source": "candidates/char_fall_c2.png",
+  "final_size": [
+   256,
+   256
+  ],
+  "process": "rembg"
+ },
+ "goal_flag": {
+  "source": "candidates/goal_flag_c1.png",
+  "final_size": [
+   256,
+   256
+  ],
+  "process": "바깥 흰 배경 제거, 기둥을 왼쪽 20% 지점·바닥에 맞춤"
+ },
+ "deco_cloud_1": {
+  "source": "candidates/deco_cloud_1_c2.png",
+  "final_size": [
+   512,
+   320
+  ],
+  "process": "흰 배경 색 따기(안쪽 투명)"
+ },
+ "deco_cloud_2": {
+  "source": "candidates/deco_cloud_2_c3.png",
+  "final_size": [
+   512,
+   320
+  ],
+  "process": "흰 배경 색 따기(안쪽 투명)"
+ },
+ "deco_cloud_3": {
+  "source": "candidates/deco_cloud_3_c4.png",
+  "final_size": [
+   512,
+   320
+  ],
+  "process": "흰 배경 색 따기(안쪽 투명)"
+ },
+ "ui_gauge_frame": {
+  "source": "candidates/ui_gauge_frame_c3.png",
+  "final_size": [
+   512,
+   64
+  ],
+  "process": "흰 배경 색 따기(안쪽 투명), 칸 가득 늘림"
+ },
+ "ui_panel": {
+  "source": "candidates/ui_panel_c4.png",
+  "final_size": [
+   640,
+   400
+  ],
+  "process": "바깥 흰 배경만 제거, 안쪽을 종이색(#F3E9D2)으로 채움"
+ },
+ "fx_star_pop": {
+  "source": "candidates/fx_star_pop_c4.png",
+  "final_size": [
+   256,
+   256
+  ],
+  "process": "흰 배경 색 따기"
+ },
+ "fx_land": {
+  "source": "candidates/fx_land_c1.png",
+  "final_size": [
+   256,
+   128
+  ],
+  "process": "바깥 흰 배경만 제거(먼지 안쪽 불투명)"
+ }
+}

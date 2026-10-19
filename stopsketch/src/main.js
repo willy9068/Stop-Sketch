@@ -1,0 +1,132 @@
+// 시작점: 캔버스, 입력, 고정 타임스텝 루프
+var G = G || {};
+
+(function () {
+  var D = G.DATA;
+  var canvas = document.getElementById('game');
+  var ctx = canvas.getContext('2d');
+  G.Assets.load();
+  canvas.width = D.view.w;
+  canvas.height = D.view.h;
+
+  var app = {
+    save: G.Save.load(),
+    game: null,
+    setMode: function (k) {
+      if (!D.timeModes[k]) return;
+      app.save.timeMode = k;
+      G.Save.write(app.save);
+      G.Game.setMode(app.game, k);
+      app.restart();
+      app.game.toast(D.timeModes[k].name + ' (구간 다시 시작)');
+    },
+    restart: function () { G.Game.reset(app.game); },
+    // 구간 목록: 보통은 levels.js, 레벨 툴의 "테스트 플레이"는 주소 #test= 로 구간 하나를 넘겨준다
+    levels: G.LEVELS,
+    levelIndex: 0,
+    testMode: false,
+    goLevel: function (i) {
+      if (!app.levels[i]) return;
+      app.levelIndex = i;
+      G.Game.setLevel(app.game, app.levels[i]);
+      app.game.hasNext = !!app.levels[i + 1];
+      G.Debug.refresh(app);
+    }
+  };
+  var m = /#test=(.+)$/.exec(location.hash);
+  if (m) {
+    try { app.levels = [JSON.parse(decodeURIComponent(m[1]))]; app.testMode = true; } catch (e) { /* 잘못된 주소면 무시 */ }
+  }
+  if (!D.timeModes[app.save.timeMode]) app.save.timeMode = D.defaultTimeMode;
+  // 계정: 잉크 성장(inkBonus·먹은 병)과 구간 기록. 레벨 툴 테스트는 계정을 건드리지 않게 복사본으로 (저장 안 함)
+  app.account = app.testMode ? JSON.parse(JSON.stringify(app.save)) : app.save;
+  app.game = G.Game.create(app.save.timeMode, app.levels[0], app.account);
+  app.game.hasNext = !!app.levels[1];
+  if (app.testMode) app.game.toast('레벨 툴 테스트 플레이: ' + app.levels[0].name + ' (계정에 저장 안 됨)');
+  function persist() { if (!app.testMode) G.Save.write(app.save); }
+  app.game.onAccountChange = function () { persist(); G.Debug.refresh(app); };
+  app.game.onFinish = function (g) {
+    var st = app.save.stats[g.modeKey] || (app.save.stats[g.modeKey] = { tries: 0, clears: 0, fails: 0, stopsUsed: 0 });
+    st.tries += 1;
+    st[g.status === 'clear' ? 'clears' : 'fails'] += 1;
+    st.stopsUsed += g.stopsUsedThisRun;
+    var id = g.level.data.id, rec = app.account.records[id] || (app.account.records[id] = { stars: 0, bestMs: 0, clears: 0, tries: 0 });
+    rec.tries += 1;
+    if (g.status === 'clear' && g.result) {       // 구간 최고 기록 (별 많은 것 우선, 같으면 빠른 시간)
+      rec.clears += 1;
+      if (g.result.stars > rec.stars || (g.result.stars === rec.stars && (!rec.bestMs || g.timeMs < rec.bestMs))) {
+        rec.stars = g.result.stars; rec.bestMs = Math.round(g.timeMs);
+      }
+    }
+    g.best = rec.clears ? rec : null;
+    persist();
+    G.Debug.refresh(app);
+  };
+  // 계정 초기화 (잉크 성장·먹은 병·구간 기록). 시간 정지 방식 설정과 모드별 기록은 남김
+  app.resetAccount = function () {
+    app.account.inkBonus = 0; app.account.bottles = {}; app.account.records = {};
+    persist();
+    app.restart();
+    app.game.toast('계정 초기화: 잉크 성장·기록을 지웠어요');
+  };
+  G.Debug.init(app);
+  G.app = app;
+
+  // ---- 입력 ----
+  function mouseWorld(e) {
+    var r = canvas.getBoundingClientRect();
+    var sx = (e.clientX - r.left) * D.view.w / r.width;
+    var sy = (e.clientY - r.top) * D.view.h / r.height;
+    return G.UI.toWorld(sx, sy);
+  }
+
+  window.addEventListener('keydown', function (e) {
+    var g = app.game;
+    if (e.code === 'Space' || e.code === 'Enter') { e.preventDefault(); G.Game.start(g); return; }
+    if (e.key === 'Shift' || e.code === 'ShiftLeft' || e.code === 'ShiftRight') { if (!e.repeat) G.Game.toggleStop(g); }
+    else if (e.code === 'KeyR') { app.restart(); }
+    else if (e.code === 'KeyN') { if (g.status === 'clear' && g.hasNext) app.goLevel(app.levelIndex + 1); }
+    else if (e.code === 'KeyD') { G.Debug.toggle(app); }
+    else if (e.key === '1') app.setMode('A');
+    else if (e.key === '2') app.setMode('B');
+    else if (e.key === '3') app.setMode('C');
+  });
+
+  canvas.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+  canvas.addEventListener('mousedown', function (e) {
+    var g = app.game;
+    if (e.button === 2) { G.Game.toggleStop(g); return; }
+    if (e.button !== 0) return;
+    if (g.status === 'ready') { G.Game.start(g); return; }
+    if (g.status !== 'run') { app.restart(); return; }
+    if (g.ink <= 0) { g.toast('잉크가 없어요'); return; }
+    G.Draw.begin(g, mouseWorld(e));
+  });
+  window.addEventListener('mousemove', function (e) { if (app.game.stroke) G.Draw.move(app.game, mouseWorld(e)); });
+  window.addEventListener('mouseup', function (e) { if (e.button === 0) G.Draw.end(app.game); });
+
+  // ---- 루프 (고정 타임스텝) ----
+  var last = performance.now(), acc = 0, frames = 0, fpsT = 0;
+  function frame(now) {
+    var dt = Math.min(250, now - last);
+    last = now;
+    acc += dt;
+    var n = 0;
+    while (acc >= D.loop.stepMs && n < D.loop.maxStepsPerFrame) {
+      G.Game.update(app.game, D.loop.stepMs);
+      acc -= D.loop.stepMs;
+      n++;
+    }
+    if (n === D.loop.maxStepsPerFrame) acc = 0;   // 너무 밀리면 버린다 (탭 전환 등)
+    G.UI.render(ctx, app.game, G.Debug.state);
+
+    frames++; fpsT += dt;
+    if (fpsT >= 500) {
+      G.Debug.state.fps = Math.round(frames * 1000 / fpsT);
+      frames = 0; fpsT = 0;
+      G.Debug.tick();
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();

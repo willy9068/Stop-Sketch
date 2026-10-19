@@ -1,0 +1,839 @@
+{
+ "char_idle": {
+  "attempts": [
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7000,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1024x1024",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on a sketchbook page, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark cute teardrop-shaped doodle creature, round body with a pointed top, two black dot eyes, tiny curved smile, small stubby feet, bright cyan-blue body with thick dark brown outline, front view, centered, on a plain white background, isolated, single object"
+   },
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7000,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1024x1024",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on a sketchbook page, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark cute teardrop-shaped doodle creature, round body with a pointed top, two black dot eyes, tiny curved smile, small stubby feet, bright cyan-blue body with thick dark brown outline, front view, centered, on a plain white background, isolated, single object, pure white background, no spiral binding, no ring holes, no page edge, no letters or words, nothing but the object"
+   },
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7000,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1024x1024",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark cute teardrop-shaped doodle creature, round body with a pointed top, two black dot eyes, tiny curved smile, small stubby feet, bright cyan-blue body with thick dark brown outline, front view, centered, on a plain white background, isolated, single object, pure white background"
+   }
+  ]
+ },
+ "bg_a": {
+  "attempts": [
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7002,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1536x768",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on a sketchbook page, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark empty sketchbook page seen from the side, plain light beige paper with very faint paper grain, a few tiny pencil doodles near the edges only (a small star, a scribbled cloud), large empty center area, horizontal seamless composition"
+   },
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7002,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1536x768",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on a sketchbook page, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark empty sketchbook page seen from the side, plain light beige paper with very faint paper grain, a few tiny pencil doodles near the edges only (a small star, a scribbled cloud), large empty center area, horizontal seamless composition, no spiral binding, no ring holes, no pencil, no border, no letters or words"
+   },
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7002,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1536x768",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark empty sheet of paper seen from the side, plain light beige paper with very faint paper grain, a few tiny pencil doodles near the edges only (a small star, a scribbled cloud), large empty center area, horizontal seamless composition"
+   },
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7010,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1536x768",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark empty sheet of paper seen flat, plain light beige paper (#F3E9D2) with very faint even paper grain, only two or three small hand-drawn cloud doodles in the upper area, nothing in the lower half, no stars, no stains, no blotches, horizontal seamless composition"
+   }
+  ]
+ },
+ "ink_red": {
+  "attempts": [
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7100,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "768x1024",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on a sketchbook page, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark a small glass ink bottle with a cork, thick dark brown outline, filled with saturated red ink, a doodle drop symbol on the label, wavy spring symbol, front view, on a plain white background, isolated, single object"
+   },
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7100,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "768x1024",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on a sketchbook page, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark a small glass ink bottle with a cork, thick dark brown outline, filled with saturated red ink, a doodle drop symbol on the label, wavy spring symbol, front view, on a plain white background, isolated, single object, pure white background, no spiral binding, no ring holes, no page edge, no letters or words, nothing but the object"
+   },
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7100,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "768x1024",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark a small glass ink bottle with a cork, thick dark brown outline, filled with saturated red ink, a doodle drop symbol on the label, wavy spring symbol, front view, on a plain white background, isolated, single object, pure white background"
+   },
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7100,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "768x1024",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark a small glass ink bottle with a cork, thick dark brown outline, filled with saturated red ink, a doodle drop symbol on the label, a wavy squiggle line symbol, front view, on a plain white background, isolated, single object, pure white background"
+   }
+  ]
+ },
+ "key_art": {
+  "attempts": [
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7001,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1344x768",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark wide scene, a small blob-shaped doodle creature (teardrop body, two dot eyes, tiny smile) running on a curved ink line toward the right, a thick red ink spring-shaped line below it and a blue arrow-shaped boost line ahead, a green barrier line blocking a small flying projectile, on the left a big white eraser sweep erasing the beige paper background into blank white, paper, dynamic composition, plenty of empty beige space"
+   },
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7001,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1344x768",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark wide scene, on the left third a large blank white area with a torn eraser edge, in the middle a medium-sized blob-shaped doodle creature (teardrop body, two dot eyes, tiny smile) running to the right along a thick curved ink line, a big thick red spring-shaped coil line below it, a big blue arrow-shaped boost line ahead, a green barrier line blocking a small flying projectile, large bold shapes, dynamic composition, plenty of empty beige space"
+   },
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7005,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1344x768",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark wide scene, on the left third a large blank white area with a torn eraser edge, in the middle a medium-sized blob-shaped doodle creature (teardrop body, two dot eyes, tiny smile) running to the right along a thick curved ink line, below it a big thick red coil-shaped squiggle line, ahead of it a big blue arrow-shaped line pointing right, a thick green zigzag fence line, a small flying spiky ball above, large bold shapes, dynamic composition, plenty of empty beige space, pure drawing without any writing"
+   },
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7006,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1344x768",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark wide scene, on the left third a large blank white area with a torn eraser edge, in the middle a medium-sized blob-shaped doodle creature (teardrop body, two dot eyes, tiny smile) running to the right along a thick curved ink line, below it a big thick red coil-shaped squiggle line, ahead of it a big blue arrow-shaped line pointing right, a thick green zigzag fence line, a small flying spiky ball above, large bold shapes, dynamic composition, plenty of empty beige space, pure drawing without any writing"
+   }
+  ]
+ },
+ "bg_b": {
+  "attempts": [
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7003,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1536x768",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark light beige notebook paper with faint pale blue ruled lines and a pale red margin line, very low contrast, empty, horizontal composition"
+   },
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7003,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1536x768",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark empty light beige notebook paper filled edge to edge, faint pale blue horizontal ruled lines and one pale red vertical margin line, very low contrast, nothing else drawn on it, completely empty"
+   },
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7011,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1536x768",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark light beige notebook paper with faint pale blue horizontal ruled lines only, no margin line, no binder holes, very low contrast, empty, seamless left-right"
+   },
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7511,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1536x768",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark a flat texture of ruled notebook paper, light beige, only evenly spaced thin pale blue horizontal lines across the whole image from edge to edge, very low contrast, completely empty otherwise, seamless left-right"
+   }
+  ]
+ },
+ "char_run": {
+  "attempts": [
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7000,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1024x1024",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark cute teardrop-shaped doodle creature, round body with a pointed top, two black dot eyes, tiny curved smile, small stubby feet, bright cyan-blue body with thick dark brown outline, leaning forward, body stretched horizontally, speed lines, side view facing right, on a plain white background, isolated, single object, pure white background"
+   }
+  ]
+ },
+ "char_jump": {
+  "attempts": [
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7000,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1024x1024",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark cute teardrop-shaped doodle creature, round body with a pointed top, two black dot eyes, tiny curved smile, small stubby feet, bright cyan-blue body with thick dark brown outline, body stretched vertically, feet tucked, side view facing right, on a plain white background, isolated, single object, pure white background"
+   }
+  ]
+ },
+ "char_erased": {
+  "attempts": [
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7000,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1024x1024",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark cute teardrop-shaped doodle creature, round body with a pointed top, two black dot eyes, tiny curved smile, small stubby feet, bright cyan-blue body with thick dark brown outline, half of the body faded into blank white with a soft eraser smudge edge, worried expression, on a plain white background, isolated, single object, pure white background"
+   }
+  ]
+ },
+ "eraser_edge": {
+  "attempts": [
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7004,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "512x1088",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark vertical edge of a giant white eraser sweep, left side pure white blank area, right side torn rubbery eraser crumbs and faint gray smudge edge fading into beige paper, plain light beige paper background"
+   }
+  ]
+ },
+ "ink_blue": {
+  "attempts": [
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7100,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "768x1024",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark a small glass ink bottle with a cork, thick dark brown outline, filled with saturated blue ink, a doodle drop symbol on the label, arrow symbol, front view, on a plain white background, isolated, single object, pure white background"
+   }
+  ]
+ },
+ "ink_green": {
+  "attempts": [
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7100,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "768x1024",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark a small glass ink bottle with a cork, thick dark brown outline, filled with saturated green ink, a doodle drop symbol on the label, a shield with grid lines symbol, front view, on a plain white background, isolated, single object, pure white background"
+   }
+  ]
+ },
+ "ink_select": {
+  "attempts": [
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7101,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "800x1024",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark spiky starburst outline frame shaped like a rounded rectangle with sharp triangular spikes around the border, thick dark brown line, empty inside, plain white background, pure white background"
+   }
+  ]
+ },
+ "ui_shelf": {
+  "attempts": [
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7200,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1536x192",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark a long thin wooden shelf plank seen from the front, warm brown wood with thick dark outline, simple wood grain doodle, horizontal, plain white background, pure white background"
+   }
+  ]
+ },
+ "ui_gauge_frame": {
+  "attempts": [
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7201,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1536x192",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark an empty long rounded bar frame like a glass tube, thick dark outline, plain white background, pure white background"
+   },
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7201,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1536x192",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark a long horizontal empty glass tube bar with rounded ends, thick dark brown outline, a thin white glass highlight, plain white inside, front view, plain white background, pure white background"
+   },
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7012,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1536x192",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark an empty long rounded glass tube frame, thick dark brown outline, small white highlight on top, the inside of the tube is empty and transparent, horizontal, plain white background, pure white background"
+   }
+  ]
+ },
+ "ui_stop_on": {
+  "attempts": [
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7202,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1024x1024",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark a simple doodle stopwatch icon with pause bars, thick outline, yellow fill, plain white background, pure white background"
+   }
+  ]
+ },
+ "ui_panel": {
+  "attempts": [
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7203,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1280x800",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark a small torn notebook paper note with taped corners, blank, thick dark outline, plain white background, pure white background"
+   },
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7013,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1280x800",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark a small torn notebook paper note slightly tilted, solid light beige paper filling the inside, closed continuous thick dark outline, taped corners, blank, plain white background, pure white background"
+   }
+  ]
+ },
+ "star_empty": {
+  "attempts": [
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7300,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1024x1024",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark an empty star outline, thick dark brown line, no fill, plain white background, isolated, pure white background"
+   }
+  ]
+ },
+ "star_full": {
+  "attempts": [
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7300,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1024x1024",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark a star filled bright yellow with a small sparkle, thick dark brown outline, plain white background, isolated, pure white background"
+   }
+  ]
+ },
+ "obs_wall": {
+  "attempts": [
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7400,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1024x1024",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark a doodle stone block scribbled with hatching, gray-brown fill, thick outline, on a plain white background, isolated, single object, pure white background"
+   }
+  ]
+ },
+ "obs_gap": {
+  "attempts": [
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7401,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1024x512",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark the torn edge of a paper hole, ragged white-gray edge, seen from the side, on a plain white background, isolated, single object, pure white background"
+   },
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7401,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1024x512",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark a wide horizontal strip of jagged torn paper edge, ragged white fibrous tear along a dark brown outline, thick uneven torn border, filled with white-gray, seen from the side, on a plain white background, isolated, single object, pure white background"
+   }
+  ]
+ },
+ "obs_shooter": {
+  "attempts": [
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7402,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1024x1024",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark a small doodle cannon with a round mouth, dark gray, thick outline, on a plain white background, isolated, single object, pure white background"
+   }
+  ]
+ },
+ "proj": {
+  "attempts": [
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7403,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1024x1024",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark a small spiky doodle ball, dark purple with angry eyes, thick outline, on a plain white background, isolated, single object, pure white background"
+   }
+  ]
+ },
+ "tut_hand": {
+  "attempts": [
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7500,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1024x1024",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark a cartoon hand cursor pointing, white glove style, thick dark outline, on a plain pale gray background, isolated, single object, pure white background"
+   }
+  ]
+ },
+ "fx_chain": {
+  "attempts": [
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7501,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1024x1024",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark a burst of colorful doodle sparkles and small stars, thick lines, plain white background, pure white background"
+   },
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7600,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1024x1024",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark a cluster of many small colorful doodle stars and sparkle crosses bursting outward from an empty center, red yellow blue green, thick lines, only stars and sparkles, plain white background, pure white background"
+   }
+  ]
+ },
+ "ground_top": {
+  "attempts": [
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7020,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1536x288",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark a horizontal strip of the top edge of torn paper, a thick dark brown hand-drawn ink line along the top with a slightly wobbly marker texture, soft torn paper fibers below fading out, seamless tileable left to right, side view, plain white background, pure white background"
+   },
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7920,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1536x288",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark a wide horizontal strip of torn paper edge seen from the side, a very thick dark brown marker line along the top edge with a wobbly texture, directly below it a band of light beige paper with soft torn fibers that fades out to white toward the bottom, seamless tileable left to right, plain white background, pure white background"
+   }
+  ]
+ },
+ "ground_fill": {
+  "attempts": [
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7021,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1024x1024",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark seamless tileable texture of warm light beige paper cross-section with very faint diagonal pencil hatching, low contrast, flat, no objects"
+   },
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7521,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1024x1024",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark a flat seamless paper texture filled edge to edge with evenly spaced thin diagonal pencil hatching lines on warm light beige, low contrast, nothing else"
+   }
+  ]
+ },
+ "prop_wall": {
+  "attempts": [
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7022,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1024x1024",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark a flat 2D front view of a doodle stone wall tile, square, thick dark brown outline of uniform weight around all four edges, evenly spaced simple hatching and a few brick lines inside, no perspective, no side faces, no shadow, centered, plain white background, pure white background"
+   }
+  ]
+ },
+ "char_fall": {
+  "attempts": [
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7000,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1024x1024",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark cute teardrop-shaped doodle creature, round body with a pointed top, two black dot eyes, tiny curved smile, small stubby feet, bright cyan-blue body with thick dark brown outline, falling down, body slightly stretched vertically, surprised round eyes and small open mouth, tiny feet pointing down, side view facing right, on a plain white background, isolated, single object, pure white background"
+   },
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7500,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1024x1024",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark cute teardrop-shaped doodle creature, round body with a pointed top, two black dot eyes, tiny curved smile, small stubby feet, bright cyan-blue body with thick dark brown outline, falling down, body stretched vertically, wide surprised round eyes, mouth open in a small O shape, tiny feet pointing down, side view facing right, on a plain white background, isolated, single object, pure white background"
+   },
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7900,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1024x1024",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark cute teardrop-shaped doodle creature, round body with a pointed top, two black dot eyes, tiny curved smile, small stubby feet, bright cyan-blue body with thick dark brown outline, the whole body filled with light cyan blue color, falling down, body stretched vertically, wide surprised round eyes, mouth open in a small O shape, tiny feet pointing down, side view facing right, on a plain white background, isolated, single object, pure white background"
+   },
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 8700,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1024x1024",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark cute teardrop-shaped doodle creature, round body with a pointed top, small stubby feet, bright cyan-blue body with thick dark brown outline, the whole body filled with light cyan blue color, falling down, body stretched vertically, shocked face with two big round wide-open eyes with tiny pupils and a round open mouth shaped like the letter O, tiny feet pointing down, side view facing right, on a plain white background, isolated, single object, pure white background"
+   }
+  ]
+ },
+ "prop_platform": {
+  "attempts": [
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7023,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1536x384",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark a flat 2D front view of a thin doodle wooden plank, long horizontal shape, thick dark brown outline of uniform weight, simple wood grain lines inside, no perspective, plain white background, pure white background"
+   }
+  ]
+ },
+ "goal_flag": {
+  "attempts": [
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7024,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1024x1024",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark a doodle goal flag on a thin pole, pole on the left standing on the bottom edge, green triangular flag waving to the right with a small star mark, thick dark outline, plain white background, pure white background"
+   }
+  ]
+ },
+ "deco_cloud_1": {
+  "attempts": [
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7030,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1024x640",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark a single hand-drawn cloud doodle outline, orange-brown marker line, empty inside, round, plain white background, pure white background"
+   }
+  ]
+ },
+ "deco_cloud_2": {
+  "attempts": [
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7031,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1024x640",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark a single hand-drawn cloud doodle outline, orange-brown marker line, empty inside, long flat, plain white background, pure white background"
+   }
+  ]
+ },
+ "deco_cloud_3": {
+  "attempts": [
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7032,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1024x640",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark a single hand-drawn cloud doodle outline, orange-brown marker line, empty inside, small puffy, plain white background, pure white background"
+   }
+  ]
+ },
+ "bg_plain": {
+  "attempts": [
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7040,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1536x768",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark empty sheet of paper, plain light beige paper (#F3E9D2) with very faint even paper grain, nothing drawn, seamless left to right"
+   }
+  ]
+ },
+ "fx_star_pop": {
+  "attempts": [
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7041,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1024x1024",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark a burst of small yellow doodle sparkles and tiny stars around an empty center, thick lines, plain white background, pure white background"
+   },
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7541,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1024x1024",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark a burst of many small bright yellow five-pointed doodle stars and yellow sparkle crosses scattered in a ring around an empty center, thick lines, only yellow, plain white background, pure white background"
+   }
+  ]
+ },
+ "fx_land": {
+  "attempts": [
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7042,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1024x512",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark two or three small doodle dust puffs on the ground, light gray-brown, thick outline, side view, plain white background, pure white background"
+   },
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7542,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1024x512",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark two or three small round fluffy dust puff clouds sitting on a ground line, light gray-brown, thick outline, cute doodle, side view, plain white background, pure white background"
+   },
+   {
+    "checkpoint": "flux1-schnell-fp8.safetensors",
+    "seed": 7942,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "size": "1024x512",
+    "count": 4,
+    "prompt": "STYLE: 2D game asset, hand-drawn doodle on paper, thick dark brown ink outlines of uniform weight, flat saturated color fills with slight marker texture, simple shapes, cute and warm mood, light beige paper background (#F3E9D2), no shading gradients, no text, no watermark three small round fluffy dust puff clouds floating in the air in a row, light gray-brown, thick outline, cute doodle, nothing underneath, plain white background, pure white background"
+   }
+  ]
+ }
+}

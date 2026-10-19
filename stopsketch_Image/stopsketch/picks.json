@@ -1,0 +1,290 @@
+{
+ "key_art": {
+  "source": "candidates/key_art_s5_c3.png",
+  "final_size": [
+   1920,
+   1080
+  ],
+  "background_removed": null
+ },
+ "bg_a": {
+  "source": "candidates/bg_a_c1.png",
+  "final_size": [
+   1920,
+   1080
+  ],
+  "background_removed": "구름만 분리해 종이 바탕만 좌우 이음매 처리(구름 복제 방지)"
+ },
+ "bg_b": {
+  "source": "candidates/bg_b_c2.png",
+  "final_size": [
+   1920,
+   1080
+  ],
+  "background_removed": "왼쪽 12%(빨간 여백선) 잘라냄, 좌우 이음매 처리(교차 혼합)"
+ },
+ "char_idle": {
+  "source": "candidates/char_idle_c2.png",
+  "final_size": [
+   256,
+   256
+  ],
+  "background_removed": "rembg(u2net)+가장자리 색 보정"
+ },
+ "char_run": {
+  "source": "candidates/char_run_c4.png",
+  "final_size": [
+   256,
+   256
+  ],
+  "background_removed": "rembg(u2net)+가장자리 색 보정"
+ },
+ "char_jump": {
+  "source": "candidates/char_jump_c4.png",
+  "final_size": [
+   256,
+   256
+  ],
+  "background_removed": "rembg(u2net)+가장자리 색 보정"
+ },
+ "char_erased": {
+  "source": "candidates/char_erased_c1.png",
+  "final_size": [
+   256,
+   256
+  ],
+  "background_removed": "rembg(u2net)+가장자리 색 보정"
+ },
+ "eraser_edge": {
+  "source": "candidates/eraser_edge_c2.png",
+  "final_size": [
+   512,
+   1080
+  ],
+  "background_removed": null
+ },
+ "ink_red": {
+  "source": "candidates/ink_red_c4.png",
+  "final_size": [
+   192,
+   256
+  ],
+  "background_removed": "rembg(u2net)+가장자리 색 보정"
+ },
+ "ink_blue": {
+  "source": "candidates/ink_blue_c4.png",
+  "final_size": [
+   192,
+   256
+  ],
+  "background_removed": "rembg(u2net)+가장자리 색 보정"
+ },
+ "ink_green": {
+  "source": "candidates/ink_green_c4.png",
+  "final_size": [
+   192,
+   256
+  ],
+  "background_removed": "rembg(u2net)+가장자리 색 보정"
+ },
+ "ink_select": {
+  "source": "candidates/ink_select_c2.png",
+  "final_size": [
+   224,
+   288
+  ],
+  "background_removed": "흰 배경 색 따기(속 빈 형태 유지)+가장자리 색 보정"
+ },
+ "ui_shelf": {
+  "source": "candidates/ui_shelf_c1.png",
+  "final_size": [
+   1280,
+   160
+  ],
+  "background_removed": "rembg(u2net)+가장자리 색 보정"
+ },
+ "ui_gauge_frame": {
+  "source": "candidates/ui_gauge_frame_c3.png",
+  "final_size": [
+   512,
+   64
+  ],
+  "background_removed": "흰 배경 색 따기(안쪽 투명), 칸 가득 늘림"
+ },
+ "ui_stop_on": {
+  "source": "candidates/ui_stop_on_c1.png",
+  "final_size": [
+   96,
+   96
+  ],
+  "background_removed": "rembg(u2net)+가장자리 색 보정"
+ },
+ "ui_panel": {
+  "source": "candidates/ui_panel_c4.png",
+  "final_size": [
+   640,
+   400
+  ],
+  "background_removed": "바깥 흰 배경만 제거, 안쪽을 종이색(#F3E9D2)으로 채움"
+ },
+ "star_empty": {
+  "source": "candidates/star_empty_c4.png",
+  "final_size": [
+   128,
+   128
+  ],
+  "background_removed": "흰 배경 색 따기(속 빈 형태 유지)+가장자리 색 보정"
+ },
+ "star_full": {
+  "source": "candidates/star_full_c3.png",
+  "final_size": [
+   128,
+   128
+  ],
+  "background_removed": "rembg(u2net)+가장자리 색 보정"
+ },
+ "obs_wall": {
+  "source": "candidates/obs_wall_c4.png",
+  "final_size": [
+   256,
+   256
+  ],
+  "background_removed": "rembg(u2net)+가장자리 색 보정"
+ },
+ "obs_gap": {
+  "source": "candidates/obs_gap_c3.png",
+  "final_size": [
+   256,
+   128
+  ],
+  "background_removed": "흰 배경 색 따기(속 빈 형태 유지)+가장자리 색 보정"
+ },
+ "obs_shooter": {
+  "source": "candidates/obs_shooter_c2.png",
+  "final_size": [
+   256,
+   256
+  ],
+  "background_removed": "rembg(u2net)+가장자리 색 보정"
+ },
+ "proj": {
+  "source": "candidates/proj_c2.png",
+  "final_size": [
+   96,
+   96
+  ],
+  "background_removed": "rembg(u2net)+가장자리 색 보정"
+ },
+ "tut_hand": {
+  "source": "candidates/tut_hand_c2.png",
+  "final_size": [
+   128,
+   128
+  ],
+  "background_removed": "rembg(u2net)+가장자리 색 보정"
+ },
+ "fx_chain": {
+  "source": "candidates/fx_chain_c1.png",
+  "final_size": [
+   256,
+   256
+  ],
+  "background_removed": "흰 배경 색 따기(속 빈 형태 유지)+가장자리 색 보정"
+ },
+ "bg_plain": {
+  "source": "candidates/bg_plain_c4.png",
+  "final_size": [
+   1920,
+   1080
+  ],
+  "background_removed": "좌우 이음매 처리(교차 혼합)"
+ },
+ "ground_top": {
+  "source": "candidates/ground_top_c1.png",
+  "final_size": [
+   512,
+   96
+  ],
+  "background_removed": "왼쪽 절반을 좌우 대칭으로 이어 이음매 제거, 흰 배경 색 따기"
+ },
+ "ground_fill": {
+  "source": "candidates/ground_fill_c4.png",
+  "final_size": [
+   256,
+   256
+  ],
+  "background_removed": "사방 이음매 처리"
+ },
+ "prop_wall": {
+  "source": "candidates/prop_wall_c1.png",
+  "final_size": [
+   256,
+   256
+  ],
+  "background_removed": "바깥 흰 배경만 제거(안쪽 불투명), 안쪽 흰색을 종이색으로, 칸 가득 늘림"
+ },
+ "prop_platform": {
+  "source": "candidates/prop_platform_c4.png",
+  "final_size": [
+   256,
+   64
+  ],
+  "background_removed": "바깥 흰 배경만 제거(안쪽 불투명), 안쪽 흰색을 종이색으로, 칸 가득 늘림"
+ },
+ "char_fall": {
+  "source": "candidates/char_fall_c2.png",
+  "final_size": [
+   256,
+   256
+  ],
+  "background_removed": "rembg"
+ },
+ "goal_flag": {
+  "source": "candidates/goal_flag_c1.png",
+  "final_size": [
+   256,
+   256
+  ],
+  "background_removed": "바깥 흰 배경 제거, 기둥을 왼쪽 20% 지점·바닥에 맞춤"
+ },
+ "deco_cloud_1": {
+  "source": "candidates/deco_cloud_1_c2.png",
+  "final_size": [
+   512,
+   320
+  ],
+  "background_removed": "흰 배경 색 따기(안쪽 투명)"
+ },
+ "deco_cloud_2": {
+  "source": "candidates/deco_cloud_2_c3.png",
+  "final_size": [
+   512,
+   320
+  ],
+  "background_removed": "흰 배경 색 따기(안쪽 투명)"
+ },
+ "deco_cloud_3": {
+  "source": "candidates/deco_cloud_3_c4.png",
+  "final_size": [
+   512,
+   320
+  ],
+  "background_removed": "흰 배경 색 따기(안쪽 투명)"
+ },
+ "fx_star_pop": {
+  "source": "candidates/fx_star_pop_c4.png",
+  "final_size": [
+   256,
+   256
+  ],
+  "background_removed": "흰 배경 색 따기"
+ },
+ "fx_land": {
+  "source": "candidates/fx_land_c1.png",
+  "final_size": [
+   256,
+   128
+  ],
+  "background_removed": "바깥 흰 배경만 제거(먼지 안쪽 불투명)"
+ }
+}
