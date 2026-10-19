@@ -7,6 +7,7 @@ G.Draw = {
   begin: function (game, p) {
     if (game.status !== 'run' || game.ink <= 0) return false;
     game.stroke = G.Rules.newStroke(p);
+    game.stroke.color = game.color;               // 그리기 시작할 때 고른 색 (그리는 중 바꿔도 이 선은 그대로)
     return true;
   },
 
@@ -23,7 +24,7 @@ G.Draw = {
     game.stroke = null;
     var r = G.Rules.finishStroke(s, G.DATA.ink);
     if (!r.ok) { game.ink += r.refund; game.toast('선이 너무 짧아요 (잉크 반환)'); return; }
-    var line = { pts: r.pts, bodies: [], active: false, len: s.len, ageMs: 0 };
+    var line = { pts: r.pts, bodies: [], active: false, len: s.len, ageMs: 0, color: s.color || 'green' };
     game.lines.push(line);
     // 달리는 중에 그린 선, 슬로 모션 중에 그린 선은 바로 물리에 반영. 완전 정지 중 선은 재생 때 반영
     if (!game.stopped || game.mode.activateOnStrokeEnd) this.activate(game, line);
@@ -33,7 +34,7 @@ G.Draw = {
     if (line.active) return;
     var P = G.Physics, th = G.DATA.ink.thickness;
     for (var i = 1; i < line.pts.length; i++) {
-      line.bodies.push(P.add(game.engine, P.segment(line.pts[i - 1], line.pts[i], th)));
+      line.bodies.push(P.add(game.engine, P.segment(line.pts[i - 1], line.pts[i], th, { inkColor: line.color })));
     }
     line.active = true;
   },

@@ -49,7 +49,7 @@ G.Debug = {
     app.levels.forEach(function (lv, i) {
       html += '<button data-act="level:' + i + '"' + (app.levelIndex === i ? ' class="on"' : '') + '>' + lv.name + '</button>';
     });
-    html += '</div><div class="row">시간 정지 방식 (키 1/2/3)</div><div class="row">';
+    html += '</div><div class="row">시간 정지 방식 (A 확정 · 비교용 Q/W/E)</div><div class="row">';
     Object.keys(modes).forEach(function (k) {
       html += '<button data-act="mode:' + k + '"' + (g.modeKey === k ? ' class="on"' : '') + '>' + modes[k].name + '</button>';
     });

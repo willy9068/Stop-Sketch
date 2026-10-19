@@ -126,6 +126,8 @@ thin sketchy lines, grayscale, dark background
 | 40 | 잉크 웅덩이 (9분할 가로형) | prop_drain.png | 256×64 | 투명 | ★ (10장) |
 | 41 | 캐릭터 도착 (기뻐함) | char_goal.png | 256×256 | 투명 | ○ 🆕 (11장) |
 | 42~44 | 색 효과: 튕김 / 가속 / 막기 | fx_bounce / fx_boost / fx_block.png | 256×128, 256×128, 256×256 | 투명 | ☆ 🆕 (11장) |
+| 45 | 시작 구멍 (스케치북을 뚫고 나온 구멍) | start_hole.png | 512×512 | 투명 | ★ 🆕 (12장) |
+| 46~47 | 도착 물감 통 (빈 / 찬) | goal_jar_empty / goal_jar_full.png | 384×448 | 투명 | ★ 🆕 (12장) — 도착 깃발 #32 대신 |
 
 ※ **#4~7, #30 캐릭터는 2026-10-19 더 동글동글한 모습으로 다시 그립니다 (11-1).**
 
@@ -456,18 +458,21 @@ spikes around the border, thick dark brown line, empty inside, plain white backg
 | 항목 | 지금 | 바꿀 모습 |
 |---|---|---|
 | 몸 모양 | 세로로 긴 물방울, 위가 길게 뾰족 | **거의 동그란 찹쌀떡 몸** (폭:높이 ≈ 1:0.9~1), 머리 위에 **작게 말린 물방울 꼭지** 하나만 남김 → 물방울 정체성은 유지 |
-| 눈 | 작은 점 눈 | **크고 동그란 까만 눈 + 흰 반짝임 점** 하나씩, 눈 사이를 조금 넓게 |
-| 입·볼 | `·ω·` 입, 분홍 볼 | 그대로 유지 (지금 캐릭터에서 가장 귀여운 부분) |
+| 눈 | 작은 점 눈 | **작고 동그란 까만 눈 + 아주 작은 흰 반짝임 점**, 눈 사이를 넓게, 얼굴은 몸 아래쪽 절반에 (2026-10-19 "치이카와 그림 느낌"으로 수정 — 큰 눈보다 작은 눈이 이 느낌에 맞음) |
+| 입·볼 | `·ω·` 입, 분홍 볼 | 작은 입 유지, 볼은 **분홍 타원 + 짧은 빗금 2~3줄** |
 | 발 | 가늘고 짧은 막대 발 | **작고 통통한 둥근 발** 두 개 (몸 아래에 반쯤 묻힌 콩 모양) |
 | 팔 | 없음 | 없음 (작게 보이면 지저분해짐) |
-| 색 | 연한 하늘색 | **결정 필요** (아래 "캐릭터 색") — 기본은 지금처럼 아주 연한 하늘색 |
-| 외곽선 | 갈색 굵은 선 | 그대로 (다른 이미지와 같은 굵기) |
+| 색 | 연한 하늘색 | **아주 연한 하늘색 유지 (사용자 결정 2026-10-19)** #CDEFF7 정도, 파랑 잉크보다 훨씬 옅게 |
+| 외곽선 | 갈색 굵은 선 | **캐릭터만 조금 가늘고 부드러운 먹색 손그림 선** (살짝 떨리는 연필·펜 선). 다른 이미지보다 약간 가늘어도 됨 — 아래 주의 참고 |
 
-**캐릭터 색 (결정 필요):** 파랑 잉크(#1F6FE0)와 같은 계열이라 색 잉크를 넣으면 헷갈릴 수 있습니다. 후보:
-- ① **아주 연한 하늘색 유지** (#CDEFF7 정도, 파랑 잉크보다 훨씬 옅게) — 물방울 느낌이 가장 강함. 파랑 잉크는 화살 무늬로 구분
-- ② **우윳빛 크림/흰 물방울** (#FFF8EC + 하늘색 반사광) — 잉크 3색과 모두 겹치지 않지만, 흰색은 "지워진 곳" 색이라 지우개와 겹칠 수 있음
-- ③ **연보라 라벤더** (#D9CCF5) — 3색과 겹치지 않음. 단 잉크 웅덩이·잉크 병(검보라)과 계열이 같음
-- 프롬프트의 `[BODY COLOR]` 자리에 고른 색을 넣습니다 (예: `very pale sky blue`, `milky cream white`, `pale lavender`).
+**캐릭터 색 (사용자 결정 2026-10-19):** ① 아주 연한 하늘색 유지 (#CDEFF7 정도). 파랑 잉크(#1F6FE0)와는 진하기로 구분하고, 파랑 선에는 화살 무늬가 있어 색각 보조도 됨.
+
+**그림 느낌 (사용자 결정 2026-10-19): "치이카와 그림 느낌"** — 0-2 규칙대로 **작품·작가 이름은 프롬프트에 넣지 않고**, 그 느낌을 이루는 특징만 풀어 씁니다:
+- 아주 단순한 형태, 군더더기 없는 작은 얼굴 (작은 까만 눈 + 작은 입 + 분홍 볼 빗금)
+- 부드럽고 살짝 떨리는 손그림 선, 연한 파스텔 색, 그림자 없음
+- 작고 통통해서 "지켜 주고 싶은" 느낌 (몸에 비해 얼굴 부품이 작고 아래쪽에 모임)
+- ⚠ 특정 캐릭터와 **너무 닮게** 나오면 쓰지 않습니다 (기각·저작권 위험). 물방울 꼭지와 하늘색 몸으로 우리 캐릭터만의 모습을 유지하세요.
+- ⚠ 스타일 블록(2장)은 "굵고 균일한 외곽선"이라 이 느낌과 조금 부딪힙니다. 캐릭터 프롬프트에서는 아래처럼 선을 "medium-thin soft" 로 덮어쓰고, 다른 이미지와 너무 달라 보이면 선 굵기만 다시 맞춥니다.
 
 **만드는 순서 (일관성)**
 1. `char_idle` 을 먼저 뽑아 고릅니다 (8장 이상 뽑기 권장).
@@ -476,13 +481,16 @@ spikes around the border, thick dark brown line, empty inside, plain white backg
 
 **프롬프트**
 ```
-(char_idle)   a very round chubby doodle creature shaped like a soft mochi, almost circular
-              plump body slightly wider at the bottom, a small curled water-droplet tip on
-              top of the head, big round glossy black eyes with one white highlight dot
-              each, eyes set a little apart, small pink blush cheeks, tiny cat-like "w"
-              mouth, two tiny round stubby feet half hidden under the body, no arms,
-              [BODY COLOR] body, thick dark brown outline of uniform weight, flat colors,
-              facing slightly right, full body, centered, plain white background, isolated
+(char_idle)   a tiny very round chubby doodle creature shaped like a soft mochi, almost
+              circular plump body slightly wider at the bottom, a small curled water-droplet
+              tip on top of the head, very simple minimal face placed low on the body: two
+              small round black eyes with a tiny white sparkle, set wide apart, a tiny soft
+              mouth, pink oval blush cheeks with two or three short diagonal hatch lines,
+              two tiny round stubby feet half hidden under the body, no arms,
+              very pale sky blue body (#CDEFF7), medium-thin soft dark brown hand-drawn
+              line with a slight wobble, flat pastel colors, no shading, gentle and
+              lovable mood, facing slightly right, full body, centered, plain white
+              background, isolated
 (char_run)    [char_idle 참조] same round mochi doodle creature as reference, same droplet
               tip and face, running to the right, body leaning forward and squashed a
               little wider, tiny feet in a running step, two or three short speed lines
@@ -500,7 +508,7 @@ spikes around the border, thick dark brown line, empty inside, plain white backg
               (^ ^), body slightly squashed, a few small doodle sparkles around,
               facing front, plain white background
 ```
-네거티브에 `long body, tall teardrop, pointed head, thin legs, arms, hands, human, anime, realistic eyes, detailed` 추가.
+네거티브에 `long body, tall teardrop, pointed head, thin legs, arms, hands, human, anime, big sparkly eyes, realistic eyes, detailed, thick heavy outline, shading` 추가.
 
 **고를 때 기준**
 - 64px 정도로 줄여 봐도 눈·볼·물방울 꼭지가 읽히는가 (게임에서 캐릭터는 화면 높이의 약 6%)
@@ -564,3 +572,45 @@ spikes around the border, thick dark brown line, empty inside, plain white backg
 - 정지 아이콘 꺼짐(`ui_stop_off`) → 코드로 흐리게 처리 중
 - 시간 정지 중 화면 효과(종이가 살짝 어두워짐 등) → 코드
 - 튜토리얼 점선 안내 → 코드
+
+---
+
+## 12. 시작 지점 · 도착 지점 그림 (2026-10-19 사용자 결정)
+
+> 참고 이미지(사용자 제공): 스케치북 종이를 **뚫고 나온 구멍**에서 캐릭터가 나오는 시작 지점 / 큰 **잉크 병**에 닿으면 끝나는 도착 지점.
+> 결정: **시작 = 스케치북을 뚫고 나온 구멍** (참고 이미지처럼), **도착 = 큰 물감 통**. 처음엔 **비어 있다가**, 캐릭터가 도착하면 **물감이 차오름**.
+> 게임에는 이미 **코드로 그린 임시 모양**(찢긴 구멍, 유리 통에 세 색 물감이 차오름)이 들어가 있고, 아래 파일을 `stopsketch/assets/`에 넣으면 바로 바뀝니다. (도착 깃발 `goal_flag` 은 더 이상 쓰지 않음)
+
+| 우선 | 파일 | 크기 | 쓰이는 곳 | 만들 때 주의 |
+|---|---|---|---|---|
+| ★ | `start_hole.png` | 512×512, 투명 | 시작 위치 뒤 (캐릭터가 그 앞에 섬). 게임에서 약 190px, 가운데가 땅 윗면에서 70px 위 | 정면에서 본 **찢어진 종이 구멍**. 바깥은 종이가 안쪽으로 말려 들어간 흰 가장자리, 안쪽은 **어두운 소용돌이 구멍**. 구멍 바깥(종이)은 투명 |
+| ★ | `goal_jar_empty.png` | 384×448, 투명 | 도착 위치 (왼쪽 끝 ≈ 도착 x, 바닥 = 땅). 게임에서 150×170px | 큰 유리 **물감 통**, 입구가 넓고 **안이 비어 있음**. 통 바닥이 이미지 맨 아래에 닿게 |
+| ★ | `goal_jar_full.png` | 384×448, 투명 | 도착하면 빈 통 위에 **아래부터 잘라 겹쳐 차오르게** 보여 줌 | **empty 와 같은 통을 같은 위치·크기**로, 안에 물감이 가득 (빨강·파랑·초록이 섞여 소용돌이). 두 장이 겹쳤을 때 통 모양이 어긋나지 않아야 함 |
+
+만드는 순서: `goal_jar_full` 을 먼저 고르고, 그 이미지를 참조로 넣어(또는 같은 시드로) `goal_jar_empty` 를 뽑습니다. 겹쳐 봐서 통 테두리가 어긋나면 이미지 편집 툴로 물감만 지워 empty 를 만드는 것이 가장 확실합니다.
+
+```
+(start_hole)      a torn hole ripped through a sketchbook paper page, seen from the front,
+                  ragged white paper edges curling inward around the hole, the inside of the
+                  hole is a deep dark navy-black space with a faint swirl, thick dark brown
+                  outline, flat colors, centered, the paper around the hole fades out,
+                  plain white background, isolated
+(goal_jar_full)   a big round glass paint jar with a wide open mouth and a thick rim, filled
+                  to the top with swirling saturated red, blue and green paint, a few paint
+                  drips on the rim, thick dark brown outline, flat colors, front view, the
+                  bottom of the jar touches the bottom edge of the image, plain white
+                  background, isolated
+(goal_jar_empty)  [goal_jar_full 참조] the same big round glass paint jar, same shape, size and
+                  position as the reference, completely empty and clean inside, transparent
+                  glass with one white highlight, thick dark brown outline, front view,
+                  plain white background, isolated
+```
+- 네거티브에 `text, label, letters, brand` 추가 (참고 이미지의 "INK" 같은 글자는 넣지 않음 — 글자는 AI가 못 씀).
+- start_hole 은 배경 제거할 때 **구멍 안쪽의 어두운 부분은 지우지 않게** 주의 (구멍 바깥 흰 배경만).
+- 넣은 뒤 크기·위치가 어색하면 `stopsketch/src/data.js` 의 `art.startHole`(size, up), `art.goalJar`(w, h, fillMs) 를 조정 (Claude에게 요청).
+
+### 12-1. 색 잉크·발사기 그림 (지금은 코드로 그린 임시 모양)
+11-2 표의 `ink_red/blue/green`, `ink_select`, `ui_shelf`, `obs_shooter`, `proj`, `fx_bounce/boost/block` 은 **게임에 자리가 준비됨** (2026-10-19 색 잉크 구현). 파일만 넣으면 바뀝니다.
+- `obs_shooter`: 게임에서 70×70px 상자 안에 비율 유지로 그림. **포구가 왼쪽**을 보게 (각도를 바꿔도 그림은 회전하지 않음 — 회전이 필요하면 Claude에게 요청)
+- `ui_shelf`: 화면 왼쪽 아래 병 3개 아래에 깔리는 나무 선반 (게임에서 약 240×30px로 줄여 씀). 1280×160으로 뽑아도 가로로 늘려 씀
+- 3장 전체 표에 #45~47 (start_hole, goal_jar_empty, goal_jar_full) 추가

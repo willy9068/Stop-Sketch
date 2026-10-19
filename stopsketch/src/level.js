@@ -6,7 +6,7 @@ G.Level = {
   build: function (engine, raw, account) {
     var P = G.Physics, lv = G.LevelCheck.normalize(raw), depth = G.DATA.level.groundDepth;
     var owned = (account && account.bottles) || {};
-    var out = { data: lv, goalX: lv.goal.x, stars: [], bottles: [], drains: [] };
+    var out = { data: lv, goalX: lv.goal.x, stars: [], bottles: [], drains: [], shooters: [] };
     lv.ground.forEach(function (g) {
       P.add(engine, P.staticRect((g.x0 + g.x1) / 2, g.top + depth / 2, g.x1 - g.x0, depth));
     });
@@ -19,6 +19,7 @@ G.Level = {
         out.bottles.push({ prop: p, key: key, got: !!owned[key], owned: !!owned[key] });
       }
       if (p.type === 'drain') out.drains.push({ x: p.x, y: p.y, w: p.w, h: p.h, prop: p });
+      if (p.type === 'shooter') out.shooters.push({ prop: p, ms: 0 });
     });
     return out;
   },

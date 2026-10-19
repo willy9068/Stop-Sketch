@@ -165,6 +165,38 @@ t('levels.js 의 모든 구간에 오류가 없음', function () {
   });
 });
 
+console.log('색 잉크 (사용자 결정 2026-10-19)');
+t('휠: 다음 색, 끝에서 처음으로', function () {
+  eq(R.nextColor(['red', 'green'], 'red', 1), 'green'); eq(R.nextColor(['red', 'green'], 'green', 1), 'red');
+  eq(R.nextColor(['red', 'blue', 'green'], 'red', -1), 'green');
+});
+t('목록에 없는 색이면 첫 색, 빈 목록이면 null', function () {
+  eq(R.nextColor(['green'], 'red', 1), 'green'); eq(R.nextColor([], 'red', 1), null);
+});
+t('평평한 빨강: 바로 위로 튕기고 가로 속도 유지', function () {
+  var v = R.bounceVelocity(0, 15, { x: 5, y: 3 });
+  near(v.x, 5, 1e-9); near(v.y, -15, 1e-9);
+});
+t('반대 방향으로 그은 선(각도 π)도 위로 튕김', function () {
+  near(R.bounceVelocity(Math.PI, 15, { x: 0, y: 0 }).y, -15, 1e-9);
+});
+t('기운 빨강: 선과 수직으로 튕김', function () {
+  var a = -Math.PI / 4, v = R.bounceVelocity(a, 10, { x: 0, y: 0 });
+  near(v.x * Math.cos(a) + v.y * Math.sin(a), 0, 1e-9, '선 방향 성분'); near(Math.sqrt(v.x * v.x + v.y * v.y), 10, 1e-9);
+});
+t('점-선분 거리 (가운데·끝 바깥)', function () {
+  near(R.pointSegDist({ x: 5, y: 3 }, { x: 0, y: 0 }, { x: 10, y: 0 }), 3);
+  near(R.pointSegDist({ x: 13, y: 4 }, { x: 0, y: 0 }, { x: 10, y: 0 }), 5);
+});
+t('구간에 색 설정이 없으면 3색 모두 + 기본 세기', function () {
+  var lv = G.LevelCheck.normalize({});
+  eq(lv.inks.join(), D.inks.order.join()); eq(lv.fx.bounce, D.inkFx.bounce);
+});
+t('구간 fx 일부만 있으면 나머지는 기본값', function () {
+  var lv = G.LevelCheck.normalize({ inks: ['red', 'nope'], fx: { bounce: 9 } });
+  eq(lv.inks.join(), 'red'); eq(lv.fx.bounce, 9); eq(lv.fx.boostPct, D.inkFx.boostPct);
+});
+
 console.log('시드 난수');
 t('같은 시드 같은 수열', function () {
   var a = G.makeRng(42), b = G.makeRng(42);

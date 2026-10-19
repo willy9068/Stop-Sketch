@@ -19,6 +19,10 @@ G.LevelCheck = (function () {
     if (o.rate.timeSec == null) o.rate.timeSec = r.timeSec;
     if (o.rate.allStars == null) o.rate.allStars = r.allStars;
     if (o.rate.maxTries == null) o.rate.maxTries = r.maxTries;
+    // 쓸 수 있는 색 (없으면 3색 모두), 색 효과 세기 (빠진 칸만 기본값)
+    o.inks = (o.inks || D.inks.order).filter(function (c) { return D.inks[c]; });
+    o.fx = o.fx || {};
+    Object.keys(D.inkFx).forEach(function (k) { if (o.fx[k] == null) o.fx[k] = D.inkFx[k]; });
     return o;
   }
 
@@ -119,6 +123,11 @@ G.LevelCheck = (function () {
       ' · 한꺼번에 필요한 최대(선 수명 동안 ' + pk.span + 'px 구간) 약 ' + pk.peak + ' / 기본 잉크 ' + lv.ink);
     if (pk.peak > lv.ink * 0.9) add('warn', '한꺼번에 필요한 잉크가 빠듯하거나 모자라요 (약 ' + pk.peak + ', 기본 ' + lv.ink + '). 잉크 병 없이도 깰 수 있게 기본량으로 맞추세요');
     if (lv.stops < 1) add('info', '정지 횟수 0: 달리면서만 그려야 해요');
+    if (!lv.inks.length) add('error', '쓸 수 있는 색이 없어요 (구간 설정 → 쓸 수 있는 색)');
+    else add('info', '쓸 수 있는 색: ' + lv.inks.map(function (c) { return D.inks[c].name; }).join(', ') +
+      ' · 튕김 ' + lv.fx.bounce + ' · 가속 ' + lv.fx.boostPct + '% ' + (lv.fx.boostMs / 1000) + '초');
+    var shooters = lv.props.filter(function (p) { return p.type === 'shooter'; });
+    if (shooters.length && lv.inks.indexOf('green') < 0) add('warn', '발사기가 있는데 초록(막기)을 쓸 수 없어요');
     return out;
   }
 

@@ -104,6 +104,28 @@ G.Rules = (function () {
     return { checks: checks, stars: n };
   }
 
+  // ---- 색 잉크 (사용자 결정 2026-10-19) ----
+  // 쓸 수 있는 색 목록 list 안에서 cur 다음(d=+1)/이전(d=-1) 색. 목록에 cur 가 없으면 첫 색
+  function nextColor(list, cur, d) {
+    if (!list.length) return null;
+    var i = list.indexOf(cur);
+    if (i < 0) return list[0];
+    return list[(i + d + list.length) % list.length];
+  }
+  // 빨강 선(기울기 angle 라디안)을 밟았을 때 튕기는 속도: 선과 수직이면서 위쪽 방향으로 bounce, 선을 따라가는 속도는 유지
+  function bounceVelocity(angle, bounce, v) {
+    var nx = Math.sin(angle), ny = -Math.cos(angle);
+    if (ny > 0) { nx = -nx; ny = -ny; }          // 늘 위쪽을 향하게
+    var along = v.x * Math.cos(angle) + v.y * Math.sin(angle);
+    return { x: Math.cos(angle) * along + nx * bounce, y: Math.sin(angle) * along + ny * bounce };
+  }
+  // 점 p 와 선분 a-b 사이 거리 (투사체가 초록 선에 닿았는지)
+  function pointSegDist(p, a, b) {
+    var dx = b.x - a.x, dy = b.y - a.y, l2 = dx * dx + dy * dy;
+    var t = l2 ? Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / l2)) : 0;
+    return dist(p, { x: a.x + dx * t, y: a.y + dy * t });
+  }
+
   // ---- 시간 배율 ----
   function timeScale(mode, stopped) { return stopped ? mode.scale : 1; }
   function shouldAutoResume(mode, stopped, stoppedMs) {
@@ -115,6 +137,7 @@ G.Rules = (function () {
     newStroke: newStroke, addSample: addSample, smooth: smooth, finishStroke: finishStroke,
     lineAlpha: lineAlpha, lineExpired: lineExpired,
     refundInk: refundInk, drainInk: drainInk, rateClear: rateClear,
+    nextColor: nextColor, bounceVelocity: bounceVelocity, pointSegDist: pointSegDist,
     newStops: newStops, canStop: canStop, useStop: useStop, rechargeStops: rechargeStops,
     timeScale: timeScale, shouldAutoResume: shouldAutoResume
   };

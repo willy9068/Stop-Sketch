@@ -160,3 +160,61 @@ var g5 = run('5 선 위 정지/재생 반복', function (g, i) {
   for (i = 0; i < 300; i++) G.Game.update(g2, STEP);
   console.log('   같은 계정 두 번째 판: 시작 최대량', g2.inkMax, '· 병 이미 먹음', g2.level.bottles[0].owned, '· 보너스 그대로', acc.inkBonus);
 })();
+
+// 11. 색 잉크 구간 2~4 모범 풀이 (사용자 결정 2026-10-19: 구간마다 새 색 하나씩). 핵심 선을 빼면 실패해야 정상
+//     레벨 툴로 배치를 바꾸면 이 좌표도 맞춰야 함 (참고용)
+(function () {
+  function colorLine(game, pts, color) {
+    G.Game.toggleStop(game);
+    game.color = color;
+    G.Draw.begin(game, pts[0]);
+    for (var k = 1; k < pts.length; k++) {
+      var a = pts[k - 1], b = pts[k], n = Math.ceil(G.Rules.dist(a, b) / 4);
+      for (var j = 1; j <= n; j++) G.Draw.move(game, { x: a.x + (b.x - a.x) * j / n, y: a.y + (b.y - a.y) * j / n });
+    }
+    G.Draw.end(game);
+    G.Game.toggleStop(game);
+    G.Rules.rechargeStops(game.stops);
+  }
+  var PLANS = {
+    s2: [
+      { at: 900, color: 'red', pts: [{ x: 1150, y: 602 }, { x: 1290, y: 602 }], what: '절벽 앞 빨강' },
+      { at: 2500, color: 'red', pts: [{ x: 2880, y: 332 }, { x: 2990, y: 332 }], what: '틈 앞 빨강' },
+      { at: 3420, color: 'red', pts: [{ x: 3600, y: 332 }, { x: 3740, y: 332 }], what: '벽 앞 빨강' }
+    ],
+    s3: [
+      { at: 800, color: 'blue', pts: [{ x: 1150, y: 602 }, { x: 1450, y: 602 }], what: '틈 앞 파랑' },
+      { at: 1000, color: 'red', pts: [{ x: 1560, y: 602 }, { x: 1690, y: 602 }], what: '틈 끝 빨강' },
+      { at: 2500, color: 'blue', pts: [{ x: 2650, y: 602 }, { x: 2900, y: 602 }], what: '웅덩이 앞 파랑' }
+    ],
+    s4: [
+      { at: 700, color: 'green', pts: [{ x: 1150, y: 470 }, { x: 1420, y: 470 }], what: '발사기 1 초록 지붕' },
+      { at: 1700, color: 'red', pts: [{ x: 1900, y: 602 }, { x: 2040, y: 602 }], what: '절벽 앞 빨강' },
+      { at: 2700, color: 'green', pts: [{ x: 2950, y: 210 }, { x: 3230, y: 210 }], what: '발사기 2 초록 지붕' },
+      { at: 2900, color: 'blue', pts: [{ x: 3000, y: 352 }, { x: 3250, y: 352 }], what: '틈 앞 파랑' },
+      { at: 3000, color: 'red', pts: [{ x: 3260, y: 352 }, { x: 3390, y: 352 }], what: '틈 끝 빨강' }
+    ]
+  };
+  function play(lv, plans, skip) {
+    var g = G.Game.create('A', lv, { inkBonus: 0, bottles: {} });
+    G.Game.start(g);
+    var todo = plans.filter(function (p, i) { return i !== skip; }).map(function (p) { return { p: p }; });
+    for (var i = 0; i < 60 * 60 && g.status === 'run'; i++) {
+      var x = g.player.body.position.x;
+      todo.forEach(function (t) { if (!t.done && x > t.p.at) { colorLine(g, t.p.pts, t.p.color); t.done = 1; } });
+      G.Game.update(g, STEP);
+    }
+    return g;
+  }
+  G.LEVELS.forEach(function (lv) {
+    var plans = PLANS[lv.id];
+    if (!plans) return;
+    var g = play(lv, plans, -1);
+    console.log('11 ' + (lv.name + ' 모범 풀이').padEnd(24), g.status.padEnd(6), (g.failReason || '').padEnd(8), 't=' + (g.timeMs / 1000).toFixed(1) + 's',
+      'ink=' + Math.round(g.ink), 'stars=' + G.Game.starsGot(g) + '/' + g.level.stars.length, '튕김 ' + g.player.bounces, '막은 투사체 ' + g.blocked);
+    plans.forEach(function (p, i) {
+      var h = play(lv, plans, i);
+      console.log('   ' + ('- ' + p.what + ' 빼면').padEnd(24), h.status.padEnd(6), h.failReason || '');
+    });
+  });
+})();

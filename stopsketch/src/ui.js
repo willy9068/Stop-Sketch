@@ -60,16 +60,76 @@ G.UI = (function () {
     }
   }
 
-  // 도착 깃발 (x, 땅 윗면 top)
-  function drawGoal(ctx, gx, gy) {
+  // 시작 구멍: 스케치북을 뚫고 나온 구멍 (사용자 결정 2026-10-19). 캐릭터 뒤에 그림. 이미지 없으면 코드로 찢긴 구멍
+  function drawStart(ctx, sx, gy) {
     if (gy == null) return;
-    var img = G.Assets.get('goal_flag');
-    if (img) { var s = 140; ctx.drawImage(img, gx - s * 0.2, gy - s, s, s); return; }
-    ctx.strokeStyle = C.outline; ctx.lineWidth = 4;
-    ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(gx, gy - 130); ctx.stroke();
-    ctx.fillStyle = C.goal;
-    ctx.beginPath(); ctx.moveTo(gx, gy - 130); ctx.lineTo(gx + 60, gy - 110); ctx.lineTo(gx, gy - 90); ctx.closePath();
-    ctx.fill(); ctx.stroke();
+    var A = G.DATA.art.startHole, s = A.size, cx = sx, cy = gy - A.up;
+    var img = G.Assets.get('start_hole');
+    if (img) { ctx.drawImage(img, cx - s / 2, cy - s / 2, s, s); return; }
+    var rnd = G.makeRng(7), n = 18, i, a, rr;
+    ctx.save();
+    ctx.beginPath();                               // 찢긴 종이 가장자리 (흰 종이 뒷면)
+    for (i = 0; i <= n; i++) {
+      a = i / n * 6.283; rr = s * (0.42 + rnd() * 0.08);
+      ctx[i ? 'lineTo' : 'moveTo'](cx + Math.cos(a) * rr, cy + Math.sin(a) * rr * 0.92);
+    }
+    ctx.closePath(); ctx.fillStyle = '#FFFDF6'; ctx.fill();
+    ctx.lineWidth = 3; ctx.strokeStyle = C.outline; ctx.stroke();
+    ctx.beginPath();                               // 안쪽 어두운 구멍
+    for (i = 0; i <= n; i++) {
+      a = i / n * 6.283; rr = s * (0.30 + rnd() * 0.06);
+      ctx[i ? 'lineTo' : 'moveTo'](cx + Math.cos(a) * rr, cy + Math.sin(a) * rr * 0.92);
+    }
+    ctx.closePath(); ctx.fillStyle = '#1E1A22'; ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 2;   // 소용돌이 몇 줄
+    for (i = 1; i <= 3; i++) { ctx.beginPath(); ctx.arc(cx, cy, s * 0.07 * i, i, i + 3.6); ctx.stroke(); }
+    ctx.restore();
+  }
+
+  // 도착 물감 통 (사용자 결정 2026-10-19): 비어 있다가 도착하면 차오름. fill 0~1. 왼쪽 끝 ≈ 도착 x, 바닥 = 땅 윗면
+  //   goal_jar_empty / goal_jar_full 이미지가 있으면 빈 통 위에 찬 통을 아래부터 fill 만큼 잘라 겹침
+  function drawGoal(ctx, gx, gy, fill) {
+    if (gy == null) return;
+    var J = G.DATA.art.goalJar, x = gx - 10, y = gy - J.h, w = J.w, h = J.h;
+    fill = Math.max(0, Math.min(1, fill || 0));
+    var empty = G.Assets.get('goal_jar_empty'), full = G.Assets.get('goal_jar_full');
+    if (empty) {
+      ctx.drawImage(empty, x, y, w, h);
+      if (full && fill > 0) {
+        ctx.save(); ctx.beginPath(); ctx.rect(x, y + h * (1 - fill), w, h * fill); ctx.clip();
+        ctx.drawImage(full, x, y, w, h); ctx.restore();
+      }
+      return;
+    }
+    var bx = x + w * 0.1, bw = w * 0.8, by = y + h * 0.18, bh = h * 0.82;   // 통 몸체
+    ctx.save();
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(bx, by, bw, bh, 22); else ctx.rect(bx, by, bw, bh);
+    ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.fill();
+    if (fill > 0) {                                // 물감: 세 색이 층층이 차오름
+      ctx.save(); ctx.clip();
+      var top = by + bh * (1 - fill * 0.92), band = (by + bh - top) / 3;
+      [C.green, C.blue, C.red].forEach(function (c, i) {
+        ctx.fillStyle = c;
+        ctx.beginPath(); ctx.moveTo(bx, top + band * i + 6);
+        ctx.quadraticCurveTo(bx + bw / 2, top + band * i - 8, bx + bw, top + band * i + 6);
+        ctx.lineTo(bx + bw, by + bh); ctx.lineTo(bx, by + bh); ctx.closePath(); ctx.fill();
+      });
+      ctx.restore();
+    }
+    ctx.beginPath();                               // 물감 칠하며 바뀐 경로 대신 통 몸체 외곽선을 다시
+    if (ctx.roundRect) ctx.roundRect(bx, by, bw, bh, 22); else ctx.rect(bx, by, bw, bh);
+    ctx.lineWidth = 4; ctx.strokeStyle = C.outline; ctx.stroke();
+    ctx.fillStyle = '#C9A26B';                       // 넓은 입구 테두리
+    ctx.fillRect(x + w * 0.04, y + h * 0.1, w * 0.92, h * 0.1); ctx.strokeRect(x + w * 0.04, y + h * 0.1, w * 0.92, h * 0.1);
+    ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.fillRect(bx + 12, by + 18, 8, bh * 0.5);   // 유리 반사
+    ctx.restore();
+  }
+
+  // 도착한 뒤 지난 시간 → 물감 통 채움 정도 (1 넘으면 다 참)
+  function goalFill(game) {
+    if (game.status !== 'clear' || !game.finishedAt) return 0;
+    return (Date.now() - game.finishedAt) / G.DATA.art.goalJar.fillMs;
   }
 
   function drawWorld(ctx, game, debug) {
@@ -82,7 +142,8 @@ G.UI = (function () {
     lv.ground.forEach(function (g) { G.Props.drawGround(ctx, g); });
     lv.props.forEach(function (p) { if (p.type === 'drain') G.Props.draw(ctx, p); });
     lv.props.forEach(function (p) { var d = G.Props.def(p.type); if (d && d.solid) G.Props.draw(ctx, p); });
-    drawGoal(ctx, lv.goal.x, G.Level.groundTopAt(lv, lv.goal.x));
+    drawStart(ctx, lv.start.x, G.Level.groundTopAt(lv, lv.start.x));
+    drawGoal(ctx, lv.goal.x, G.Level.groundTopAt(lv, lv.goal.x), goalFill(game));
     game.level.stars.forEach(function (s) {
       if (!s.got) { G.Props.draw(ctx, s.prop); return; }
       var t = (game.timeMs - s.gotMs) / 300;      // 먹으면 0.3초 동안 커지며 사라짐
@@ -108,18 +169,14 @@ G.UI = (function () {
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     var ink = G.DATA.ink;
     game.lines.forEach(function (ln) {
-      ctx.lineWidth = ink.thickness;
-      ctx.strokeStyle = ln.active ? C.ink : C.inkPending;
-      ctx.setLineDash(ln.active ? [] : [14, 10]);
-      ctx.globalAlpha = ln.active ? G.Rules.lineAlpha(ln.ageMs, ink.lifeMs, ink.fadeMs) : 1;
-      path(ctx, ln.pts); ctx.stroke();
+      ctx.globalAlpha = ln.active ? G.Rules.lineAlpha(ln.ageMs, ink.lifeMs, ink.fadeMs) : 0.5;
+      drawInkLine(ctx, ln.pts, ln.color, !ln.active);
     });
     ctx.globalAlpha = 1;
-    ctx.setLineDash([]);
     if (game.stroke && game.stroke.pts.length > 1) {
-      ctx.lineWidth = G.DATA.ink.thickness; ctx.strokeStyle = C.inkPending;
-      path(ctx, game.stroke.pts); ctx.stroke();
+      ctx.globalAlpha = 0.6; drawInkLine(ctx, game.stroke.pts, game.stroke.color, true); ctx.globalAlpha = 1;
     }
+    drawProjectiles(ctx, game);
 
     drawPlayer(ctx, game.player);
     drawFx(ctx, game);
@@ -131,10 +188,79 @@ G.UI = (function () {
     ctx.restore();
   }
 
+  // 색 잉크 선: 색 + 색각 보조 무늬 (빨강=작은 동그라미, 파랑=진행 방향 화살, 초록=가로지르는 눈금). pending 이면 점선
+  function drawInkLine(ctx, pts, color, pending) {
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.lineWidth = G.DATA.ink.thickness; ctx.strokeStyle = C[color] || C.ink;
+    ctx.setLineDash(pending ? [14, 10] : []);
+    path(ctx, pts); ctx.stroke();
+    ctx.setLineDash([]);
+    if (pending) return;
+    var gap = color === 'green' ? 14 : 22, acc = gap / 2;
+    ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.fillStyle = 'rgba(255,255,255,0.9)'; ctx.lineWidth = 2;
+    for (var i = 1; i < pts.length; i++) {
+      var a = pts[i - 1], b = pts[i], dx = b.x - a.x, dy = b.y - a.y, len = Math.sqrt(dx * dx + dy * dy);
+      if (!len) continue;
+      var ux = dx / len, uy = dy / len;
+      while (acc <= len) {
+        var x = a.x + ux * acc, y = a.y + uy * acc;
+        ctx.beginPath();
+        if (color === 'red') { ctx.arc(x, y, 2, 0, 6.283); ctx.fill(); }
+        else if (color === 'blue') { ctx.moveTo(x - ux * 3 - uy * 3, y - uy * 3 + ux * 3); ctx.lineTo(x + ux * 2, y + uy * 2); ctx.lineTo(x - ux * 3 + uy * 3, y - uy * 3 - ux * 3); ctx.stroke(); }
+        else { ctx.moveTo(x - uy * 3, y + ux * 3); ctx.lineTo(x + uy * 3, y - ux * 3); ctx.stroke(); }
+        acc += gap;
+      }
+      acc -= len;
+    }
+  }
+
+  // 투사체: proj 이미지, 없으면 보라색 가시 공
+  function drawProjectiles(ctx, game) {
+    var r = G.DATA.projectile.radius, img = G.Assets.get('proj');
+    game.projs.forEach(function (q) {
+      if (img) { ctx.drawImage(img, q.x - r * 1.6, q.y - r * 1.6, r * 3.2, r * 3.2); return; }
+      ctx.beginPath();
+      for (var i = 0; i < 16; i++) {
+        var a = i / 16 * 6.283, rr = i % 2 ? r * 0.75 : r * 1.15;
+        ctx[i ? 'lineTo' : 'moveTo'](q.x + Math.cos(a) * rr, q.y + Math.sin(a) * rr);
+      }
+      ctx.closePath(); ctx.fillStyle = '#5A2D6E'; ctx.fill();
+      ctx.lineWidth = 2.5; ctx.strokeStyle = C.outline; ctx.stroke();
+    });
+  }
+
+  // 튕김(fx_bounce)·가속(fx_boost)·막기(fx_block) 효과. 이미지 없으면 코드로 짧은 선 몇 개
+  function drawInkFx(ctx, game, f) {
+    var t = (game.timeMs - f.t) / G.DATA.art.fx.inkMs;
+    if (t < 0 || t >= 1) return;
+    var img = G.Assets.get('fx_' + f.type), i;
+    ctx.save(); ctx.globalAlpha = 1 - t * t;
+    if (img) {
+      var w = f.type === 'block' ? 90 : 110, h = f.type === 'block' ? 90 : 55;
+      ctx.translate(f.x, f.y); if (f.dir < 0) ctx.scale(-1, 1);
+      ctx.drawImage(img, -w / 2, -h * (f.type === 'block' ? 0.5 : 0.9), w, h);
+      ctx.restore(); return;
+    }
+    ctx.lineWidth = 4; ctx.lineCap = 'round';
+    var k = 14 + t * 22;
+    if (f.type === 'bounce') {
+      ctx.strokeStyle = C.red;
+      for (i = -1; i <= 1; i++) { ctx.beginPath(); ctx.moveTo(f.x + i * 12, f.y - 4); ctx.lineTo(f.x + i * 22, f.y - 4 - k); ctx.stroke(); }
+    } else if (f.type === 'boost') {
+      ctx.strokeStyle = C.blue;
+      for (i = 0; i < 3; i++) { ctx.beginPath(); ctx.moveTo(f.x - f.dir * (20 + k), f.y - 10 - i * 12); ctx.lineTo(f.x - f.dir * 20, f.y - 10 - i * 12); ctx.stroke(); }
+    } else {
+      ctx.strokeStyle = C.green;
+      for (i = 0; i < 6; i++) { var a = i / 6 * 6.283; ctx.beginPath(); ctx.moveTo(f.x + Math.cos(a) * 6, f.y + Math.sin(a) * 6); ctx.lineTo(f.x + Math.cos(a) * k, f.y + Math.sin(a) * k); ctx.stroke(); }
+    }
+    ctx.restore();
+  }
+
   // 짧은 효과: 별 반짝(fx_star_pop, 커지며 사라짐), 착지 먼지(fx_land, 옆으로 퍼지며 사라짐). 이미지 없으면 생략
   function drawFx(ctx, game) {
     var F = G.DATA.art.fx;
     game.fx.forEach(function (f) {
+      if (f.type === 'bounce' || f.type === 'boost' || f.type === 'block') { drawInkFx(ctx, game, f); return; }
       var star = f.type === 'star', img = G.Assets.get(star ? 'fx_star_pop' : 'fx_land');
       var t = (game.timeMs - f.t) / (star ? F.starPopMs : F.landMs);
       if (!img || t < 0 || t >= 1) return;
@@ -242,6 +368,72 @@ G.UI = (function () {
     ctx.textAlign = 'left';
   }
 
+  // 아래 잉크 병 선반 (사용자 결정 2026-10-19: 병 클릭 / 휠 / 1·2·3 으로 색 고르기). 이 구간에서 못 쓰는 색은 흐리게 "잠김"
+  function shelfSlots() {
+    var S = G.DATA.art.shelf;
+    return G.DATA.inks.order.map(function (c, i) {
+      return { color: c, key: i + 1, x: S.x + i * S.slot, y: V.h - S.h, w: S.slot - 8, h: S.h };
+    });
+  }
+  // 화면 좌표(sx, sy)가 병 위면 그 색, 아니면 null
+  function inkAt(sx, sy) {
+    var hit = null;
+    shelfSlots().forEach(function (b) { if (sx >= b.x && sx <= b.x + b.w && sy >= b.y && sy <= b.y + b.h) hit = b.color; });
+    return hit;
+  }
+
+  function drawShelf(ctx, game) {
+    var S = G.DATA.art.shelf, slots = shelfSlots(), allowed = game.level.data.inks;
+    var shelfW = S.x * 2 + slots.length * S.slot - 8, shelfImg = G.Assets.get('ui_shelf');
+    if (shelfImg) ctx.drawImage(shelfImg, 0, V.h - 30, shelfW + 10, 30);
+    else {
+      ctx.fillStyle = '#B07A45'; ctx.fillRect(4, V.h - 16, shelfW, 12);
+      ctx.strokeStyle = C.outline; ctx.lineWidth = 2.5; ctx.strokeRect(4, V.h - 16, shelfW, 12);
+    }
+    var sel = G.Assets.get('ink_select');
+    slots.forEach(function (b) {
+      var on = allowed.indexOf(b.color) >= 0, picked = game.color === b.color;
+      var img = G.Assets.get('ink_' + b.color), bw = S.bottle * 0.75, bh = S.bottle;
+      var cx = b.x + b.w / 2, by = V.h - 16 - bh;
+      if (picked) {                                // 고른 병: 뾰족한 외곽선 (색각 보조: 색이 아니라 모양으로도 구분)
+        if (sel) ctx.drawImage(sel, cx - bw * 0.75, by - 10, bw * 1.5, bh + 20);
+        else {
+          ctx.beginPath();
+          for (var i = 0; i < 20; i++) {
+            var a = i / 20 * 6.283, rr = i % 2 ? 0.86 : 1;
+            ctx[i ? 'lineTo' : 'moveTo'](cx + Math.cos(a) * bw * 0.85 * rr, by + bh / 2 + Math.sin(a) * bh * 0.62 * rr);
+          }
+          ctx.closePath(); ctx.fillStyle = 'rgba(245,197,24,0.35)'; ctx.fill();
+          ctx.lineWidth = 3; ctx.strokeStyle = C.outline; ctx.stroke();
+        }
+      }
+      ctx.save(); ctx.globalAlpha = on ? 1 : 0.25;
+      if (img) ctx.drawImage(img, cx - bw / 2, by, bw, bh);
+      else {
+        ctx.fillStyle = C[b.color]; ctx.strokeStyle = C.outline; ctx.lineWidth = 3;
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(cx - bw / 2, by + bh * 0.25, bw, bh * 0.75, 8); else ctx.rect(cx - bw / 2, by + bh * 0.25, bw, bh * 0.75);
+        ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#C9A26B'; ctx.fillRect(cx - bw * 0.2, by + bh * 0.08, bw * 0.4, bh * 0.17); ctx.strokeRect(cx - bw * 0.2, by + bh * 0.08, bw * 0.4, bh * 0.17);
+        ctx.fillStyle = '#fff'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5;   // 병 라벨 무늬 (선 무늬와 같음)
+        var ly = by + bh * 0.62;
+        ctx.beginPath();
+        if (b.color === 'red') { ctx.arc(cx - 7, ly, 3, 0, 6.283); ctx.arc(cx + 7, ly, 3, 0, 6.283); ctx.fill(); }
+        else if (b.color === 'blue') { ctx.moveTo(cx - 8, ly - 7); ctx.lineTo(cx + 4, ly); ctx.lineTo(cx - 8, ly + 7); ctx.stroke(); }
+        else { for (var j = -1; j <= 1; j++) { ctx.moveTo(cx + j * 7, ly - 7); ctx.lineTo(cx + j * 7, ly + 7); } ctx.stroke(); }
+      }
+      ctx.restore();
+      ctx.fillStyle = on ? C.outline : 'rgba(43,33,24,0.35)'; ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText(on ? String(b.key) : '잠김', cx, by - 4);
+      ctx.textAlign = 'left';
+    });
+    var cur = G.DATA.inks[game.color];
+    ctx.fillStyle = C.outline; ctx.font = 'bold 15px sans-serif';
+    ctx.fillText(cur ? cur.name : '', shelfW + 14, V.h - 40);
+    ctx.font = '13px sans-serif'; ctx.fillStyle = 'rgba(43,33,24,0.6)';
+    ctx.fillText('병 클릭 · 휠 · 1/2/3', shelfW + 14, V.h - 20);
+  }
+
   function drawStopOverlay(ctx, game) {
     if (!game.stopped) return;
     ctx.fillStyle = C.stopTint;
@@ -277,10 +469,11 @@ G.UI = (function () {
       ctx.textAlign = 'center'; ctx.fillStyle = C.outline; ctx.font = 'bold 28px sans-serif';
       ctx.fillText('클릭 또는 Space: 출발', V.w / 2, 250);
       ctx.font = '17px sans-serif';
-      ctx.fillText('R: 처음부터 · 1/2/3: 시간 정지 방식 바꾸기 · D: 디버그', V.w / 2, 285);
+      ctx.fillText('R: 처음부터 · 병 클릭·휠·1/2/3: 색 고르기 · D: 디버그', V.w / 2, 285);
       ctx.textAlign = 'left';
       return;
     }
+    if (game.status === 'clear' && goalFill(game) < 1.15) return;   // 물감 통이 다 차오른 뒤 결과 쪽지
     ctx.fillStyle = 'rgba(43,33,24,0.35)';
     ctx.fillRect(0, 0, V.w, V.h);
     var clear = game.status === 'clear' && game.result;
@@ -338,9 +531,11 @@ G.UI = (function () {
     drawWorld(ctx, game, debug);
     drawStopOverlay(ctx, game);
     drawHUD(ctx, game);
+    drawShelf(ctx, game);
     drawMessages(ctx, game);
     drawResult(ctx, game);
   }
 
-  return { render: render, toWorld: toWorld, cam: cam, drawBackground: drawBackground, drawGoal: drawGoal };
+  return { render: render, toWorld: toWorld, cam: cam, drawBackground: drawBackground, drawGoal: drawGoal, drawStart: drawStart,
+           inkAt: inkAt, drawInkLine: drawInkLine };
 })();

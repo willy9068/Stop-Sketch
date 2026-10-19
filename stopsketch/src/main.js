@@ -12,10 +12,9 @@ var G = G || {};
   var app = {
     save: G.Save.load(),
     game: null,
+    // 시간 정지 방식은 A로 확정 (사용자 결정 2026-10-19). B·C 는 비교용으로 Q/W/E, 저장하지 않음
     setMode: function (k) {
       if (!D.timeModes[k]) return;
-      app.save.timeMode = k;
-      G.Save.write(app.save);
       G.Game.setMode(app.game, k);
       app.restart();
       app.game.toast(D.timeModes[k].name + ' (구간 다시 시작)');
@@ -37,10 +36,9 @@ var G = G || {};
   if (m) {
     try { app.levels = [JSON.parse(decodeURIComponent(m[1]))]; app.testMode = true; } catch (e) { /* 잘못된 주소면 무시 */ }
   }
-  if (!D.timeModes[app.save.timeMode]) app.save.timeMode = D.defaultTimeMode;
   // 계정: 잉크 성장(inkBonus·먹은 병)과 구간 기록. 레벨 툴 테스트는 계정을 건드리지 않게 복사본으로 (저장 안 함)
   app.account = app.testMode ? JSON.parse(JSON.stringify(app.save)) : app.save;
-  app.game = G.Game.create(app.save.timeMode, app.levels[0], app.account);
+  app.game = G.Game.create(D.defaultTimeMode, app.levels[0], app.account);
   app.game.hasNext = !!app.levels[1];
   if (app.testMode) app.game.toast('레벨 툴 테스트 플레이: ' + app.levels[0].name + ' (계정에 저장 안 됨)');
   function persist() { if (!app.testMode) G.Save.write(app.save); }
@@ -87,16 +85,28 @@ var G = G || {};
     else if (e.code === 'KeyR') { app.restart(); }
     else if (e.code === 'KeyN') { if (g.status === 'clear' && g.hasNext) app.goLevel(app.levelIndex + 1); }
     else if (e.code === 'KeyD') { G.Debug.toggle(app); }
-    else if (e.key === '1') app.setMode('A');
-    else if (e.key === '2') app.setMode('B');
-    else if (e.key === '3') app.setMode('C');
+    else if (e.code === 'KeyQ') app.setMode('A');          // 정지 방식 비교용 (1/2/3 에서 옮김, 사용자 결정 2026-10-19)
+    else if (e.code === 'KeyW') app.setMode('B');
+    else if (e.code === 'KeyE') app.setMode('C');
+    else if (e.key === '1' || e.key === '2' || e.key === '3') G.Game.setColor(g, D.inks.order[+e.key - 1]);   // 색 고르기
   });
 
+  function mouseScreen(e) {
+    var r = canvas.getBoundingClientRect();
+    return { x: (e.clientX - r.left) * D.view.w / r.width, y: (e.clientY - r.top) * D.view.h / r.height };
+  }
+
   canvas.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+  canvas.addEventListener('wheel', function (e) {        // 휠: 쓸 수 있는 색 안에서 다음/이전
+    e.preventDefault();
+    if (e.deltaY) G.Game.cycleColor(app.game, e.deltaY > 0 ? 1 : -1);
+  }, { passive: false });
   canvas.addEventListener('mousedown', function (e) {
     var g = app.game;
     if (e.button === 2) { G.Game.toggleStop(g); return; }
     if (e.button !== 0) return;
+    var sp = mouseScreen(e), bottle = G.UI.inkAt(sp.x, sp.y);
+    if (bottle && g.status !== 'clear' && g.status !== 'fail') { G.Game.setColor(g, bottle); return; }   // 아래 병 클릭: 색 고르기
     if (g.status === 'ready') { G.Game.start(g); return; }
     if (g.status !== 'run') { app.restart(); return; }
     if (g.ink <= 0) { g.toast('잉크가 없어요'); return; }

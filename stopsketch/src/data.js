@@ -32,7 +32,8 @@ G.DATA = {
     perSection: 3          // 구간당 정지 횟수
   },
 
-  // 시간 정지 방식 3모드 (첫날 비교 실험). scale = 정지 중 시간 배율
+  // 시간 정지 방식 (사용자 결정 2026-10-19: A 완전 정지로 확정 — 지우개 추격·실시간 그리기 등 압박 장치가 많아서).
+  // B·C 는 비교용으로만 남김 (Q/W/E 키, 저장하지 않음 → 열 때마다 A). scale = 정지 중 시간 배율
   timeModes: {
     A: { name: 'A. 완전 정지', scale: 0, limitMs: 0, activateOnStrokeEnd: false },
     B: { name: 'B. 슬로 모션', scale: 0.3, limitMs: 0, activateOnStrokeEnd: true },
@@ -55,6 +56,23 @@ G.DATA = {
     thickness: 8,          // 선 두께 (물리 바디도 같은 두께)
     friction: 0            // 선 표면 마찰 (캐릭터는 속도를 직접 제어)
   },
+
+  // 색 잉크 (사용자 결정 2026-10-19): 3색 모두 데모에 넣음. 고르기: 아래 병 클릭 / 마우스 휠 / 키 1·2·3
+  //   빨강 = 밟으면 선과 수직 방향으로 튕김, 파랑 = 밟는 동안·내린 뒤 잠시 빨라짐, 초록 = 보통 발판 + 투사체를 막음
+  //   (빨강·파랑 선은 투사체가 그냥 지나감). 구간마다 쓸 수 있는 색은 levels.js 의 inks
+  inks: {
+    order: ['red', 'blue', 'green'],                        // 키 1/2/3, 아래 병 순서
+    red:   { name: '빨강 · 튕김' },
+    blue:  { name: '파랑 · 가속' },
+    green: { name: '초록 · 막기' }
+  },
+  // 색 효과 세기 기본값. 구간마다 levels.js 의 fx 로 바꿈 (레벨 툴 "구간 설정 → 색 효과 세기")
+  //   bounce: 빨강에서 튕기는 속도 (스텝당 px, 15 ≈ 약 400px 높이) / boostPct: 파랑 위 달리기 속도 % / boostMs: 파랑에서 내린 뒤 빠른 상태 유지
+  inkFx: { bounce: 15, boostPct: 190, boostMs: 1200 },
+  bounceCdMs: 250,         // 한 번 튕긴 뒤 다시 튕길 수 있기까지 (같은 선에서 두 번 튕김 방지)
+
+  // 투사체 (발사기 프랍이 쏨). 직선으로 날아가고 중력 없음. 초록 선·땅·벽에 닿으면 사라지고, 캐릭터에 닿으면 실패
+  projectile: { radius: 13, lifeMs: 7000 },
 
   // 색 (아트 문서 1-1 팔레트와 같은 값)
   colors: {
@@ -90,6 +108,9 @@ G.DATA = {
     inkup:    { name: '잉크 병', collect: true, size: 60, imgs: [['item_ink', 'fit']] },     // 성장용: 먹으면 잉크 최대량 영구 증가
     drain:    { name: '잉크 웅덩이', box: true, w: 160, h: 14, color: '#3B2A4A',              // 닿아 있으면 잉크가 줄어듦 (충돌 없음)
                 imgs: [['prop_drain', 'nine']] },
+    // 발사기: 정해진 간격으로 angle(도, 0=오른쪽 90=아래 180=왼쪽) 방향으로 투사체를 쏨. 몸체는 벽처럼 단단함
+    shooter:  { name: '발사기', solid: true, box: true, w: 70, h: 70, color: '#5B5560',
+                angle: 180, periodMs: 2000, speed: 5, imgs: [['obs_shooter', 'fit']] },
     deco:     { name: '장식', size: 180, img: 'deco_cloud_1' },     // 충돌 없음, 그림만
     text:     { name: '글자', size: 20, text: '안내 문구' }          // 충돌 없음
   },
@@ -105,7 +126,10 @@ G.DATA = {
       'ground_top', 'ground_fill',
       'prop_wall', 'obs_wall', 'prop_platform', 'star_full', 'goal_flag', 'item_ink', 'prop_drain',
       'deco_cloud_1', 'deco_cloud_2', 'deco_cloud_3',
-      'ui_stop_on', 'ui_gauge_frame', 'ui_panel', 'fx_star_pop', 'fx_land'
+      'ui_stop_on', 'ui_gauge_frame', 'ui_panel', 'fx_star_pop', 'fx_land',
+      // 4차 (아직 없으면 코드로 그린 임시 모양): 시작 구멍, 도착 물감 통(빈/찬), 색 잉크 병, 선반, 발사기·투사체, 색 효과, 도착 캐릭터
+      'start_hole', 'goal_jar_empty', 'goal_jar_full', 'ink_red', 'ink_blue', 'ink_green', 'ink_select', 'ui_shelf',
+      'obs_shooter', 'proj', 'fx_bounce', 'fx_boost', 'fx_block', 'char_goal'
     ],
     backgrounds: { bg_a: '종이 + 구름', bg_b: '줄 노트', bg_plain: '빈 종이', none: '단색 종이' },
     decos: ['deco_cloud_1', 'deco_cloud_2', 'deco_cloud_3'],
@@ -118,7 +142,10 @@ G.DATA = {
     // 9분할 이미지의 테두리 폭: 원본 px(src) → 화면 px(dst). dst/src 가 무늬 배율 (가운데는 이 배율로 반복)
     //   prop_wall: 256px 벽돌 한 장이 약 91px로 보임 / prop_platform: 높이 64px 나무판이 기본 높이 28px에 꼭 맞음
     slices: { prop_wall: { src: 14, dst: 5 }, prop_platform: { src: 8, dst: 3.5 }, prop_drain: { src: 16, dst: 6 } },
-    fx: { starPopMs: 450, landMs: 350, landVy: 6 },   // 별 반짝·착지 먼지 시간, 이 세로 속도 이상으로 떨어져 닿으면 먼지
+    fx: { starPopMs: 450, landMs: 350, landVy: 6, inkMs: 400 },   // inkMs: 튕김·가속·막기 효과 시간
+    startHole: { size: 190, up: 70 },   // 시작 구멍: 한 변 크기, 가운데가 땅 윗면에서 올라간 높이 (캐릭터 뒤에 그림)
+    goalJar: { w: 150, h: 170, fillMs: 900 },  // 도착 물감 통 크기 (왼쪽 끝 = 도착 x, 바닥 = 땅). 도착하면 fillMs 동안 차오름, 그 뒤 결과 쪽지
+    shelf: { h: 84, slot: 74, x: 16, bottle: 64 },   // 아래 잉크 병 선반 (화면 왼쪽 아래)   // 별 반짝·착지 먼지 시간, 이 세로 속도 이상으로 떨어져 닿으면 먼지
     wallCrop: [5, 32, 247, 193],  // obs_wall.png 에서 실제 돌이 있는 영역 [x, y, 폭, 높이] (이미지를 바꾸면 다시 잼)
     // ui_panel.png 안쪽이 투명할 때만 이 외곽 다각형대로 종이색을 먼저 깐다. 2차 이미지는 안쪽이 불투명해서 필요 없음(null)
     panelHull: null

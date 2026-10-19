@@ -51,10 +51,24 @@ G.Physics = (function () {
     return out;
   }
 
+  // body 와 닿아 있는 상대 바디마다 { other, pts } (색 잉크 선을 밟았는지 보려고)
+  function touching(engine, body) {
+    var out = [], list = engine.pairs.list;
+    for (var i = 0; i < list.length; i++) {
+      var p = list[i];
+      if (!p.isActive || p.isSensor) continue;
+      if (p.bodyA !== body && p.bodyB !== body) continue;
+      var c = p.collision, pts = [];
+      for (var j = 0; j < c.supportCount; j++) pts.push(c.supports[j]);
+      out.push({ other: p.bodyA === body ? p.bodyB : p.bodyA, pts: pts });
+    }
+    return out;
+  }
+
   function allBodies(engine) { return M.Composite.allBodies(engine.world); }
 
   return {
     M: M, create: create, add: add, remove: remove, staticRect: staticRect,
-    segment: segment, step: step, contacts: contacts, allBodies: allBodies
+    segment: segment, step: step, contacts: contacts, touching: touching, allBodies: allBodies
   };
 })();

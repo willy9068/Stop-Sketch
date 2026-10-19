@@ -25,7 +25,8 @@ var G = G || {};
   };
   var TOOLS = [
     ['select', '선택', 'V'], ['ground', '땅', 'G'], ['wall', '벽', 'W'], ['platform', '발판', 'P'],
-    ['star', '별', 'S'], ['inkup', '잉크 병', 'I'], ['drain', '웅덩이', 'U'], ['deco', '장식', 'C'], ['text', '글자', 'T']
+    ['star', '별', 'S'], ['inkup', '잉크 병', 'I'], ['drain', '웅덩이', 'U'], ['shooter', '발사기', 'O'],
+    ['deco', '장식', 'C'], ['text', '글자', 'T']
   ];
   var GRID = 10, HANDLE = 7;
 
@@ -120,13 +121,14 @@ var G = G || {};
   function drawStart(l) {
     var top = LC.groundTopAt(l, l.start.x), r = D.player.radius;
     if (top == null) top = 600;
+    G.UI.drawStart(ctx, l.start.x, top);           // 시작 구멍 (게임과 같은 그림)
     var img = G.Assets.get('char_idle'), s = r * D.art.charSize;
     if (img) ctx.drawImage(img, l.start.x - s / 2, top - s, s, s);
     else {
       ctx.beginPath(); ctx.arc(l.start.x, top - r, r, 0, 6.283);
       ctx.fillStyle = D.colors.player; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = D.colors.outline; ctx.stroke();
     }
-    label('시작', l.start.x - 14, top - 80, '#1F6FE0');
+    label('시작', l.start.x - 14, top - D.art.startHole.up - D.art.startHole.size / 2 - 8, '#1F6FE0');
   }
 
   function label(text, x, y, color) {
@@ -169,7 +171,7 @@ var G = G || {};
     l.props.forEach(function (p) { if (p.type === 'drain') P.draw(ctx, p, { editor: true }); });
     l.props.forEach(function (p) { var d = P.def(p.type); if (d && d.solid) P.draw(ctx, p, { editor: true }); });
     G.UI.drawGoal(ctx, l.goal.x, LC.groundTopAt(l, l.goal.x));
-    label('도착', l.goal.x + 4, (LC.groundTopAt(l, l.goal.x) || 600) - 146, '#1FA655');
+    label('도착', l.goal.x + 4, (LC.groundTopAt(l, l.goal.x) || 600) - D.art.goalJar.h - 8, '#1FA655');
     l.props.forEach(function (p) { if (p.type === 'star' || p.type === 'inkup') P.draw(ctx, p, { editor: true }); });
     drawStart(l);
 
@@ -286,6 +288,9 @@ var G = G || {};
     else if (tool === 'drain') {                     // 웅덩이는 클릭한 곳 땅 위에 깔림
       var t2 = LC.groundTopAt(l, w.x);
       p = { type: 'drain', x: snap(w.x - d.w / 2), y: t2 != null ? t2 - d.h : snap(w.y - d.h / 2), w: d.w, h: d.h };
+    }
+    else if (tool === 'shooter') {                   // 발사기: 기본은 왼쪽으로 쏨. 오른쪽 "선택" 칸에서 각도·간격·속도
+      p = { type: 'shooter', x: snap(w.x - d.w / 2), y: snap(w.y - d.h / 2), w: d.w, h: d.h, angle: d.angle, periodMs: d.periodMs, speed: d.speed };
     }
     else if (tool === 'deco') p = { type: 'deco', x: snap(w.x), y: snap(w.y), size: d.size, img: S.decoImg };
     else if (tool === 'text') p = { type: 'text', x: snap(w.x), y: snap(w.y), size: d.size, text: d.text };
@@ -523,7 +528,14 @@ var G = G || {};
       '<div class="row"><b>별 평가 조건</b>&nbsp;(만족한 수 = 별 0~3)</div>' +
       num('r_time', '시간(초) 안', l.rate.timeSec) +
       '<div class="f"><label>수집 별</label><label><input type="checkbox" id="r_stars"' + (l.rate.allStars ? ' checked' : '') + '> 모두 먹기</label></div>' +
-      num('r_tries', '시도 횟수 안', l.rate.maxTries);
+      num('r_tries', '시도 횟수 안', l.rate.maxTries) +
+      '<div class="row"><b>쓸 수 있는 색</b>&nbsp;(게임 키 1/2/3)</div><div class="f">' +
+      D.inks.order.map(function (c) {
+        return '<label><input type="checkbox" id="k_' + c + '"' + (l.inks.indexOf(c) >= 0 ? ' checked' : '') + '> ' + D.inks[c].name + '</label>';
+      }).join('<br>') + '</div>' +
+      '<div class="row"><b>색 효과 세기</b></div>' +
+      num('fx_bounce', '빨강 튕김', l.fx.bounce) + '<div>15 ≈ 약 400px 높이</div>' +
+      num('fx_boostPct', '파랑 속도 %', l.fx.boostPct) + num('fx_boostMs', '파랑 유지 ms', l.fx.boostMs);
     $('lvSel').innerHTML = S.levels.map(function (x, i) { return '<option value="' + i + '"' + (i === S.cur ? ' selected' : '') + '>' + (i + 1) + '. ' + esc(x.name) + '</option>'; }).join('');
   }
 
@@ -538,7 +550,11 @@ var G = G || {};
     } else {
       var d = P.def(o.type);
       h = '<b>' + d.name + '</b>';
-      if (d.box) {
+      if (o.type === 'shooter') {
+        h += num('f_x', 'x (왼쪽)', o.x) + num('f_y', 'y (위)', o.y) + num('f_w', '폭', o.w) + num('f_h', '높이', o.h);
+        h += num('f_angle', '각도(도)', o.angle != null ? o.angle : d.angle) + '<div>0 오른쪽 · 90 아래 · 180 왼쪽 · 135 왼쪽 아래</div>';
+        h += num('f_periodMs', '간격(ms)', o.periodMs || d.periodMs) + num('f_speed', '속도', o.speed || d.speed);
+      } else if (d.box) {
         h += '<div class="f"><label>종류</label><select id="f_type">' + opts([['wall', '벽'], ['platform', '발판'], ['drain', '잉크 웅덩이']], o.type) + '</select></div>';
         h += num('f_x', 'x (왼쪽)', o.x) + num('f_y', 'y (위)', o.y) + num('f_w', '폭', o.w) + num('f_h', '높이', o.h);
       } else {
@@ -580,6 +596,11 @@ var G = G || {};
     else if (id === 'l_start') l.start.x = v; else if (id === 'l_goal') l.goal.x = v;
     else if (id === 'r_time') l.rate.timeSec = v; else if (id === 'r_tries') l.rate.maxTries = v;
     else if (id === 'r_stars') l.rate.allStars = t.checked;
+    else if (id.indexOf('k_') === 0) {             // 쓸 수 있는 색 (순서는 1/2/3 순서로 유지)
+      var c = id.slice(2), on = t.checked;
+      l.inks = D.inks.order.filter(function (k) { return k === c ? on : l.inks.indexOf(k) >= 0; });
+    }
+    else if (id.indexOf('fx_') === 0) l.fx[id.slice(3)] = v;
     else if (o) {
       var f = id.slice(2);
       if (f === 'type') { o.type = v; }
@@ -637,7 +658,7 @@ var G = G || {};
   function levelsText() {
     var body = S.levels.map(function (l) {
       var lines = ['  {'];
-      ['id', 'name', 'bg', 'ink', 'stops', 'rate', 'start', 'goal'].forEach(function (k) { lines.push('    ' + JSON.stringify(k) + ': ' + JSON.stringify(l[k]) + ','); });
+      ['id', 'name', 'bg', 'ink', 'stops', 'rate', 'inks', 'fx', 'start', 'goal'].forEach(function (k) { lines.push('    ' + JSON.stringify(k) + ': ' + JSON.stringify(l[k]) + ','); });
       lines.push('    "ground": [\n' + l.ground.map(function (g) { return '      ' + JSON.stringify(g); }).join(',\n') + '\n    ],');
       lines.push('    "props": [\n' + l.props.map(function (p) { return '      ' + JSON.stringify(p); }).join(',\n') + '\n    ]');
       lines.push('  }');

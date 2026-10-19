@@ -112,6 +112,15 @@ G.Props = (function () {
       ctx.fillRect(r.x + r.w * 0.15, r.y + 3, r.w * 0.2, 2);
       return;
     }
+    if (p.type === 'shooter') {                  // 그림이 없을 때: 회색 상자 + 쏘는 방향의 포구
+      var a = (p.angle != null ? p.angle : d.angle) * Math.PI / 180, cx = p.x + p.w / 2, cy = p.y + p.h / 2, mr = Math.min(p.w, p.h) * 0.22;
+      ctx.fillStyle = d.color; ctx.fillRect(r.x, r.y, r.w, r.h);
+      ctx.lineWidth = 4; ctx.strokeStyle = C.outline; ctx.strokeRect(r.x, r.y, r.w, r.h);
+      var mx = cx + Math.cos(a) * (p.w / 2 - mr * 0.4), my = cy + Math.sin(a) * (p.h / 2 - mr * 0.4);
+      ctx.beginPath(); ctx.arc(mx, my, mr, 0, 6.283); ctx.fillStyle = '#1E1A22'; ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(cx - Math.cos(a) * mr, cy - Math.sin(a) * mr - 4, 4, 0, 6.283); ctx.fill();
+      return;
+    }
     if (p.type === 'star') {
       drawStarShape(ctx, p.x, p.y, r.w / 2);
       ctx.fillStyle = C.star; ctx.fill();
