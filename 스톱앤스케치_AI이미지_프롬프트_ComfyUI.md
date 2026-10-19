@@ -1,4 +1,4 @@
-# 잉크 런 (가제) — 아트 스타일 · 이미지 목록 · AI 이미지 프롬프트 (ComfyUI용)
+# 스톱 앤 스케치 (가제, 구 잉크 런) — 아트 스타일 · 이미지 목록 · AI 이미지 프롬프트 (ComfyUI용)
 
 > 2026-10-19 · 가제와 목록은 임시입니다. 프롬프트는 영어로 썼습니다(대부분의 모델이 영어에서 안정적).
 > 저는 이미지를 직접 만들 수 없고 ComfyUI도 실행해 보지 못했습니다. **결과가 어떻게 나오는지는 확인하지 못했으니** 첫날 3장 시험(0-1)으로 먼저 확인하세요.
@@ -35,7 +35,7 @@
 |---|---|
 | 세계관 | 스케치북 속 세계. 종이 위에 그려진 낙서 |
 | 서사 | 뒤에서 지우개(공백)가 지워 온다 |
-| 캐릭터 | 물방울 모양의 낙서 생물 (교체 가능) |
+| 캐릭터 | 물방울 낙서 생물. **2026-10-19 더 동글동글하고 귀엽게 바꾸기로** (찹쌀떡처럼 둥근 몸 + 머리 위 작은 물방울 꼭지, 11장) |
 | 배경 | 연한 베이지 종이. 소품 최소(거의 없음) |
 | 선/잉크/캐릭터/아이템 | 진하고 채도 높은 굵은 선, 단순한 색 면 |
 | UI | PC용 가로 16:9. 상단 한 줄 HUD + 하단 나무 선반 위 잉크 병. 선택된 잉크는 **뾰족한 외곽선(모양)** 으로도 구분 |
@@ -122,6 +122,12 @@ thin sketchy lines, grayscale, dark background
 | 36 | 빈 종이 배경 (장식 없음) | bg_plain.png | 1920×1080 | 있음 | ☆ 🆕 |
 | 37 | 별 먹을 때 반짝 | fx_star_pop.png | 256×256 | 투명 | ○ 🆕 |
 | 38 | 착지 먼지 | fx_land.png | 256×128 | 투명 | ○ 🆕 |
+| 39 | 잉크 병 (성장용 아이템) | item_ink.png | 256×256 | 투명 | ★ (10장) |
+| 40 | 잉크 웅덩이 (9분할 가로형) | prop_drain.png | 256×64 | 투명 | ★ (10장) |
+| 41 | 캐릭터 도착 (기뻐함) | char_goal.png | 256×256 | 투명 | ○ 🆕 (11장) |
+| 42~44 | 색 효과: 튕김 / 가속 / 막기 | fx_bounce / fx_boost / fx_block.png | 256×128, 256×128, 256×256 | 투명 | ☆ 🆕 (11장) |
+
+※ **#4~7, #30 캐릭터는 2026-10-19 더 동글동글한 모습으로 다시 그립니다 (11-1).**
 
 ※ 플레이어가 그리는 선, 게이지 채움, 점선은 **코드로** 처리합니다.
 
@@ -157,6 +163,7 @@ line, very low contrast, empty, horizontal composition
 ```
 
 ### 4-4. 캐릭터 기본 (#4)
+> **2026-10-19: 캐릭터를 더 동글동글하게 바꾸기로 해서 이 프롬프트(4-4, 4-5) 대신 11-1의 새 프롬프트를 씁니다.** 아래는 1차 기록용으로 남겨 둡니다.
 ```
 cute teardrop-shaped doodle creature, round body with a pointed top, two black dot
 eyes, tiny curved smile, small stubby feet, bright cyan-blue body with thick dark
@@ -433,3 +440,127 @@ spikes around the border, thick dark brown line, empty inside, plain white backg
              dark outline of uniform weight, no perspective, plain white background
 ```
 - prop_drain 네거티브에 `3d, perspective, top-down, splash` 추가.
+
+---
+
+## 11. 4차 이미지 요청 (2026-10-19, 캐릭터 다시 그리기 + 다음 기능용)
+
+> 사용자 요청: 캐릭터가 **더 동글동글하고 귀여웠으면** 좋겠음.
+> 지금 캐릭터(`char_idle`)는 위가 길고 뾰족한 물방울이라 몸이 세로로 길고, 화면에서 작게 보면 "물방울 아이콘"에 가깝습니다. 아래 방향으로 바꿉니다.
+> 모든 프롬프트 앞에 2장 스타일 블록을 그대로 붙입니다.
+
+### 11-1. 캐릭터 다시 그리기
+
+**바꾸는 방향**
+
+| 항목 | 지금 | 바꿀 모습 |
+|---|---|---|
+| 몸 모양 | 세로로 긴 물방울, 위가 길게 뾰족 | **거의 동그란 찹쌀떡 몸** (폭:높이 ≈ 1:0.9~1), 머리 위에 **작게 말린 물방울 꼭지** 하나만 남김 → 물방울 정체성은 유지 |
+| 눈 | 작은 점 눈 | **크고 동그란 까만 눈 + 흰 반짝임 점** 하나씩, 눈 사이를 조금 넓게 |
+| 입·볼 | `·ω·` 입, 분홍 볼 | 그대로 유지 (지금 캐릭터에서 가장 귀여운 부분) |
+| 발 | 가늘고 짧은 막대 발 | **작고 통통한 둥근 발** 두 개 (몸 아래에 반쯤 묻힌 콩 모양) |
+| 팔 | 없음 | 없음 (작게 보이면 지저분해짐) |
+| 색 | 연한 하늘색 | **결정 필요** (아래 "캐릭터 색") — 기본은 지금처럼 아주 연한 하늘색 |
+| 외곽선 | 갈색 굵은 선 | 그대로 (다른 이미지와 같은 굵기) |
+
+**캐릭터 색 (결정 필요):** 파랑 잉크(#1F6FE0)와 같은 계열이라 색 잉크를 넣으면 헷갈릴 수 있습니다. 후보:
+- ① **아주 연한 하늘색 유지** (#CDEFF7 정도, 파랑 잉크보다 훨씬 옅게) — 물방울 느낌이 가장 강함. 파랑 잉크는 화살 무늬로 구분
+- ② **우윳빛 크림/흰 물방울** (#FFF8EC + 하늘색 반사광) — 잉크 3색과 모두 겹치지 않지만, 흰색은 "지워진 곳" 색이라 지우개와 겹칠 수 있음
+- ③ **연보라 라벤더** (#D9CCF5) — 3색과 겹치지 않음. 단 잉크 웅덩이·잉크 병(검보라)과 계열이 같음
+- 프롬프트의 `[BODY COLOR]` 자리에 고른 색을 넣습니다 (예: `very pale sky blue`, `milky cream white`, `pale lavender`).
+
+**만드는 순서 (일관성)**
+1. `char_idle` 을 먼저 뽑아 고릅니다 (8장 이상 뽑기 권장).
+2. 고른 `char_idle` 을 **참조 이미지**(IP-Adapter 계열 등, 설치 환경에서 확인)로 넣고 나머지 포즈를 뽑습니다. 시드도 고정.
+3. 포즈가 잘 안 맞으면 `char_idle` 한 장만 쓰고 코드의 찌그러짐·늘어남(squash & stretch)으로 대신해도 됩니다 (코드 쪽은 Claude가 처리).
+
+**프롬프트**
+```
+(char_idle)   a very round chubby doodle creature shaped like a soft mochi, almost circular
+              plump body slightly wider at the bottom, a small curled water-droplet tip on
+              top of the head, big round glossy black eyes with one white highlight dot
+              each, eyes set a little apart, small pink blush cheeks, tiny cat-like "w"
+              mouth, two tiny round stubby feet half hidden under the body, no arms,
+              [BODY COLOR] body, thick dark brown outline of uniform weight, flat colors,
+              facing slightly right, full body, centered, plain white background, isolated
+(char_run)    [char_idle 참조] same round mochi doodle creature as reference, same droplet
+              tip and face, running to the right, body leaning forward and squashed a
+              little wider, tiny feet in a running step, two or three short speed lines
+              behind, plain white background
+(char_jump)   [char_idle 참조] same creature, bouncing upward, body stretched a little
+              taller like a jelly, feet tucked, happy open-mouth smile, facing right,
+              plain white background
+(char_fall)   [char_idle 참조] same creature, falling down, body slightly stretched
+              vertically, surprised round eyes and small "o" mouth, droplet tip bent up,
+              feet pointing down, facing right, plain white background
+(char_erased) [char_idle 참조] same creature, the left half fading into blank white with a
+              soft eraser smudge edge and a few eraser crumbs, worried teary eyes,
+              plain white background
+(char_goal)   [char_idle 참조] same creature, cheering happily with eyes closed in joy
+              (^ ^), body slightly squashed, a few small doodle sparkles around,
+              facing front, plain white background
+```
+네거티브에 `long body, tall teardrop, pointed head, thin legs, arms, hands, human, anime, realistic eyes, detailed` 추가.
+
+**고를 때 기준**
+- 64px 정도로 줄여 봐도 눈·볼·물방울 꼭지가 읽히는가 (게임에서 캐릭터는 화면 높이의 약 6%)
+- **몸이 원에 가까운가**: 게임의 충돌체가 원이라, 몸이 둥글수록 땅·선에 닿는 모습이 자연스러움
+- 6장 모두 같은 캐릭터로 보이는가 (꼭지 모양·눈 간격·외곽선 굵기)
+- 캐릭터가 이미지의 가운데, 발끝이 이미지 아래쪽 약 90% 지점 (지금 이미지와 같은 배치면 크기 조정 없이 바로 교체됨)
+- 몸 폭이 지금(이미지 폭의 약 62%)과 많이 다르면 `data.js` 의 `art.charSize` 를 맞춰야 함 (Claude에게 요청)
+
+**파일:** `char_idle`·`char_run`·`char_jump`·`char_fall`·`char_erased` 는 같은 이름으로 덮어쓰기(256×256, 투명, 오른쪽 보기). `char_goal` 은 새 파일 — 도착 쪽지에 쓰이도록 코드 추가 필요 (Claude).
+
+### 11-2. 다음 기능(색 잉크 · 지우개 · 투사체)에 필요한 이미지 정리
+
+> 3장 표에 이미 있지만 아직 안 만든 것 + 이번에 새로 필요한 것을 한곳에 모았습니다. **색 잉크·지우개·투사체를 데모에 넣을지에 따라 필요 여부가 달라지므로**, 아래 "다음 기능 전 결정할 것"을 정한 뒤 뽑는 것을 권합니다.
+> 상태: 🆕 새로 추가 / 📋 3장 표에 이미 있음(아직 없음) / ⏳ 10장에서 요청했고 아직 없음
+
+| 우선 | 파일 | 크기 | 쓰이는 곳 | 상태 |
+|---|---|---|---|---|
+| ★ | `char_idle` 외 캐릭터 5장 | 256×256, 투명 | 11-1 | 다시 그리기 |
+| ★ | `item_ink.png` | 256×256, 투명 | 잉크 병(성장용) — 지금 코드로 그린 임시 모양 | ⏳ (10장) |
+| ★ | `prop_drain.png` | 256×64, 투명 | 잉크 웅덩이 — 지금 코드로 그린 임시 모양 | ⏳ (10장) |
+| ★ | `ink_red/blue/green.png` | 192×256, 투명 | 색 잉크 선택 버튼 (하단 선반 또는 HUD) | 📋 #9~11 |
+| ☆ | `ink_select.png` | 224×288, 투명 | 고른 색 표시 (뾰족한 외곽선) | 📋 #12 |
+| ☆ | `ui_shelf.png` | 1280×160, 투명 | 잉크 병을 올려 두는 하단 선반 (선반 방식으로 정하면) | 📋 #13 |
+| ☆ | `fx_bounce.png` | 256×128, 투명 | 빨강 선에서 튕길 때 순간 효과 | 🆕 |
+| ☆ | `fx_boost.png` | 256×128, 투명 | 파랑 선에서 빨라질 때 꼬리 효과 | 🆕 |
+| ☆ | `eraser_edge.png` | 512×1080, 투명 | 지우개 추격 가장자리 (지우개를 넣으면) | 📋 #8 |
+| ☆ | `obs_shooter.png` / `proj.png` | 256×256 / 96×96, 투명 | 투사체 발사기·투사체 (초록 잉크를 넣으면) | 📋 #22·23 |
+| ○ | `fx_block.png` | 256×256, 투명 | 초록 선이 투사체를 막을 때 터지는 효과 | 🆕 |
+| ○ | `char_goal.png` | 256×256, 투명 | 도착 쪽지의 기뻐하는 캐릭터 (실패 쪽지에 char_erased 를 쓰는 것과 짝) | 🆕 (11-1) |
+| ○ | `star_empty.png` | 128×128, 투명 | 결과 쪽지의 못 얻은 별 — 지금은 코드로 빈 별 윤곽선을 그림. 손그림 느낌을 맞추고 싶을 때만 | 📋 #17 |
+| ○ | `tut_hand.png` | 128×128, 투명 | 첫 구간 "여기에 선을 그어 보세요" 안내 손 | 📋 #24 |
+| ○ | `key_art.png` | 1920×1080 | 대표 이미지 (제출 문서 첫 장). **새 캐릭터로 다시 구성** | 📋 #1 |
+
+새 이미지 프롬프트
+```
+(ink_red / ink_blue / ink_green)
+             a small round glass ink bottle with a cork, thick dark brown outline, filled
+             with saturated [RED / BLUE / GREEN] ink, the label shows a simple doodle symbol
+             [RED: wavy spring / BLUE: arrow pointing right / GREEN: shield with grid],
+             flat colors, front view, plain white background, isolated
+             → item_ink(성장용, 먹색·보라 + 위 화살표)와 병 모양을 다르게: 색 잉크는 "네모 병", item_ink는 "둥근 병"
+(fx_bounce)  a springy doodle impact burst, three short curved red marker lines spreading
+             upward from a point, small zigzag spring mark, thick lines, plain white background
+(fx_boost)   a horizontal doodle speed trail, three blue marker streaks with small arrow
+             tips pointing right, thick lines, plain white background
+(fx_block)   a small doodle shield-shaped burst, green marker lines in a grid pattern
+             cracking outward, a few broken purple fragments, thick lines, plain white background
+(eraser_edge) vertical edge of a giant white eraser sweep, left side pure white, right side
+             rubbery eraser crumbs and faint gray smudge fading out, plain white background
+(obs_shooter) a small round doodle cannon facing left, dark gray body, thick dark outline,
+             flat 2D side view, plain white background
+(proj)       a small spiky doodle ball, dark purple, tiny angry eyes, thick outline, plain
+             white background
+(char_goal)  → 11-1 프롬프트
+```
+- 색 잉크 병 3장은 **시드를 고정하고 색 단어·기호만 바꿔** 뽑습니다.
+- `fx_*` 는 작게(화면에서 60~120px) 보이므로 선을 굵게, 개수를 적게.
+
+### 11-3. 이번에 만들지 않아도 되는 것
+- 플레이어가 그리는 선과 색별 무늬(물결·화살·격자) → **코드로 그림**
+- 정지 아이콘 꺼짐(`ui_stop_off`) → 코드로 흐리게 처리 중
+- 시간 정지 중 화면 효과(종이가 살짝 어두워짐 등) → 코드
+- 튜토리얼 점선 안내 → 코드
