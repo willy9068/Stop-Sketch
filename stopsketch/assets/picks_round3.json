@@ -1,0 +1,226 @@
+{
+ "char_idle": {
+  "source": "candidates/char_idle_e3.png",
+  "final_size": [
+   256,
+   256
+  ],
+  "process": "rembg, 몸 안쪽 흰색을 연한 하늘색(#CDEFF7)으로 입힘, 몸 폭 약 62%·발끝 90% 위치로 배치"
+ },
+ "char_run": {
+  "source": "candidates/char_run_c2.png",
+  "final_size": [
+   256,
+   256
+  ],
+  "process": "rembg, 몸 안쪽 흰색을 연한 하늘색(#CDEFF7)으로 입힘, 몸 폭 약 62%·발끝 90% 위치로 배치"
+ },
+ "char_jump": {
+  "source": "candidates/char_jump_c3.png",
+  "final_size": [
+   256,
+   256
+  ],
+  "process": "rembg, 몸 안쪽 흰색을 연한 하늘색(#CDEFF7)으로 입힘, 몸 폭 약 62%·발끝 90% 위치로 배치"
+ },
+ "char_fall": {
+  "source": "candidates/char_fall_c4.png",
+  "final_size": [
+   256,
+   256
+  ],
+  "process": "rembg, 몸 안쪽 흰색을 연한 하늘색(#CDEFF7)으로 입힘, 몸 폭 약 62%·발끝 90% 위치로 배치"
+ },
+ "char_erased": {
+  "source": "candidates/char_erased_c4.png",
+  "final_size": [
+   256,
+   256
+  ],
+  "process": "rembg, 몸 안쪽 흰색을 연한 하늘색(#CDEFF7)으로 입힘 (왼쪽 절반은 그대로), 몸 폭 약 62%·발끝 90% 위치로 배치"
+ },
+ "char_goal": {
+  "source": "candidates/char_goal_c2.png",
+  "final_size": [
+   256,
+   256
+  ],
+  "process": "rembg, 몸 안쪽 흰색을 연한 하늘색(#CDEFF7)으로 입힘, 몸 폭 약 62%·발끝 90% 위치로 배치"
+ },
+ "ground_fill": {
+  "source": "candidates/ground_fill_c4.png",
+  "final_size": [
+   256,
+   256
+  ],
+  "process": "색을 #D9C7A0 쪽으로 보정, 옅은 대각 빗금(32px 주기)을 코드로 추가, 사방 이음매 처리"
+ },
+ "bg_a": {
+  "source": "candidates/bg_a_n1.png",
+  "final_size": [
+   1920,
+   1080
+  ],
+  "process": "종이 바탕을 곡면으로 근사해 좌우 이음매 처리, 구름만 원본 그대로 합성"
+ },
+ "deco_cloud_1": {
+  "source": "candidates/deco_cloud_1_c4.png",
+  "final_size": [
+   512,
+   320
+  ],
+  "process": "흰 배경 색 따기, 선 색을 #B5652B 한 색으로 통일(안쪽 투명)"
+ },
+ "deco_cloud_2": {
+  "source": "candidates/deco_cloud_2_c3.png",
+  "final_size": [
+   512,
+   320
+  ],
+  "process": "흰 배경 색 따기, 선 색을 #B5652B 한 색으로 통일(안쪽 투명)"
+ },
+ "deco_cloud_3": {
+  "source": "candidates/deco_cloud_3_c2.png",
+  "final_size": [
+   512,
+   320
+  ],
+  "process": "흰 배경 색 따기, 선 색을 #B5652B 한 색으로 통일(안쪽 투명)"
+ },
+ "prop_platform": {
+  "source": "candidates/prop_platform_c3.png",
+  "final_size": [
+   256,
+   64
+  ],
+  "process": "바깥 흰 배경만 제거, 안쪽 종이색, 칸 가득 늘림"
+ },
+ "ground_top": {
+  "source": "candidates/ground_top_n3.png",
+  "final_size": [
+   512,
+   96
+  ],
+  "process": "흰 배경 색 따기, 좌우 이음매 처리(교차 혼합 12%)"
+ },
+ "item_ink": {
+  "source": "candidates/item_ink_c4.png",
+  "final_size": [
+   256,
+   256
+  ],
+  "process": "rembg"
+ },
+ "ink_red": {
+  "source": "candidates/ink_red_p1.png",
+  "final_size": [
+   192,
+   256
+  ],
+  "process": "rembg"
+ },
+ "ink_blue": {
+  "source": "candidates/ink_blue_p1.png",
+  "final_size": [
+   192,
+   256
+  ],
+  "process": "rembg"
+ },
+ "ink_green": {
+  "source": "candidates/ink_green_p1.png",
+  "final_size": [
+   192,
+   256
+  ],
+  "process": "rembg"
+ },
+ "prop_drain": {
+  "source": "candidates/prop_drain_c4.png",
+  "final_size": [
+   256,
+   64
+  ],
+  "process": "바깥 배경만 제거, 칸 가득 늘림"
+ },
+ "fx_bounce": {
+  "source": "candidates/fx_bounce_c1.png",
+  "final_size": [
+   256,
+   128
+  ],
+  "process": "흰 배경 색 따기"
+ },
+ "fx_boost": {
+  "source": "candidates/fx_boost_c3.png",
+  "final_size": [
+   256,
+   128
+  ],
+  "process": "흰 배경 색 따기"
+ },
+ "fx_block": {
+  "source": "candidates/fx_block_c3.png",
+  "final_size": [
+   256,
+   256
+  ],
+  "process": "흰 배경 색 따기"
+ },
+ "eraser_edge": {
+  "source": "candidates/eraser_edge_c2.png",
+  "final_size": [
+   512,
+   1080
+  ],
+  "process": "왼쪽 흰 영역은 불투명 흰색, 오른쪽은 부스러기·번짐만 남기고 투명"
+ },
+ "obs_shooter": {
+  "source": "candidates/obs_shooter_c2.png",
+  "final_size": [
+   256,
+   256
+  ],
+  "process": "rembg"
+ },
+ "proj": {
+  "source": "candidates/proj_c1.png",
+  "final_size": [
+   96,
+   96
+  ],
+  "process": "rembg"
+ },
+ "start_hole": {
+  "source": "candidates/start_hole_c3.png",
+  "final_size": [
+   512,
+   512
+  ],
+  "process": "바깥 흰 배경만 제거(구멍 안쪽 어두운 부분 유지)"
+ },
+ "goal_jar_full": {
+  "source": "candidates/goal_jar_full_p1.png",
+  "final_size": [
+   384,
+   448
+  ],
+  "process": "흰 배경 색 따기, 바닥 정렬"
+ },
+ "goal_jar_empty": {
+  "source": "candidates/goal_jar_full_p1.png",
+  "final_size": [
+   384,
+   448
+  ],
+  "process": "흰 배경 색 따기, 바닥 정렬; 빈 통은 가득 찬 통에서 외곽선만 남겨 만듦(같은 위치·크기 보장)"
+ },
+ "key_art": {
+  "source": "candidates/key_art_m3.png",
+  "final_size": [
+   1920,
+   1080
+  ],
+  "process": "구석의 글자 흔적을 주변 색으로 지움"
+ }
+}

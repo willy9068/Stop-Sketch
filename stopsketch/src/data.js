@@ -124,12 +124,12 @@ G.DATA = {
       'bg_a', 'bg_b', 'bg_plain',
       'char_idle', 'char_run', 'char_jump', 'char_fall', 'char_erased',
       'ground_top', 'ground_fill',
-      'prop_wall', 'obs_wall', 'prop_platform', 'star_full', 'goal_flag', 'item_ink', 'prop_drain',
+      'prop_wall', 'obs_wall', 'prop_platform', 'star_full', 'item_ink', 'prop_drain',   // goal_flag 은 물감 통으로 바뀌어 안 씀
       'deco_cloud_1', 'deco_cloud_2', 'deco_cloud_3',
       'ui_stop_on', 'ui_gauge_frame', 'ui_panel', 'fx_star_pop', 'fx_land',
       // 4차 (아직 없으면 코드로 그린 임시 모양): 시작 구멍, 도착 물감 통(빈/찬), 색 잉크 병, 선반, 발사기·투사체, 색 효과, 도착 캐릭터
       'start_hole', 'goal_jar_empty', 'goal_jar_full', 'ink_red', 'ink_blue', 'ink_green', 'ink_select', 'ui_shelf',
-      'obs_shooter', 'proj', 'fx_bounce', 'fx_boost', 'fx_block', 'char_goal'
+      'obs_shooter', 'proj', 'fx_bounce', 'fx_boost', 'fx_block', 'char_goal', 'star_empty'
     ],
     backgrounds: { bg_a: '종이 + 구름', bg_b: '줄 노트', bg_plain: '빈 종이', none: '단색 종이' },
     decos: ['deco_cloud_1', 'deco_cloud_2', 'deco_cloud_3'],
@@ -138,7 +138,7 @@ G.DATA = {
     bgParallax: 0.5,       // 배경이 카메라보다 느리게 움직이는 비율
     groundTop: { h: 48, up: 14 },   // ground_top 띠 높이와 땅 윗면 위로 올라오는 정도
     // ground_fill 위에 덧입히는 색 (2차 ground_fill 이 거의 흰색이라 틈과 구분이 안 돼서 임시 보정. 진한 땅 무늬로 바꾸면 null)
-    groundTint: 'rgba(201,180,138,0.55)',
+    groundTint: null,      // 4차 ground_fill 이 충분히 진해서 덧칠 끔 (예전: 'rgba(201,180,138,0.55)')
     // 9분할 이미지의 테두리 폭: 원본 px(src) → 화면 px(dst). dst/src 가 무늬 배율 (가운데는 이 배율로 반복)
     //   prop_wall: 256px 벽돌 한 장이 약 91px로 보임 / prop_platform: 높이 64px 나무판이 기본 높이 28px에 꼭 맞음
     slices: { prop_wall: { src: 14, dst: 5 }, prop_platform: { src: 8, dst: 3.5 }, prop_drain: { src: 16, dst: 6 } },

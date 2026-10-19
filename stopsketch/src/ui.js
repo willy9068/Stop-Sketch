@@ -492,8 +492,9 @@ G.UI = (function () {
       ctx.fillStyle = C.paper; ctx.fillRect(x, y, w, h);
       ctx.strokeStyle = C.outline; ctx.lineWidth = 4; ctx.strokeRect(x, y, w, h);
     }
-    var erased = game.status === 'fail' && G.Assets.get('char_erased');
-    if (erased) ctx.drawImage(erased, x + 66, y + 22, 80, 80);
+    // 쪽지 왼쪽 위 캐릭터: 실패 = char_erased, 도착 = char_goal (4차 이미지)
+    var face = G.Assets.get(game.status === 'fail' ? 'char_erased' : 'char_goal');
+    if (face) ctx.drawImage(face, x + 66, y + 22, 80, 80);
     ctx.textAlign = 'center'; ctx.fillStyle = game.status === 'clear' ? C.green : C.red;
     ctx.font = 'bold 40px sans-serif';
     ctx.fillText(game.status === 'clear' ? '도착!' : game.failReason, V.w / 2, y + 70);
@@ -501,7 +502,9 @@ G.UI = (function () {
     if (clear) {                                  // 평가: 만족한 조건 수만큼 별 (사용자 결정 2026-10-19)
       for (var k = 0; k < 3; k++) {                // 얻은 별은 채운 별, 못 얻은 별은 빈 별 (조건 0개면 빈 별 3개 = 0개 획득)
         var sx0 = V.w / 2 + (k - 1) * 56, sy0 = y + 112;
+        var emptyStar = G.Assets.get('star_empty');
         if (k < game.result.stars) G.Props.draw(ctx, { type: 'star', x: sx0, y: sy0, size: 50 });
+        else if (emptyStar) ctx.drawImage(emptyStar, sx0 - 25, sy0 - 25, 50, 50);
         else {
           G.Props.drawStarShape(ctx, sx0, sy0, 25);
           ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(43,33,24,0.35)'; ctx.stroke();
