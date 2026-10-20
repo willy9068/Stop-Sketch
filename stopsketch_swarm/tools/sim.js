@@ -117,3 +117,24 @@ G.LEVELS.forEach(function (lv) {
   var ok = G.Draw.suck(g, p);
   console.log('5 빨아들이기', ok, '쓴 잉크', Math.round(used), '→ 돌려받은 뒤', Math.round(g.ink), '/', ink0, '· 선 수', g.lines.length);
 })();
+
+// 6. 물방울 속도·서로 충돌 (레벨 툴 스테이지 설정, 2026-10-20)
+(function () {
+  function run(drops) {
+    var lv = { id: 't', name: '시험', ink: 1000, stops: 3, start: { x: 0 }, goal: { x: 3000 }, inks: ['black'], drops: drops,
+      ground: [{ x0: -400, x1: 4000, top: 600 }],
+      props: [{ type: 'wall', x: -300, y: 400, w: 40, h: 200 }, { type: 'drop', x: 300, y: 587 }, { type: 'wall', x: 900, y: 400, w: 40, h: 200 }] };
+    var g = G.Game.create('A', lv); G.Game.start(g);
+    for (var i = 0; i < 240; i++) G.Game.update(g, STEP);    // 4초
+    var w = G.Game.walking(g), s = w.filter(function (d) { return !d.hero; })[0];
+    return { hero: Math.round(g.hero.body.position.x), small: s ? Math.round(s.body.position.x) : null,
+      turns: w.reduce(function (n, d) { return n + d.turns; }, 0), group: s && s.body.collisionFilter.group };
+  }
+  var a = run({ heroSpeed: 5.2, smallSpeed: 5.2, collide: false });
+  var b = run({ heroSpeed: 5.2, smallSpeed: 2.6, collide: false });
+  var c = run({ heroSpeed: 5.2, smallSpeed: 5.2, collide: true });
+  console.log('6 물방울 설정 (4초 뒤, 두 벽 사이 왕복)');
+  console.log('  기본(통과, 같은 속도)   주인공 x=' + a.hero, '작은 x=' + a.small, '되돌기 합 ' + a.turns, 'group ' + a.group);
+  console.log('  작은 물방울 속도 절반   주인공 x=' + b.hero, '작은 x=' + b.small, '되돌기 합 ' + b.turns);
+  console.log('  서로 충돌 켬            주인공 x=' + c.hero, '작은 x=' + c.small, '되돌기 합 ' + c.turns, 'group ' + c.group, '(부딪혀 되돌기가 늘어야 정상)');
+})();

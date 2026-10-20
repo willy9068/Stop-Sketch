@@ -6,18 +6,21 @@ var G = G || {};
 G.Drop = {
   GROUP: -7,
 
-  // hero: 주인공이면 true (크기가 크고, 죽으면 실패)
-  create: function (engine, x, y, hero, dir) {
+  // hero: 주인공이면 true (크기가 크고, 죽으면 실패). cfg = 스테이지 drops 설정 {heroSpeed, smallSpeed, collide}
+  //   collide 가 꺼져 있으면 같은 음수 group 이라 물방울끼리 통과, 켜져 있으면 서로 부딪힘(벽처럼 뒤로 돌고 위에 올라탐)
+  create: function (engine, x, y, hero, dir, cfg) {
     var D = G.DATA.drop, M = G.Physics.M, r = hero ? D.heroRadius : D.smallRadius;
+    cfg = cfg || {};
     var body = M.Bodies.circle(x, y, r, {
       friction: 0, frictionAir: 0, frictionStatic: 0, restitution: 0, label: 'drop',
-      collisionFilter: { group: this.GROUP }
+      collisionFilter: { group: cfg.collide ? 0 : this.GROUP }
     });
     M.Body.setDensity(body, D.density);
     M.Body.setInertia(body, Infinity);
     G.Physics.add(engine, body);
     return {
       body: body, r: r, hero: !!hero, dir: dir || 1, state: 'walk', grounded: false,
+      speed: (hero ? cfg.heroSpeed : cfg.smallSpeed) || D.runSpeed,
       turnCdMs: 0, turns: 0, boostMs: 0, bounceCdMs: 0, bounces: 0, pinchMs: 0, onInk: null,
       events: [], dead: null
     };
@@ -27,7 +30,7 @@ G.Drop = {
     var D = G.DATA.drop, M = G.Physics.M, v = d.body.velocity;
     if (!d.grounded) return;
     var boost = d.boostMs > 0 && fx;
-    var target = D.runSpeed * (boost ? fx.boostPct / 100 : 1) * d.dir;
+    var target = d.speed * (boost ? fx.boostPct / 100 : 1) * d.dir;
     var vx = v.x + (target - v.x) * Math.min(1, D.accel * (boost ? 2.5 : 1) * scale);
     M.Body.setVelocity(d.body, { x: vx, y: v.y });
   },

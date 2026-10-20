@@ -20,6 +20,10 @@ G.LevelCheck = (function () {
     if (o.rate.rescuePct == null) o.rate.rescuePct = r.rescuePct;
     delete o.rate.allStars;
     o.segments = o.segments || [];                 // 구간(설계 용어): [{x, name}] — 레벨 툴에 경계와 이름만 표시
+    o.drops = o.drops || {};                       // 물방울 이동 속도·서로 충돌 (레벨 툴 "스테이지 설정 → 물방울")
+    if (o.drops.heroSpeed == null) o.drops.heroSpeed = D.drop.runSpeed;
+    if (o.drops.smallSpeed == null) o.drops.smallSpeed = D.drop.runSpeed;
+    if (o.drops.collide == null) o.drops.collide = D.drop.collide;
     o.eraser = o.eraser || {};
     if (o.eraser.pct == null) o.eraser.pct = D.eraser.pct;
     if (o.eraser.delayMs == null) o.eraser.delayMs = D.eraser.delayMs;
@@ -109,7 +113,7 @@ G.LevelCheck = (function () {
     if (!drops.length) add('warn', '잠든 물방울이 없어요 (물방울 도착 비율 조건이 늘 만족됨)');
     if (drops.length > 20) add('warn', '물방울이 ' + drops.length + '마리예요 (시험판 권장 최대 20)');
 
-    var minTime = Math.ceil((lv.goal.x - lv.start.x) / (D.drop.runSpeed * 60));
+    var minTime = Math.ceil((lv.goal.x - lv.start.x) / (lv.drops.heroSpeed * 60));
     if (lv.rate.timeSec < minTime) add('warn', '목표 시간 ' + lv.rate.timeSec + '초는 너무 짧아요 (쉬지 않고 걸어도 약 ' + minTime + '초)');
     add('info', '별 평가 조건: ' + lv.rate.timeSec + '초 안 · 물방울 ' + lv.rate.rescuePct + '% 이상(' + G.Rules.needRescue(lv.rate, drops.length) + '/' + drops.length + ') · ' + lv.rate.maxTries + '번 안');
     var est = estimateInk(lv);
@@ -121,6 +125,9 @@ G.LevelCheck = (function () {
       ' · 튕김 ' + lv.fx.bounce + ' · 가속 ' + lv.fx.boostPct + '% ' + (lv.fx.boostMs / 1000) + '초 · 떠오름 ' + lv.fx.riseSpeed);
     var crystals = lv.props.filter(function (p) { return p.type === 'crystal'; });
     if (crystals.length && lv.inks.indexOf('yellow') < 0) add('warn', '배치된 선이 있는데 노랑(지우기)을 쓸 수 없어요');
+    add('info', '물방울 속도: 주인공 ' + lv.drops.heroSpeed + ' · 작은 물방울 ' + lv.drops.smallSpeed + ' · 서로 충돌 ' + (lv.drops.collide ? '켬' : '끔'));
+    if (lv.drops.heroSpeed <= 0 || lv.drops.smallSpeed <= 0) add('error', '물방울 속도는 0보다 커야 해요');
+    if (lv.drops.smallSpeed < lv.drops.heroSpeed * lv.eraser.pct / 100) add('warn', '작은 물방울이 지우개보다 느려요 — 뒤처진 물방울은 모두 지워져요');
     add('info', '지우개: ' + (lv.eraser.delayMs / 1000) + '초 뒤 출발, 주인공 속도의 ' + lv.eraser.pct + '% · 구간 경계 ' + lv.segments.length + '개');
     return out;
   }

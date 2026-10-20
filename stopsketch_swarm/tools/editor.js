@@ -557,6 +557,11 @@ var G = G || {};
       num('fx_bounce', '빨강 튕김', l.fx.bounce) + '<div>15 ≈ 약 400px 높이</div>' +
       num('fx_boostPct', '파랑 속도 %', l.fx.boostPct) + num('fx_boostMs', '파랑 유지 ms', l.fx.boostMs) +
       num('fx_riseSpeed', '초록 떠오름', l.fx.riseSpeed) + '<div>스텝당 px (1.2 ≈ 초당 72px)</div>' +
+      '<div class="row"><b>물방울</b></div>' +
+      num('d_heroSpeed', '주인공 속도', l.drops.heroSpeed) + num('d_smallSpeed', '작은 물방울 속도', l.drops.smallSpeed) +
+      '<div>스텝당 px (5.2 ≈ 초당 312px). 소수 첫째 자리까지</div>' +
+      '<div class="f"><label>서로 충돌</label><label><input type="checkbox" id="d_collide"' + (l.drops.collide ? ' checked' : '') + '> 물방울끼리 부딪힘</label></div>' +
+      '<div>끄면 서로 통과(기본). 켜면 부딪혀 뒤로 돌거나 위에 올라탐</div>' +
       '<div class="row"><b>지우개</b></div>' +
       num('e_pct', '속도 % (주인공)', l.eraser.pct) + num('e_delayMs', '출발 ms', l.eraser.delayMs) +
       '<div class="row"><b>구간 경계</b>&nbsp;(설계 표시만, "x:이름" 한 줄에 하나)</div>' +
@@ -623,6 +628,8 @@ var G = G || {};
     else if (id === 'r_time') l.rate.timeSec = v; else if (id === 'r_tries') l.rate.maxTries = v;
     else if (id === 'r_rescue') l.rate.rescuePct = Math.max(0, Math.min(100, v));
     else if (id === 'e_pct') l.eraser.pct = v; else if (id === 'e_delayMs') l.eraser.delayMs = v;
+    else if (id === 'd_heroSpeed' || id === 'd_smallSpeed') l.drops[id.slice(2)] = Math.max(0.1, Math.round(+t.value * 10) / 10);
+    else if (id === 'd_collide') l.drops.collide = t.checked;
     else if (id === 'l_segments') {
       l.segments = String(v).split('\n').map(function (line) {
         var m = /^\s*(-?\d+)\s*:\s*(.*)$/.exec(line); return m ? { x: +m[1], name: m[2].trim() } : null;
@@ -690,7 +697,7 @@ var G = G || {};
   function levelsText() {
     var body = S.levels.map(function (l) {
       var lines = ['  {'];
-      ['id', 'name', 'bg', 'ink', 'stops', 'rate', 'inks', 'fx', 'eraser', 'segments', 'start', 'goal'].forEach(function (k) { lines.push('    ' + JSON.stringify(k) + ': ' + JSON.stringify(l[k]) + ','); });
+      ['id', 'name', 'bg', 'ink', 'stops', 'rate', 'inks', 'fx', 'drops', 'eraser', 'segments', 'start', 'goal'].forEach(function (k) { lines.push('    ' + JSON.stringify(k) + ': ' + JSON.stringify(l[k]) + ','); });
       lines.push('    "ground": [\n' + l.ground.map(function (g) { return '      ' + JSON.stringify(g); }).join(',\n') + '\n    ],');
       lines.push('    "props": [\n' + l.props.map(function (p) { return '      ' + JSON.stringify(p); }).join(',\n') + '\n    ]');
       lines.push('  }');

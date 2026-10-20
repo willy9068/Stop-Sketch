@@ -21,7 +21,8 @@ G.DATA = {
   drop: {
     heroRadius: 22,
     smallRadius: 13,
-    runSpeed: 5.2,         // 걷는 속도 (스텝당 px, 주인공·작은 물방울 같음)
+    runSpeed: 5.2,         // 걷는 속도 기본값 (스텝당 px). 스테이지마다 levels.js drops.heroSpeed / smallSpeed 로 바꿈 (레벨 툴)
+    collide: false,        // 물방울끼리 부딪히는가 기본값 (사용자 결정 2026-10-20: 서로 통과). 스테이지마다 drops.collide 로 켬 (레벨 툴)
     accel: 0.12,           // 바닥에 있을 때 목표 속도로 다가가는 비율
     groundCheck: 0.45,     // 접촉점이 중심보다 반지름 × 이 값 이상 아래면 "바닥"
     stepUp: 16,            // 이 높이 이하의 턱은 넘어감 (작은 물방울은 반지름 비율로 줄이되 stepUpMin 보다 작지 않게)

@@ -29,7 +29,7 @@ G.Game = {
     var lv = game.level.data;
     var top = G.Level.groundTopAt(lv, lv.start.x);
     if (top == null) top = 600;
-    game.hero = G.Drop.create(game.engine, lv.start.x, top - D.drop.heroRadius - 1, true, 1);
+    game.hero = G.Drop.create(game.engine, lv.start.x, top - D.drop.heroRadius - 1, true, 1, lv.drops);
     game.drops = [game.hero];                      // 깨어난 물방울 (주인공 포함)
     game.total = game.level.sleepers.length;       // 배치된 작은 물방울 수 (평가 기준)
     game.rescued = 0;                              // 도착한 작은 물방울
@@ -134,7 +134,7 @@ G.Game = {
   moveEraser: function (game, s) {
     var E = game.level.data.eraser;
     if (game.runMs < E.delayMs) return;
-    game.eraserX += G.DATA.drop.runSpeed * E.pct / 100 * s;
+    game.eraserX += game.level.data.drops.heroSpeed * E.pct / 100 * s;
     for (var i = game.lines.length - 1; i >= 0; i--) {   // 지우개가 지나간 선도 지움 (잉크는 돌아오지 않음)
       var ln = game.lines[i], pts = G.Draw.worldPts(ln), maxX = -Infinity;
       pts.forEach(function (q) { maxX = Math.max(maxX, q.x); });
@@ -150,7 +150,7 @@ G.Game = {
       var reach = (d.r + D.smallRadius) * D.wakeReach, dx = sl.x - p.x, dy = sl.y - p.y;
       if (dx * dx + dy * dy > reach * reach) return;
       sl.state = 'awake';
-      var nd = G.Drop.create(game.engine, sl.x, sl.y, false, d.dir);
+      var nd = G.Drop.create(game.engine, sl.x, sl.y, false, d.dir, game.level.data.drops);
       game.drops.push(nd);
       game.fx.push({ type: 'star', x: sl.x, y: sl.y, t: game.timeMs });
     });

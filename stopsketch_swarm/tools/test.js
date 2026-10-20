@@ -168,6 +168,13 @@ t('평가 조건 기본값 채우기, 있는 값은 유지', function () {
   eq(n.rate.timeSec, 45); eq(n.rate.rescuePct, D.level.rate.rescuePct); eq(n.rate.maxTries, D.level.rate.maxTries); eq(n.rate.allStars, undefined);
 });
 t('지우개·구간 기본값', function () { var n = LC.normalize({}); eq(n.eraser.pct, D.eraser.pct); eq(n.segments.length, 0); });
+t('물방울 속도·충돌 기본값, 있는 값은 유지', function () {
+  var n = LC.normalize({}); eq(n.drops.heroSpeed, D.drop.runSpeed); eq(n.drops.smallSpeed, D.drop.runSpeed); eq(n.drops.collide, false);
+  var m = LC.normalize({ drops: { smallSpeed: 3, collide: true } }); eq(m.drops.heroSpeed, D.drop.runSpeed); eq(m.drops.smallSpeed, 3); eq(m.drops.collide, true);
+});
+t('검사: 작은 물방울이 지우개보다 느리면 경고', function () {
+  if (!hasMsg(LC.check(mini({ drops: { heroSpeed: 5, smallSpeed: 0.5 } })), 'warn', '지우개보다 느려요')) throw new Error('경고 없음');
+});
 t('검사: 배치된 선이 있는데 노랑이 없으면 경고', function () {
   if (!hasMsg(LC.check(mini({ inks: ['black'], props: [{ type: 'crystal', x: 0, y: 0, w: 100, h: 10 }] })), 'warn', '노랑')) throw new Error('경고 없음');
 });
