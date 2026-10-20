@@ -48,7 +48,7 @@ G.Drop = {
     var D = G.DATA.drop, M = G.Physics.M, b = d.body, r = d.r, gameMs = realMs * scale;
     var stepUp = Math.max(D.stepUpMin, D.stepUp * r / D.heroRadius);
     var touch = G.Physics.touching(engine, b);
-    var ground = false, wall = false, red = null, blue = false, above = null, below = false, low = false, front = null;
+    var under = null, ground = false, wall = false, red = null, blue = false, above = null, below = false, low = false, front = null;
     d.events.length = 0;
     for (var t = 0; t < touch.length; t++) {
       var pts = touch[t].pts, other = touch[t].other, root = touch[t].root, color = other.inkColor || root.inkColor;
@@ -59,6 +59,7 @@ G.Drop = {
           ground = true; below = true;
           if (!front || dx * d.dir > front.f) front = { f: dx * d.dir, dx: dx, dy: dy };   // 가는 쪽으로 가장 앞선 바닥 접점
           if (dx * d.dir > r * 0.75) low = true;   // 발 앞쪽 모서리에 걸침 → 올라타기
+          if (color && color !== 'yellow' && !under) under = color;   // 밟고 있는 색 (물들기)
           if (color === 'red') red = other;
           if (color === 'blue') blue = true;
         } else if (dy < -r * D.groundCheck) above = root;
@@ -67,6 +68,7 @@ G.Drop = {
       }
     }
     d.grounded = ground;
+    d.under = under;
     if (front) {                                   // 바닥 면 방향 = 앞선 접점에서 중심으로 (턱 모서리면 그 기울기로 타고 오름)
       var len = Math.sqrt(front.dx * front.dx + front.dy * front.dy) || 1;
       d.groundN = { x: -front.dx / len, y: -front.dy / len };
@@ -109,14 +111,16 @@ G.Drop = {
   // 대열 물방울: 가시에 닿았는가, 발밑(반지름 + supportTol 안)에 물방울 아닌 몸체가 있는가
   //   위치를 직접 옮기므로 걷기 판정 대신 아래로 짧은 광선을 쏴서 봄 (경사에서 살짝 떠도 바닥으로 침)
   support: function (d, engine) {
-    var b = d.body, touch = G.Physics.touching(engine, b);
+    var b = d.body, touch = G.Physics.touching(engine, b), color = null;
     for (var t = 0; t < touch.length; t++) {
       if (touch[t].root.label === 'spike' || touch[t].other.label === 'spike') return { ground: true, spike: true };
+      var c = touch[t].other.inkColor || touch[t].root.inkColor;
+      if (c && c !== 'yellow' && !color && touch[t].pts.some(function (q) { return q.y > b.position.y; })) color = c;   // 발밑 색 (물들기)
     }
     var M = G.Physics.M, p = b.position, reach = d.r + G.DATA.drop.follow.supportTol;
     var bodies = G.Physics.allBodies(engine).filter(function (q) { return q.label !== 'drop'; });
     var hit = M.Query.ray(bodies, { x: p.x, y: p.y }, { x: p.x, y: p.y + reach }, d.r * 1.2);
-    return { ground: hit.length > 0, spike: false };
+    return { ground: hit.length > 0, spike: false, color: color };
   },
 
   // 대열에 붙는 동안은 아무것과도 안 부딪힘 (통 튀어 날아가는 중), 대열에선 물방울끼리 통과, 혼자 걸을 땐 스테이지 설정대로
@@ -124,6 +128,21 @@ G.Drop = {
     var f = d.body.collisionFilter;
     f.mask = mode === 'join' ? 0 : 0xFFFFFFFF;
     f.group = mode === 'free' && collide ? 0 : this.GROUP;
+  },
+
+  // 물들기 (사용자 결정 2026-10-20): d.tc = 물든 색 [r,g,b], d.ta = 세기 0~1, d.tHold = 내려온 뒤 유지 남은 시간
+  tint: function (d, ms) {
+    var T = G.DATA.tint, c = d.under && T.colors[d.under];
+    if (c) {
+      if (!d.tc || (d.ta || 0) <= 0.01) d.tc = c.slice();
+      var k = 1 - Math.exp(-3 * ms / T.inMs);        // 다른 색이면 섞이며 넘어감
+      d.tc = d.tc.map(function (v, i) { return v + (c[i] - v) * k; });
+      d.ta = Math.min(1, (d.ta || 0) + ms / T.inMs);
+      d.tHold = T.holdMs;
+    } else if (d.ta > 0) {
+      if (d.tHold > 0) d.tHold -= ms;
+      else d.ta = Math.max(0, d.ta - ms / T.fadeMs);
+    }
   },
 
   remove: function (engine, d) { if (d.body) { G.Physics.remove(engine, d.body); d.body = null; } }

@@ -93,6 +93,13 @@ G.DATA = {
   //   병은 들어간 만큼 jarFadePerSec 속도로 서서히 밝아짐
   goalEnter: { gapMs: 420, enterMs: 650, hopHeight: 70, endScale: 0.35, spacing: 26, slide: 0.15, jarFadePerSec: 0.35, resultDelayMs: 1000 },   // resultDelayMs: 병이 다 밝아진 뒤 결과 창까지 (사용자 요청 2026-10-20)
 
+  // 물들기 (사용자 결정 2026-10-20): 색 선(노랑 제외, 검정 포함)을 밟고 있으면 물방울이 그 색으로 점차 물듦(다른 색이면 섞이며 넘어감).
+  //   내려와도 holdMs 동안 유지, 그 뒤 fadeMs 에 걸쳐 원래 하늘색으로. 잉크병에 들어갈 때의 색이 정화된 잉크병 색에 섞임
+  tint: {
+    colors: { black: [96, 92, 106], red: [232, 70, 60], blue: [50, 118, 232], green: [64, 178, 86] },   // 검정은 진한 회색까지
+    inMs: 1200, holdMs: 6000, fadeMs: 3000
+  },
+
   stop: { perSection: 3 }, // 스테이지당 정지 횟수 (levels.js stops 로 바꿈)
   stopUp: 1,               // 정지 +1 아이템 하나당 (그 스테이지에서만)
 
@@ -220,47 +227,187 @@ var G = G || {};
 
 G.LEVELS = [
   {
-    "id": "w1",
-    "name": "스테이지 1 · 물방울 모으기",
+    "id": "d1",
+    "name": "데모 1 · 검정 빨강 파랑",
     "bg": "bg_plain",
     "ink": 1600,
     "stops": 3,
-    "inks": ["black"],
+    "inks": ["black","red","blue"],
+    "fx": {"bounce":15,"boostPct":190,"boostMs":1200,"riseSpeed":1.2},
+    "drops": {"heroSpeed":3,"smallSpeed":3.5,"collide":false,"follow":true,"gap":32},
+    "eraser": {"pct":20,"delayMs":3000},
+    "segments": [{"x":-700,"name":"이동 구간"},{"x":650,"name":"검정 다리"},{"x":1000,"name":"빨강 튕김"},{"x":1750,"name":"턱 오르기"},{"x":2350,"name":"파랑 멀리 뛰기"},{"x":3300,"name":"도착"}],
+    "start": {"x":-300,"y":600},
+    "goal": {"x":3500,"y":700},
+    "ground": [
+      {"x0":-700,"x1":700,"top":600,"h":400},
+      {"x0":950,"x1":1800,"top":600,"h":400},
+      {"x0":1800,"x1":2500,"top":480,"h":400},
+      {"x0":2700,"x1":3900,"top":700,"h":400}
+    ],
+    "props": [
+      {"type":"wall","x":-660,"y":300,"w":40,"h":300},
+      {"type":"wall","x":3860,"y":400,"w":40,"h":300},
+      {"type":"drop","x":-100,"y":587},
+      {"type":"drop","x":150,"y":587},
+      {"type":"drop","x":400,"y":587},
+      {"type":"drop","x":1150,"y":587},
+      {"type":"drop","x":1450,"y":587},
+      {"type":"drop","x":2000,"y":467},
+      {"type":"drop","x":2250,"y":467},
+      {"type":"drop","x":2950,"y":687},
+      {"type":"drop","x":3200,"y":687},
+      {"type":"star","x":1300,"y":330,"size":56},
+      {"type":"star","x":2120,"y":260,"size":56},
+      {"type":"star","x":2600,"y":480,"size":56},
+      {"type":"text","x":-620,"y":430,"size":20,"text":"스페이스: 시간 정지 · 드래그: 선 그리기 · 우클릭: 잉크 돌려받기"},
+      {"type":"text","x":600,"y":470,"size":20,"text":"1 검정 — 틈에 걸쳐 다리"},
+      {"type":"text","x":1050,"y":260,"size":20,"text":"2 빨강 — 밟으면 튕겨요 (높은 별)"},
+      {"type":"text","x":1600,"y":400,"size":20,"text":"턱은 빨강으로 튕기거나 검정 비탈로"},
+      {"type":"text","x":2200,"y":380,"size":20,"text":"3 파랑 — 밟으면 빨라져 멀리 뛰어요"},
+      {"type":"deco","x":300,"y":150,"size":180,"img":"deco_cloud_1"},
+      {"type":"deco","x":1500,"y":120,"size":180,"img":"deco_cloud_2"},
+      {"type":"deco","x":2800,"y":160,"size":180,"img":"deco_cloud_3"}
+    ]
+  },
+  {
+    "id": "d2",
+    "name": "데모 2 · 검정 초록 노랑",
+    "bg": "bg_a",
+    "ink": 1800,
+    "stops": 3,
+    "inks": ["black","green","yellow"],
+    "fx": {"bounce":15,"boostPct":190,"boostMs":1200,"riseSpeed":1.2},
+    "drops": {"heroSpeed":3,"smallSpeed":3.5,"collide":false,"follow":true,"gap":32},
+    "eraser": {"pct":20,"delayMs":3000},
+    "segments": [{"x":-700,"name":"이동 구간"},{"x":750,"name":"다이아몬드 우리 (노랑)"},{"x":1500,"name":"우물 (초록)"},{"x":2300,"name":"떠오르는 별"},{"x":3700,"name":"도착"}],
+    "start": {"x":-300,"y":600},
+    "goal": {"x":4000,"y":800},
+    "ground": [
+      {"x0":-700,"x1":1600,"top":600,"h":400},
+      {"x0":1600,"x1":1800,"top":900,"h":400},
+      {"x0":1800,"x1":4400,"top":800,"h":400}
+    ],
+    "props": [
+      {"type":"wall","x":-660,"y":300,"w":40,"h":300},
+      {"type":"wall","x":4360,"y":500,"w":40,"h":300},
+      {"type":"crystal","x":840,"y":530,"w":130,"h":10,"angle":90,"pin":"end"},
+      {"type":"crystal","x":1040,"y":530,"w":130,"h":10,"angle":90,"pin":"end"},
+      {"type":"drop","x":200,"y":587},
+      {"type":"drop","x":500,"y":587},
+      {"type":"drop","x":960,"y":587},
+      {"type":"drop","x":1005,"y":587},
+      {"type":"drop","x":1050,"y":587},
+      {"type":"drop","x":1660,"y":887},
+      {"type":"drop","x":1740,"y":887},
+      {"type":"drop","x":2300,"y":787},
+      {"type":"drop","x":3300,"y":787},
+      {"type":"star","x":1005,"y":548,"size":56},
+      {"type":"star","x":1700,"y":760,"size":56},
+      {"type":"star","x":2680,"y":635,"size":56},
+      {"type":"platform","x":2560,"y":670,"w":220,"h":28},
+      {"type":"text","x":-620,"y":430,"size":20,"text":"4 초록 — 떨어지지 않고 천천히 떠올라요"},
+      {"type":"text","x":-620,"y":460,"size":20,"text":"5 노랑 — 칠한 부분의 검은 다이아몬드 선을 지워요"},
+      {"type":"text","x":700,"y":400,"size":20,"text":"우리 벽 아래를 노랑으로 칠해서"},
+      {"type":"text","x":1450,"y":520,"size":20,"text":"우물 바닥을 초록으로 — 떠올라 오른쪽으로 나가요"},
+      {"type":"text","x":2380,"y":590,"size":20,"text":"선반 위 별은 검정 비탈로"},
+      {"type":"deco","x":400,"y":140,"size":180,"img":"deco_cloud_2"},
+      {"type":"deco","x":1900,"y":180,"size":180,"img":"deco_cloud_1"},
+      {"type":"deco","x":3300,"y":140,"size":180,"img":"deco_cloud_3"}
+    ]
+  },
+  {
+    "id": "d3",
+    "name": "데모 3 · 다섯 색",
+    "bg": "bg_b",
+    "ink": 2200,
+    "stops": 3,
+    "inks": ["black","red","blue","green","yellow"],
+    "fx": {"bounce":15,"boostPct":190,"boostMs":1200,"riseSpeed":1.2},
+    "drops": {"heroSpeed":3,"smallSpeed":3.5,"collide":false,"follow":true,"gap":32},
+    "eraser": {"pct":20,"delayMs":3000},
+    "segments": [{"x":-700,"name":"이동 구간"},{"x":850,"name":"검정 다리"},{"x":1150,"name":"빨강"},{"x":1950,"name":"턱"},{"x":2550,"name":"파랑"},{"x":3350,"name":"우물 (초록)"},{"x":3900,"name":"우리 (노랑)"},{"x":4450,"name":"도착"}],
+    "start": {"x":-300,"y":600},
+    "goal": {"x":4600,"y":900},
+    "ground": [
+      {"x0":-700,"x1":900,"top":600,"h":400},
+      {"x0":1150,"x1":2000,"top":600,"h":400},
+      {"x0":2000,"x1":2600,"top":480,"h":400},
+      {"x0":2800,"x1":3400,"top":700,"h":400},
+      {"x0":3400,"x1":3600,"top":1000,"h":400},
+      {"x0":3600,"x1":5100,"top":900,"h":400}
+    ],
+    "props": [
+      {"type":"wall","x":-660,"y":300,"w":40,"h":300},
+      {"type":"wall","x":5060,"y":600,"w":40,"h":300},
+      {"type":"crystal","x":3935,"y":830,"w":130,"h":10,"angle":90,"pin":"end"},
+      {"type":"crystal","x":4135,"y":830,"w":130,"h":10,"angle":90,"pin":"end"},
+      {"type":"drop","x":0,"y":587},
+      {"type":"drop","x":400,"y":587},
+      {"type":"drop","x":1300,"y":587},
+      {"type":"drop","x":1700,"y":587},
+      {"type":"drop","x":2200,"y":467},
+      {"type":"drop","x":3000,"y":687},
+      {"type":"drop","x":3250,"y":687},
+      {"type":"drop","x":3460,"y":987},
+      {"type":"drop","x":3540,"y":987},
+      {"type":"drop","x":4060,"y":887},
+      {"type":"drop","x":4100,"y":887},
+      {"type":"drop","x":4140,"y":887},
+      {"type":"star","x":1500,"y":330,"size":56},
+      {"type":"star","x":2700,"y":480,"size":56},
+      {"type":"star","x":3500,"y":960,"size":56},
+      {"type":"text","x":-620,"y":430,"size":20,"text":"다섯 색을 모두 써서 물방울을 데려가요"},
+      {"type":"text","x":1250,"y":270,"size":20,"text":"빨강 — 높은 별"},
+      {"type":"text","x":2450,"y":400,"size":20,"text":"파랑 — 멀리 뛰어 별"},
+      {"type":"text","x":3250,"y":620,"size":20,"text":"초록 — 우물에서 떠올라요"},
+      {"type":"text","x":3900,"y":760,"size":20,"text":"노랑 — 우리를 열어요"},
+      {"type":"deco","x":200,"y":160,"size":180,"img":"deco_cloud_3"},
+      {"type":"deco","x":1700,"y":120,"size":180,"img":"deco_cloud_1"},
+      {"type":"deco","x":3200,"y":150,"size":180,"img":"deco_cloud_2"},
+      {"type":"deco","x":4600,"y":300,"size":180,"img":"deco_cloud_1"}
+    ]
+  },
+  {
+    "id": "w1",
+    "name": "테스트 · 스테이지 1 · 물방울 모으기",
+    "test": true,
+    "bg": "bg_plain",
+    "ink": 1600,
+    "stops": 3,
+    "inks": ["black","red","blue","green","yellow"],
     "fx": {"bounce":15,"boostPct":190,"boostMs":1200,"riseSpeed":1.2},
     "drops": {"heroSpeed":3,"smallSpeed":4,"collide":false,"follow":true,"gap":25},
     "eraser": {"pct":10,"delayMs":5},
     "segments": [{"x":-200,"name":"이동 구간"},{"x":3900,"name":"도착"}],
-    "start": {"x":-900},
-    "goal": {"x":3760},
+    "start": {"x":-950,"y":430},
+    "goal": {"x":3750,"y":490},
     "ground": [
-      {"x0":-1420,"x1":-200,"top":580},
-      {"x0":1480,"x1":2050,"top":490},
-      {"x0":2360,"x1":2940,"top":490},
-      {"x0":2940,"x1":3300,"top":580},
-      {"x0":3300,"x1":4140,"top":490},
-      {"x0":-200,"x1":330,"top":660},
-      {"x0":330,"x1":790,"top":570},
-      {"x0":790,"x1":1300,"top":490}
+      {"x0":-1420,"x1":-200,"top":580,"h":400},
+      {"x0":1480,"x1":2050,"top":490,"h":400},
+      {"x0":2360,"x1":2940,"top":490,"h":400},
+      {"x0":2940,"x1":3300,"top":580,"h":310},
+      {"x0":3300,"x1":4140,"top":490,"h":400},
+      {"x0":-200,"x1":330,"top":660,"h":400},
+      {"x0":330,"x1":790,"top":570,"h":400},
+      {"x0":790,"x1":1300,"top":490,"h":400}
     ],
     "props": [
       {"type":"wall","x":-1170,"y":380,"w":40,"h":200},
-      {"type":"star","x":-500,"y":530,"size":56},
-      {"type":"star","x":1760,"y":455,"size":56},
-      {"type":"star","x":3120,"y":500,"size":56},
       {"type":"spike","x":2940,"y":550,"w":360,"h":30},
       {"type":"drop","x":-410,"y":560},
       {"type":"drop","x":70,"y":640},
-      {"type":"drop","x":1720,"y":470},
+      {"type":"drop","x":1760,"y":470},
       {"type":"drop","x":3040,"y":410},
       {"type":"drop","x":3180,"y":410},
-      {"type":"text","x":-600,"y":420,"size":20,"text":"잠든 물방울에 닿으면 깨어나 함께 걸어요"},
+      {"type":"text","x":-590,"y":420,"size":20,"text":"잠든 물방울에 닿으면 깨어나 함께 걸어요"},
       {"type":"text","x":1900,"y":310,"size":20,"text":"선은 떨어져요 — 다리는 양쪽 땅에 걸치게"},
       {"type":"text","x":1200,"y":360,"size":20,"text":"검정 선을 틈에 걸쳐서"},
       {"type":"text","x":2790,"y":320,"size":20,"text":"가시 구덩이는 선으로 덮어서"},
       {"type":"deco","x":720,"y":130,"size":180,"img":"deco_cloud_1"},
       {"type":"deco","x":3250,"y":250,"size":180,"img":"deco_cloud_3"},
       {"type":"drop","x":560,"y":550},
-      {"type":"drop","x":2140,"y":390},
+      {"type":"drop","x":2130,"y":390},
       {"type":"text","x":1900,"y":280,"size":20,"text":"스페이스: 시간 정지"},
       {"type":"text","x":0,"y":490,"size":20,"text":"좌클릭: 선 그리기"},
       {"type":"drop","x":2270,"y":390},
@@ -272,12 +419,16 @@ G.LEVELS = [
       {"type":"deco","x":-270,"y":230,"size":180,"img":"deco_cloud_2"},
       {"type":"deco","x":160,"y":310,"size":180,"img":"deco_cloud_3"},
       {"type":"deco","x":2700,"y":110,"size":180,"img":"deco_cloud_2"},
-      {"type":"deco","x":3770,"y":120,"size":180,"img":"deco_cloud_1"}
+      {"type":"deco","x":3770,"y":120,"size":180,"img":"deco_cloud_1"},
+      {"type":"star","x":1390,"y":440,"size":56},
+      {"type":"star","x":2200,"y":380,"size":56},
+      {"type":"star","x":3110,"y":400,"size":56}
     ]
   },
   {
     "id": "w2",
-    "name": "스테이지 2 · 다섯 색",
+    "name": "테스트 · 스테이지 2 · 다섯 색",
+    "test": true,
     "bg": "bg_a",
     "ink": 2200,
     "stops": 3,
@@ -286,21 +437,19 @@ G.LEVELS = [
     "drops": {"heroSpeed":5.2,"smallSpeed":5.2,"collide":false,"follow":true,"gap":32},
     "eraser": {"pct":20,"delayMs":3000},
     "segments": [{"x":-600,"name":"이동 구간"},{"x":700,"name":"퍼즐 구간 1 · 다이아몬드 우리"},{"x":1450,"name":"퍼즐 구간 2 · 우물"},{"x":2600,"name":"아이템 구간"},{"x":3300,"name":"퍼즐 구간 3 · 넓은 틈"},{"x":4500,"name":"도착"}],
-    "start": {"x":-300},
-    "goal": {"x":5300},
+    "start": {"x":-300,"y":600},
+    "goal": {"x":5300,"y":750},
     "ground": [
-      {"x0":-900,"x1":1600,"top":600},
-      {"x0":1600,"x1":2120,"top":900},
-      {"x0":2120,"x1":3600,"top":750},
-      {"x0":3900,"x1":5700,"top":750}
+      {"x0":-900,"x1":1600,"top":600,"h":400},
+      {"x0":1600,"x1":2120,"top":900,"h":400},
+      {"x0":2120,"x1":3600,"top":750,"h":400},
+      {"x0":3900,"x1":5700,"top":750,"h":400}
     ],
     "props": [
+      {"type":"crystal","x":1140,"y":320,"w":100,"h":10,"pin":"end","angle":0},
       {"type":"wall","x":-760,"y":300,"w":40,"h":300},
-      {"type":"star","x":450,"y":565,"size":56},
-      {"type":"star","x":1860,"y":865,"size":56},
-      {"type":"star","x":4300,"y":715,"size":56},
-      {"type":"crystal","x":900,"y":470,"w":10,"h":130,"pin":"end"},
-      {"type":"crystal","x":1104,"y":470,"w":10,"h":130,"pin":"end"},
+      {"type":"crystal","x":840,"y":530,"w":130,"h":10,"pin":"end","angle":90},
+      {"type":"crystal","x":1044,"y":530,"w":130,"h":10,"pin":"end","angle":90},
       {"type":"drop","x":950,"y":587},
       {"type":"drop","x":1005,"y":587},
       {"type":"drop","x":1060,"y":587},
@@ -952,7 +1101,7 @@ G.Drop = {
     var D = G.DATA.drop, M = G.Physics.M, b = d.body, r = d.r, gameMs = realMs * scale;
     var stepUp = Math.max(D.stepUpMin, D.stepUp * r / D.heroRadius);
     var touch = G.Physics.touching(engine, b);
-    var ground = false, wall = false, red = null, blue = false, above = null, below = false, low = false, front = null;
+    var under = null, ground = false, wall = false, red = null, blue = false, above = null, below = false, low = false, front = null;
     d.events.length = 0;
     for (var t = 0; t < touch.length; t++) {
       var pts = touch[t].pts, other = touch[t].other, root = touch[t].root, color = other.inkColor || root.inkColor;
@@ -963,6 +1112,7 @@ G.Drop = {
           ground = true; below = true;
           if (!front || dx * d.dir > front.f) front = { f: dx * d.dir, dx: dx, dy: dy };   // 가는 쪽으로 가장 앞선 바닥 접점
           if (dx * d.dir > r * 0.75) low = true;   // 발 앞쪽 모서리에 걸침 → 올라타기
+          if (color && color !== 'yellow' && !under) under = color;   // 밟고 있는 색 (물들기)
           if (color === 'red') red = other;
           if (color === 'blue') blue = true;
         } else if (dy < -r * D.groundCheck) above = root;
@@ -971,6 +1121,7 @@ G.Drop = {
       }
     }
     d.grounded = ground;
+    d.under = under;
     if (front) {                                   // 바닥 면 방향 = 앞선 접점에서 중심으로 (턱 모서리면 그 기울기로 타고 오름)
       var len = Math.sqrt(front.dx * front.dx + front.dy * front.dy) || 1;
       d.groundN = { x: -front.dx / len, y: -front.dy / len };
@@ -1013,14 +1164,16 @@ G.Drop = {
   // 대열 물방울: 가시에 닿았는가, 발밑(반지름 + supportTol 안)에 물방울 아닌 몸체가 있는가
   //   위치를 직접 옮기므로 걷기 판정 대신 아래로 짧은 광선을 쏴서 봄 (경사에서 살짝 떠도 바닥으로 침)
   support: function (d, engine) {
-    var b = d.body, touch = G.Physics.touching(engine, b);
+    var b = d.body, touch = G.Physics.touching(engine, b), color = null;
     for (var t = 0; t < touch.length; t++) {
       if (touch[t].root.label === 'spike' || touch[t].other.label === 'spike') return { ground: true, spike: true };
+      var c = touch[t].other.inkColor || touch[t].root.inkColor;
+      if (c && c !== 'yellow' && !color && touch[t].pts.some(function (q) { return q.y > b.position.y; })) color = c;   // 발밑 색 (물들기)
     }
     var M = G.Physics.M, p = b.position, reach = d.r + G.DATA.drop.follow.supportTol;
     var bodies = G.Physics.allBodies(engine).filter(function (q) { return q.label !== 'drop'; });
     var hit = M.Query.ray(bodies, { x: p.x, y: p.y }, { x: p.x, y: p.y + reach }, d.r * 1.2);
-    return { ground: hit.length > 0, spike: false };
+    return { ground: hit.length > 0, spike: false, color: color };
   },
 
   // 대열에 붙는 동안은 아무것과도 안 부딪힘 (통 튀어 날아가는 중), 대열에선 물방울끼리 통과, 혼자 걸을 땐 스테이지 설정대로
@@ -1028,6 +1181,21 @@ G.Drop = {
     var f = d.body.collisionFilter;
     f.mask = mode === 'join' ? 0 : 0xFFFFFFFF;
     f.group = mode === 'free' && collide ? 0 : this.GROUP;
+  },
+
+  // 물들기 (사용자 결정 2026-10-20): d.tc = 물든 색 [r,g,b], d.ta = 세기 0~1, d.tHold = 내려온 뒤 유지 남은 시간
+  tint: function (d, ms) {
+    var T = G.DATA.tint, c = d.under && T.colors[d.under];
+    if (c) {
+      if (!d.tc || (d.ta || 0) <= 0.01) d.tc = c.slice();
+      var k = 1 - Math.exp(-3 * ms / T.inMs);        // 다른 색이면 섞이며 넘어감
+      d.tc = d.tc.map(function (v, i) { return v + (c[i] - v) * k; });
+      d.ta = Math.min(1, (d.ta || 0) + ms / T.inMs);
+      d.tHold = T.holdMs;
+    } else if (d.ta > 0) {
+      if (d.tHold > 0) d.tHold -= ms;
+      else d.ta = Math.max(0, d.ta - ms / T.fadeMs);
+    }
   },
 
   remove: function (engine, d) { if (d.body) { G.Physics.remove(engine, d.body); d.body = null; } }
@@ -1249,7 +1417,8 @@ G.Game = {
     game.goalQueue = [];                           // 잉크병 앞에 줄 선 물방울 (닿은 순서)
     game.entering = [];                            // 잉크병 입구로 뛰어드는 중
     game.enterCdMs = 0;
-    game.lastReachMs = 0;                          // 마지막으로 잉크병에 닿은 시각 (별 평가 시간 — 들어가는 연출 시간은 빼고)
+    game.lastReachMs = 0;
+    game.jarCols = [];                             // 잉크병에 들어간 물방울 색 (정화된 잉크병 색에 섞임, 사용자 결정 2026-10-20)                          // 마지막으로 잉크병에 닿은 시각 (별 평가 시간 — 들어가는 연출 시간은 빼고)
     var lowest = lv.ground.reduce(function (m, g) { return Math.max(m, g.top); }, 600);
     game.failY = lowest + D.physics.failY - 600;
     game.inkMax = lv.ink + (game.account.inkBonus || 0);
@@ -1335,6 +1504,7 @@ G.Game = {
       }
     });
     this.recordTrail(game);
+    walk.forEach(function (d) { if (d.state === 'walk' && d.mode !== 'join') G.Drop.tint(d, realMs * s); });
     joiners.forEach(function (d) { self.moveJoin(game, d, realMs * s); });
     G.Draw.rise(game, s, fx);
     G.Draw.cleanup(game);
@@ -1424,6 +1594,7 @@ G.Game = {
     var sup = G.Drop.support(d, game.engine);
     if (sup.spike) { d.dead = '가시에 찔렸어요'; return; }
     d.vel = { x: e.x - d.prev.x, y: e.y - d.prev.y };
+    d.under = sup.color;
     if (Math.abs(d.vel.x) > 0.05) d.dir = d.vel.x > 0 ? 1 : -1;
     d.nudge = disp > F.nudgeDist ? (d.nudge || 0) + 1 : 0;
     d.unsup = e.g && !sup.ground ? (d.unsup || 0) + 1 : 0;
@@ -1582,6 +1753,8 @@ G.Game = {
   absorb: function (game, d, m) {
     d.state = 'home';
     game.fx.push({ type: 'absorb', x: m.x, y: 0, t: game.timeMs });
+    var base = G.DATA.colors.jarClear, a = d.tc ? (d.ta || 0) : 0;
+    game.jarCols.push(base.map(function (v, i) { return v + ((d.tc ? d.tc[i] : v) - v) * a; }));
     if (d.hero) game.heroIn = true; else game.rescued += 1;
   },
 
@@ -1594,6 +1767,15 @@ G.Game = {
   },
 
   // 정화 정도 0~1: 도착한 물방울(주인공 포함) / 전체(주인공 + 배치된 작은 물방울)
+  // 정화된 잉크병 색: 들어간 물방울 색의 평균 (없으면 하늘색)
+  jarColor: function (game) {
+    var n = game.jarCols.length;
+    if (!n) return G.DATA.colors.jarClear;
+    var sum = [0, 0, 0];
+    game.jarCols.forEach(function (c) { sum[0] += c[0]; sum[1] += c[1]; sum[2] += c[2]; });
+    return sum.map(function (v) { return v / n; });
+  },
+
   purity: function (game) { return (game.rescued + (game.heroIn ? 1 : 0)) / (game.total + 1); },
 
   canSkip: function (game) { return game.status === 'run' && game.heroHome; },
@@ -2066,14 +2248,15 @@ G.UI = (function () {
 
   // 도착: 검은 잉크병. purity 0~1 만큼 병 전체가 검정 → 하늘색으로 섞여 감 (사용자 결정 2026-10-20)
   //   빈 통 이미지(goal_jar_empty, 안쪽 투명) 뒤에 잉크를 칠하고 통을 위에 그림
-  function drawGoal(ctx, gx, gy, purity) {
+  //   clearCol: 정화됐을 때 색 (들어간 물방울 색의 평균). 없으면 하늘색
+  function drawGoal(ctx, gx, gy, purity, clearCol) {
     if (gy == null) return;
     var J = G.DATA.art.goalJar, x = gx - 10, y = gy - J.h, w = J.w, h = J.h;
     var bx = x + w * 0.12, bw = w * 0.76, by = y + h * 0.2, bh = h * 0.78;
     ctx.save();
     ctx.beginPath();
     if (ctx.roundRect) ctx.roundRect(bx, by, bw, bh, 26); else ctx.rect(bx, by, bw, bh);
-    ctx.fillStyle = mix(C.jarDark, C.jarClear, Math.max(0, Math.min(1, purity || 0)));
+    ctx.fillStyle = mix(C.jarDark, clearCol || C.jarClear, Math.max(0, Math.min(1, purity || 0)));
     ctx.fill();
     ctx.fillStyle = 'rgba(255,255,255,0.25)'; ctx.fillRect(bx + 12, by + 14, 8, bh * 0.55);
     var empty = G.Assets.get('goal_jar_empty'), dark = G.Assets.get('goal_jar_dark');
@@ -2144,6 +2327,27 @@ G.UI = (function () {
     else n = Math.abs(v.x) > 0.5 ? 'char_run' : 'char_idle';
     return get(n) ? n : 'char_idle';
   }
+  // 물든 그림 (사용자 결정 2026-10-20): 그림 위에 물든 색을 곱하기로 칠하고 그림 모양으로 잘라 냄 (테두리는 어두운 채로)
+  var tintCv = null;
+  function tinted(img, d) {
+    var a = d.tc ? (d.ta || 0) : 0;
+    if (a <= 0.01 || typeof document === 'undefined') return img;
+    if (!tintCv) tintCv = document.createElement('canvas');
+    var w = img.width, h = img.height, x = tintCv.getContext('2d');
+    if (tintCv.width !== w || tintCv.height !== h) { tintCv.width = w; tintCv.height = h; }
+    x.globalCompositeOperation = 'source-over'; x.globalAlpha = 1; x.clearRect(0, 0, w, h);
+    x.drawImage(img, 0, 0);
+    x.globalCompositeOperation = 'multiply'; x.globalAlpha = a * 0.9;
+    x.fillStyle = 'rgb(' + d.tc.map(Math.round).join(',') + ')'; x.fillRect(0, 0, w, h);
+    x.globalCompositeOperation = 'destination-in'; x.globalAlpha = 1; x.drawImage(img, 0, 0);
+    x.globalCompositeOperation = 'source-over';
+    return tintCv;
+  }
+  function tintFill(d) {
+    var a = d.tc ? (d.ta || 0) : 0;
+    return a > 0.01 ? mix(C.jarClear, d.tc, a) : C.player;
+  }
+
   // 걷기 (사용자 요청 2026-10-20: 코드로 걷는 모습): 움직인 거리만큼 걸음 위상이 돌고, 걸음마다 통통 튀고(bob)·좌우로 기울고(sway)·
   //   발이 닿을 때 눌림(squash). 빠르면 걸음이 빨라짐. 수치는 data.js art.walk
   function walkPose(d) {
@@ -2166,8 +2370,8 @@ G.UI = (function () {
     function one(d, x, y, sc, rot, name) {
       var img = get(name) || get('char_idle'), r = d.r * sc, face = (A.charFace && A.charFace[name]) || 1;
       ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.scale(face, 1);
-      if (img) { var s = r * A.charSize; ctx.drawImage(img, -s / 2, r - s, s, s); }
-      else { ctx.beginPath(); ctx.arc(0, 0, r, 0, 6.283); ctx.fillStyle = C.player; ctx.fill(); ctx.lineWidth = 2.5; ctx.strokeStyle = C.outline; ctx.stroke(); }
+      if (img) { var s = r * A.charSize; ctx.drawImage(tinted(img, d), -s / 2, r - s, s, s); }
+      else { ctx.beginPath(); ctx.arc(0, 0, r, 0, 6.283); ctx.fillStyle = tintFill(d); ctx.fill(); ctx.lineWidth = 2.5; ctx.strokeStyle = C.outline; ctx.stroke(); }
       ctx.restore();
     }
     game.goalQueue.forEach(function (d, k) {
@@ -2196,9 +2400,9 @@ G.UI = (function () {
     stretch -= pose.squash;
     var face = (A.charFace && A.charFace[name]) || 1;   // 그림이 왼쪽을 보면 -1
     ctx.translate(0, r); ctx.scale((1 - stretch * 0.6) * d.dir * face, 1 + stretch); ctx.translate(0, -r);
-    if (img) { var s = r * G.DATA.art.charSize; ctx.drawImage(img, -s / 2, r - s, s, s); }
+    if (img) { var s = r * G.DATA.art.charSize; ctx.drawImage(tinted(img, d), -s / 2, r - s, s, s); }
     else {
-      ctx.beginPath(); ctx.arc(0, 0, r, 0, 6.283); ctx.fillStyle = C.player; ctx.fill();
+      ctx.beginPath(); ctx.arc(0, 0, r, 0, 6.283); ctx.fillStyle = tintFill(d); ctx.fill();
       ctx.lineWidth = d.hero ? 4 : 2.5; ctx.strokeStyle = C.outline; ctx.stroke();
       ctx.fillStyle = C.outline;
       ctx.beginPath(); ctx.arc(r * 0.15, -r * 0.2, r * 0.15, 0, 6.283); ctx.arc(r * 0.6, -r * 0.2, r * 0.15, 0, 6.283); ctx.fill();
@@ -2230,7 +2434,7 @@ G.UI = (function () {
       G.Props.drawCrystal(ctx, { x: -f.w / 2, y: -f.h / 2, w: f.w, h: f.h }); ctx.restore();
     });
     drawStart(ctx, lv.start.x, lv.start.y);
-    drawGoal(ctx, lv.goal.x, lv.goal.y, jarShown);
+    drawGoal(ctx, lv.goal.x, lv.goal.y, jarShown, G.Game.jarColor(game));
     game.level.items.forEach(function (it) {
       if (it.owned) { ctx.save(); ctx.globalAlpha = 0.2; G.Props.draw(ctx, it.prop); ctx.restore(); return; }
       if (!it.got) G.Props.draw(ctx, it.prop);
@@ -2509,7 +2713,7 @@ G.UI = (function () {
       if (face) ctx.drawImage(face, bx - fs / 2 + 4, by - fs * 0.93, fs, fs);
       ctx.fillText('정화 ' + Math.round(r.purity * 100) + '%  (물방울 ' + r.inJar + ' / ' + r.all + ')', bx + 80 + (bw - 80) / 2, by - 8);
       ctx.fillStyle = 'rgba(43,33,24,0.12)'; ctx.fillRect(bx, by, bw, 14);
-      ctx.fillStyle = mix(C.jarDark, C.jarClear, r.purity); ctx.fillRect(bx, by, bw * r.purity, 14);
+      ctx.fillStyle = mix(C.jarDark, G.Game.jarColor(game), r.purity); ctx.fillRect(bx, by, bw * r.purity, 14);
       ctx.lineWidth = 2; ctx.strokeStyle = C.outline; ctx.strokeRect(bx, by, bw, 14);
       ctx.fillStyle = C.outline; ctx.font = '15px sans-serif';
       ctx.fillText((r.timeMs / 1000).toFixed(1) + '초' + (best ? '  ·  최고 기록: 별 ' + (best.stars || 0) + '/' + r.starsTotal +
@@ -2661,7 +2865,7 @@ var G = G || {};
     },
     restart: function () { G.Game.reset(app.game); G.UI.resetCamera(); },
     // 구간 목록: 보통은 levels.js, 레벨 툴의 "테스트 플레이"는 주소 #test= 로 구간 하나를 넘겨준다
-    levels: G.LEVELS,
+    levels: G.LEVELS.filter(function (l) { return !l.test; }),   // 테스트용 스테이지(test: true)는 게임·제출본에서 숨김 (사용자 결정 2026-10-20)
     levelIndex: 0,
     testMode: false,
     goLevel: function (i) {

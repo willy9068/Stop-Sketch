@@ -299,3 +299,20 @@ G.LEVELS.forEach(function (lv) {
   drawLine(g, [{ x: f0.x - 60, y: f0.y }, { x: f0.x + 60, y: f0.y }], 'yellow');   // 땅에 떨어진 조각을 따라 칠함
   console.log('13 노랑: 100px 칠하는 데 잉크 ' + Math.round(used) + ' (검정이면 100) · 떨어진 조각 ' + n1 + '개(' + w1 + ') → 다시 칠한 뒤 ' + g.fallen.length + '개(' + g.fallen.map(function (f) { return Math.round(f.w); }).join('+') + ')');
 })();
+
+// 14. 물들기 (사용자 결정 2026-10-20): 색 선 위에서 점차 물들고, 내려와 6초 유지 → 3초에 걸쳐 원래 색. 잉크병 색에 섞임
+(function () {
+  var lv = { id: 't', name: '시험', ink: 3000, stops: 9, start: { x: 0 }, goal: { x: 1500 }, inks: ['black', 'blue'],
+    drops: { heroSpeed: 1 }, eraser: { pct: 50, delayMs: 600000 }, ground: [{ x0: -400, x1: 3000, top: 600 }], props: [{ type: 'drop', x: 60, y: 587 }] };
+  var g = G.Game.create('A', lv); G.Game.start(g);
+  drawLine(g, [{ x: 40, y: 597 }, { x: 260, y: 597 }], 'black');
+  var log = [];
+  for (var i = 1; i <= 60 * 20; i++) {
+    G.Game.update(g, STEP);
+    if (i % 120 === 0) log.push((i / 60) + 's ' + (g.hero.ta || 0).toFixed(2) + (g.hero.under ? '(' + g.hero.under + ')' : ''));
+  }
+  var small = g.drops.filter(function (d) { return !d.hero; })[0];
+  console.log('14 물들기 (검정 선 220px, 주인공 속도 1): ' + log.join(' · ') + ' · 작은 물방울 세기 ' + (small ? (small.ta || 0).toFixed(2) : '-'));
+  for (i = 0; i < 60 * 40 && g.status === 'run'; i++) G.Game.update(g, STEP);
+  console.log('   잉크병 색 ' + G.Game.jarColor(g).map(Math.round).join(',') + ' (기본 하늘색 ' + D.colors.jarClear.join(',') + ')', g.status);
+})();

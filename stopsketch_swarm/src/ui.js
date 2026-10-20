@@ -121,14 +121,15 @@ G.UI = (function () {
 
   // 도착: 검은 잉크병. purity 0~1 만큼 병 전체가 검정 → 하늘색으로 섞여 감 (사용자 결정 2026-10-20)
   //   빈 통 이미지(goal_jar_empty, 안쪽 투명) 뒤에 잉크를 칠하고 통을 위에 그림
-  function drawGoal(ctx, gx, gy, purity) {
+  //   clearCol: 정화됐을 때 색 (들어간 물방울 색의 평균). 없으면 하늘색
+  function drawGoal(ctx, gx, gy, purity, clearCol) {
     if (gy == null) return;
     var J = G.DATA.art.goalJar, x = gx - 10, y = gy - J.h, w = J.w, h = J.h;
     var bx = x + w * 0.12, bw = w * 0.76, by = y + h * 0.2, bh = h * 0.78;
     ctx.save();
     ctx.beginPath();
     if (ctx.roundRect) ctx.roundRect(bx, by, bw, bh, 26); else ctx.rect(bx, by, bw, bh);
-    ctx.fillStyle = mix(C.jarDark, C.jarClear, Math.max(0, Math.min(1, purity || 0)));
+    ctx.fillStyle = mix(C.jarDark, clearCol || C.jarClear, Math.max(0, Math.min(1, purity || 0)));
     ctx.fill();
     ctx.fillStyle = 'rgba(255,255,255,0.25)'; ctx.fillRect(bx + 12, by + 14, 8, bh * 0.55);
     var empty = G.Assets.get('goal_jar_empty'), dark = G.Assets.get('goal_jar_dark');
@@ -199,6 +200,27 @@ G.UI = (function () {
     else n = Math.abs(v.x) > 0.5 ? 'char_run' : 'char_idle';
     return get(n) ? n : 'char_idle';
   }
+  // 물든 그림 (사용자 결정 2026-10-20): 그림 위에 물든 색을 곱하기로 칠하고 그림 모양으로 잘라 냄 (테두리는 어두운 채로)
+  var tintCv = null;
+  function tinted(img, d) {
+    var a = d.tc ? (d.ta || 0) : 0;
+    if (a <= 0.01 || typeof document === 'undefined') return img;
+    if (!tintCv) tintCv = document.createElement('canvas');
+    var w = img.width, h = img.height, x = tintCv.getContext('2d');
+    if (tintCv.width !== w || tintCv.height !== h) { tintCv.width = w; tintCv.height = h; }
+    x.globalCompositeOperation = 'source-over'; x.globalAlpha = 1; x.clearRect(0, 0, w, h);
+    x.drawImage(img, 0, 0);
+    x.globalCompositeOperation = 'multiply'; x.globalAlpha = a * 0.9;
+    x.fillStyle = 'rgb(' + d.tc.map(Math.round).join(',') + ')'; x.fillRect(0, 0, w, h);
+    x.globalCompositeOperation = 'destination-in'; x.globalAlpha = 1; x.drawImage(img, 0, 0);
+    x.globalCompositeOperation = 'source-over';
+    return tintCv;
+  }
+  function tintFill(d) {
+    var a = d.tc ? (d.ta || 0) : 0;
+    return a > 0.01 ? mix(C.jarClear, d.tc, a) : C.player;
+  }
+
   // 걷기 (사용자 요청 2026-10-20: 코드로 걷는 모습): 움직인 거리만큼 걸음 위상이 돌고, 걸음마다 통통 튀고(bob)·좌우로 기울고(sway)·
   //   발이 닿을 때 눌림(squash). 빠르면 걸음이 빨라짐. 수치는 data.js art.walk
   function walkPose(d) {
@@ -221,8 +243,8 @@ G.UI = (function () {
     function one(d, x, y, sc, rot, name) {
       var img = get(name) || get('char_idle'), r = d.r * sc, face = (A.charFace && A.charFace[name]) || 1;
       ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.scale(face, 1);
-      if (img) { var s = r * A.charSize; ctx.drawImage(img, -s / 2, r - s, s, s); }
-      else { ctx.beginPath(); ctx.arc(0, 0, r, 0, 6.283); ctx.fillStyle = C.player; ctx.fill(); ctx.lineWidth = 2.5; ctx.strokeStyle = C.outline; ctx.stroke(); }
+      if (img) { var s = r * A.charSize; ctx.drawImage(tinted(img, d), -s / 2, r - s, s, s); }
+      else { ctx.beginPath(); ctx.arc(0, 0, r, 0, 6.283); ctx.fillStyle = tintFill(d); ctx.fill(); ctx.lineWidth = 2.5; ctx.strokeStyle = C.outline; ctx.stroke(); }
       ctx.restore();
     }
     game.goalQueue.forEach(function (d, k) {
@@ -251,9 +273,9 @@ G.UI = (function () {
     stretch -= pose.squash;
     var face = (A.charFace && A.charFace[name]) || 1;   // 그림이 왼쪽을 보면 -1
     ctx.translate(0, r); ctx.scale((1 - stretch * 0.6) * d.dir * face, 1 + stretch); ctx.translate(0, -r);
-    if (img) { var s = r * G.DATA.art.charSize; ctx.drawImage(img, -s / 2, r - s, s, s); }
+    if (img) { var s = r * G.DATA.art.charSize; ctx.drawImage(tinted(img, d), -s / 2, r - s, s, s); }
     else {
-      ctx.beginPath(); ctx.arc(0, 0, r, 0, 6.283); ctx.fillStyle = C.player; ctx.fill();
+      ctx.beginPath(); ctx.arc(0, 0, r, 0, 6.283); ctx.fillStyle = tintFill(d); ctx.fill();
       ctx.lineWidth = d.hero ? 4 : 2.5; ctx.strokeStyle = C.outline; ctx.stroke();
       ctx.fillStyle = C.outline;
       ctx.beginPath(); ctx.arc(r * 0.15, -r * 0.2, r * 0.15, 0, 6.283); ctx.arc(r * 0.6, -r * 0.2, r * 0.15, 0, 6.283); ctx.fill();
@@ -285,7 +307,7 @@ G.UI = (function () {
       G.Props.drawCrystal(ctx, { x: -f.w / 2, y: -f.h / 2, w: f.w, h: f.h }); ctx.restore();
     });
     drawStart(ctx, lv.start.x, lv.start.y);
-    drawGoal(ctx, lv.goal.x, lv.goal.y, jarShown);
+    drawGoal(ctx, lv.goal.x, lv.goal.y, jarShown, G.Game.jarColor(game));
     game.level.items.forEach(function (it) {
       if (it.owned) { ctx.save(); ctx.globalAlpha = 0.2; G.Props.draw(ctx, it.prop); ctx.restore(); return; }
       if (!it.got) G.Props.draw(ctx, it.prop);
@@ -564,7 +586,7 @@ G.UI = (function () {
       if (face) ctx.drawImage(face, bx - fs / 2 + 4, by - fs * 0.93, fs, fs);
       ctx.fillText('정화 ' + Math.round(r.purity * 100) + '%  (물방울 ' + r.inJar + ' / ' + r.all + ')', bx + 80 + (bw - 80) / 2, by - 8);
       ctx.fillStyle = 'rgba(43,33,24,0.12)'; ctx.fillRect(bx, by, bw, 14);
-      ctx.fillStyle = mix(C.jarDark, C.jarClear, r.purity); ctx.fillRect(bx, by, bw * r.purity, 14);
+      ctx.fillStyle = mix(C.jarDark, G.Game.jarColor(game), r.purity); ctx.fillRect(bx, by, bw * r.purity, 14);
       ctx.lineWidth = 2; ctx.strokeStyle = C.outline; ctx.strokeRect(bx, by, bw, 14);
       ctx.fillStyle = C.outline; ctx.font = '15px sans-serif';
       ctx.fillText((r.timeMs / 1000).toFixed(1) + '초' + (best ? '  ·  최고 기록: 별 ' + (best.stars || 0) + '/' + r.starsTotal +

@@ -56,6 +56,13 @@ G.DATA = {
   //   병은 들어간 만큼 jarFadePerSec 속도로 서서히 밝아짐
   goalEnter: { gapMs: 420, enterMs: 650, hopHeight: 70, endScale: 0.35, spacing: 26, slide: 0.15, jarFadePerSec: 0.35, resultDelayMs: 1000 },   // resultDelayMs: 병이 다 밝아진 뒤 결과 창까지 (사용자 요청 2026-10-20)
 
+  // 물들기 (사용자 결정 2026-10-20): 색 선(노랑 제외, 검정 포함)을 밟고 있으면 물방울이 그 색으로 점차 물듦(다른 색이면 섞이며 넘어감).
+  //   내려와도 holdMs 동안 유지, 그 뒤 fadeMs 에 걸쳐 원래 하늘색으로. 잉크병에 들어갈 때의 색이 정화된 잉크병 색에 섞임
+  tint: {
+    colors: { black: [96, 92, 106], red: [232, 70, 60], blue: [50, 118, 232], green: [64, 178, 86] },   // 검정은 진한 회색까지
+    inMs: 1200, holdMs: 6000, fadeMs: 3000
+  },
+
   stop: { perSection: 3 }, // 스테이지당 정지 횟수 (levels.js stops 로 바꿈)
   stopUp: 1,               // 정지 +1 아이템 하나당 (그 스테이지에서만)
 

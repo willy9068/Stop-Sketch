@@ -22,7 +22,7 @@ var G = G || {};
     },
     restart: function () { G.Game.reset(app.game); G.UI.resetCamera(); },
     // 구간 목록: 보통은 levels.js, 레벨 툴의 "테스트 플레이"는 주소 #test= 로 구간 하나를 넘겨준다
-    levels: G.LEVELS,
+    levels: G.LEVELS.filter(function (l) { return !l.test; }),   // 테스트용 스테이지(test: true)는 게임·제출본에서 숨김 (사용자 결정 2026-10-20)
     levelIndex: 0,
     testMode: false,
     goLevel: function (i) {

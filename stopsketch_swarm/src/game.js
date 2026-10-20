@@ -43,7 +43,8 @@ G.Game = {
     game.goalQueue = [];                           // 잉크병 앞에 줄 선 물방울 (닿은 순서)
     game.entering = [];                            // 잉크병 입구로 뛰어드는 중
     game.enterCdMs = 0;
-    game.lastReachMs = 0;                          // 마지막으로 잉크병에 닿은 시각 (별 평가 시간 — 들어가는 연출 시간은 빼고)
+    game.lastReachMs = 0;
+    game.jarCols = [];                             // 잉크병에 들어간 물방울 색 (정화된 잉크병 색에 섞임, 사용자 결정 2026-10-20)                          // 마지막으로 잉크병에 닿은 시각 (별 평가 시간 — 들어가는 연출 시간은 빼고)
     var lowest = lv.ground.reduce(function (m, g) { return Math.max(m, g.top); }, 600);
     game.failY = lowest + D.physics.failY - 600;
     game.inkMax = lv.ink + (game.account.inkBonus || 0);
@@ -129,6 +130,7 @@ G.Game = {
       }
     });
     this.recordTrail(game);
+    walk.forEach(function (d) { if (d.state === 'walk' && d.mode !== 'join') G.Drop.tint(d, realMs * s); });
     joiners.forEach(function (d) { self.moveJoin(game, d, realMs * s); });
     G.Draw.rise(game, s, fx);
     G.Draw.cleanup(game);
@@ -218,6 +220,7 @@ G.Game = {
     var sup = G.Drop.support(d, game.engine);
     if (sup.spike) { d.dead = '가시에 찔렸어요'; return; }
     d.vel = { x: e.x - d.prev.x, y: e.y - d.prev.y };
+    d.under = sup.color;
     if (Math.abs(d.vel.x) > 0.05) d.dir = d.vel.x > 0 ? 1 : -1;
     d.nudge = disp > F.nudgeDist ? (d.nudge || 0) + 1 : 0;
     d.unsup = e.g && !sup.ground ? (d.unsup || 0) + 1 : 0;
@@ -376,6 +379,8 @@ G.Game = {
   absorb: function (game, d, m) {
     d.state = 'home';
     game.fx.push({ type: 'absorb', x: m.x, y: 0, t: game.timeMs });
+    var base = G.DATA.colors.jarClear, a = d.tc ? (d.ta || 0) : 0;
+    game.jarCols.push(base.map(function (v, i) { return v + ((d.tc ? d.tc[i] : v) - v) * a; }));
     if (d.hero) game.heroIn = true; else game.rescued += 1;
   },
 
@@ -388,6 +393,15 @@ G.Game = {
   },
 
   // 정화 정도 0~1: 도착한 물방울(주인공 포함) / 전체(주인공 + 배치된 작은 물방울)
+  // 정화된 잉크병 색: 들어간 물방울 색의 평균 (없으면 하늘색)
+  jarColor: function (game) {
+    var n = game.jarCols.length;
+    if (!n) return G.DATA.colors.jarClear;
+    var sum = [0, 0, 0];
+    game.jarCols.forEach(function (c) { sum[0] += c[0]; sum[1] += c[1]; sum[2] += c[2]; });
+    return sum.map(function (v) { return v / n; });
+  },
+
   purity: function (game) { return (game.rescued + (game.heroIn ? 1 : 0)) / (game.total + 1); },
 
   canSkip: function (game) { return game.status === 'run' && game.heroHome; },

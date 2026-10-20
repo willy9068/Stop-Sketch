@@ -610,6 +610,7 @@ var G = G || {};
     $('lvForm').innerHTML =
       '<div class="f"><label>이름</label><input id="l_name" value="' + esc(l.name) + '"></div>' +
       '<div class="f"><label>id</label><input id="l_id" value="' + esc(l.id) + '"></div>' +
+      '<div class="f"><label>테스트용</label><label><input type="checkbox" id="l_test"' + (l.test ? ' checked' : '') + '>게임·제출본에서 숨김</label></div>' +
       '<div class="f"><label>배경</label><select id="l_bg">' + opts(bgs, l.bg) + '</select></div>' +
       num('l_ink', '잉크', l.ink) + num('l_stops', '정지 횟수', l.stops) +
       num('l_start', '시작 x', l.start.x) + num('l_goal', '도착 x', l.goal.x) +
@@ -698,7 +699,8 @@ var G = G || {};
     if (id === 'file') return;
     if (inputUndoArmed) { pushUndo(); inputUndoArmed = false; }
     if (isChange) inputUndoArmed = true;
-    if (id === 'l_name') l.name = v; else if (id === 'l_id') l.id = v; else if (id === 'l_bg') l.bg = v;
+    if (id === 'l_test') l.test = t.checked || undefined;
+    else if (id === 'l_name') l.name = v; else if (id === 'l_id') l.id = v; else if (id === 'l_bg') l.bg = v;
     else if (id === 'l_ink') l.ink = v; else if (id === 'l_stops') l.stops = v;
     else if (id === 'l_start') l.start.x = v; else if (id === 'l_goal') l.goal.x = v;
     else if (id === 'e_pct') l.eraser.pct = v; else if (id === 'e_delayMs') l.eraser.delayMs = v;
@@ -781,7 +783,8 @@ var G = G || {};
   function levelsText() {
     var body = S.levels.map(function (l) {
       var lines = ['  {'];
-      ['id', 'name', 'bg', 'ink', 'stops', 'inks', 'fx', 'drops', 'eraser', 'segments', 'start', 'goal'].forEach(function (k) {
+      ['id', 'name', 'test', 'bg', 'ink', 'stops', 'inks', 'fx', 'drops', 'eraser', 'segments', 'start', 'goal'].forEach(function (k) {
+        if (k === 'test' && !l.test) return;           // 테스트용 표시는 있을 때만
         var v = k === 'segments' ? (l.segments || []).slice().sort(function (a, b) { return a.x - b.x; }) : l[k];   // 구간 경계는 x 순서로 저장
         lines.push('    ' + JSON.stringify(k) + ': ' + JSON.stringify(v) + ',');
       });
