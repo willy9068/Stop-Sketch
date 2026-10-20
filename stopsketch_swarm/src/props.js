@@ -79,7 +79,23 @@ G.Props = (function () {
   // 배치된 선: 검은 다이아몬드처럼 광이 나는 막대 (사용자 결정 2026-10-20). 이미지(prop_crystal)가 있으면 9분할
   function drawCrystal(ctx, r) {
     var img = G.Assets.get('prop_crystal');
-    if (img) { drawImg(ctx, 'prop_crystal', 'nine', img, r.x, r.y, r.w, r.h); return; }
+    if (img) {                                     // 이미지(가로 막대, 양 끝 뾰족): 양 끝은 그대로, 가운데는 반복. 세로 막대는 90도 돌려 그림
+      var A = G.DATA.art.crystal, hz = r.w >= r.h, len = hz ? r.w : r.h, th = hz ? r.h : r.w;
+      var k = th / img.height, f = Math.min(1, len / ((A.left + A.right) * k));   // 아주 짧으면 끝을 줄임
+      var eL = A.left * k * f, eR = A.right * k * f, mid = img.width - A.left - A.right;
+      ctx.save();
+      ctx.translate(r.x + r.w / 2, r.y + r.h / 2);
+      if (!hz) ctx.rotate(Math.PI / 2);
+      var x0 = -len / 2, y0 = -th / 2;
+      ctx.drawImage(img, 0, 0, A.left, img.height, x0, y0, eL, th);
+      ctx.drawImage(img, img.width - A.right, 0, A.right, img.height, x0 + len - eR, y0, eR, th);
+      for (var xx = x0 + eL; xx < x0 + len - eR - 0.01; xx += mid * k) {
+        var ww = Math.min(mid * k, x0 + len - eR - xx);
+        ctx.drawImage(img, A.left, 0, ww / k, img.height, xx, y0, ww, th);
+      }
+      ctx.restore();
+      return;
+    }
     var C = G.DATA.colors, horiz = r.w >= r.h, t = horiz ? r.h : r.w;
     ctx.save();
     ctx.beginPath();                               // 양 끝이 뾰족한 결정 모양

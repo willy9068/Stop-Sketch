@@ -138,3 +138,36 @@ G.LEVELS.forEach(function (lv) {
   console.log('  작은 물방울 속도 절반   주인공 x=' + b.hero, '작은 x=' + b.small, '되돌기 합 ' + b.turns);
   console.log('  서로 충돌 켬            주인공 x=' + c.hero, '작은 x=' + c.small, '되돌기 합 ' + c.turns, 'group ' + c.group, '(부딪혀 되돌기가 늘어야 정상)');
 })();
+
+// 7. 경사·낮은 턱 오르기 (사용자 요청 2026-10-20: 낮은 턱에서 멈추거나 느리게 오름 → 매끄럽게)
+(function () {
+  function climb(name, ramp, speed) {
+    var lv = { id: 't', name: '시험', ink: 2000, stops: 3, start: { x: 0 }, goal: { x: 1900 }, inks: ['black'], drops: { heroSpeed: speed },
+      ground: [{ x0: -400, x1: 900, top: 600 }, { x0: 900, x1: 2400, top: 480 }], props: [] };
+    var g = G.Game.create('A', lv); G.Game.start(g);
+    g.color = 'black'; G.Draw.begin(g, ramp[0]);
+    for (var k = 1; k < ramp.length; k++) {
+      var a = ramp[k - 1], b = ramp[k], n = Math.ceil(G.Rules.dist(a, b) / 4);
+      for (var j = 1; j <= n; j++) G.Draw.move(g, { x: a.x + (b.x - a.x) * j / n, y: a.y + (b.y - a.y) * j / n });
+    }
+    G.Draw.end(g);
+    var minV = 99, t0 = null, t1 = null;
+    for (var i = 0; i < 60 * 40 && g.status === 'run'; i++) {
+      G.Game.update(g, STEP);
+      var p = g.hero.body ? g.hero.body.position : null;
+      if (!p) break;
+      if (t0 === null && p.x > 450) t0 = i;
+      if (t0 !== null && t1 === null && p.x > 960) t1 = i;
+      if (t0 !== null && t1 === null) minV = Math.min(minV, Math.abs(g.hero.body.velocity.x));
+    }
+    var ideal = (960 - 450) / (speed * 60);
+    console.log('  ' + (name + ' · 속도 ' + speed).padEnd(30), '오르막 통과', t1 !== null ? ((t1 - t0) / 60).toFixed(2) + 's (평지라면 ' + ideal.toFixed(2) + 's)' : '못 오름', '· 오르는 중 최저 가로 속도', minV.toFixed(2));
+  }
+  console.log('7 경사·턱 오르기 (높이 120 언덕, 바닥에 걸친 선의 끝 턱 포함)');
+  var photo = [{ x: 560, y: 598 }, { x: 640, y: 590 }, { x: 700, y: 575 }, { x: 760, y: 545 }, { x: 830, y: 500 }, { x: 900, y: 478 }, { x: 1000, y: 476 }];
+  [5.2, 1.5, 1].forEach(function (sp) {
+    climb('완만한 선 (약 20°)', [{ x: 520, y: 598 }, { x: 920, y: 478 }], sp);
+    climb('가파른 선 (약 40°)', [{ x: 760, y: 598 }, { x: 920, y: 478 }], sp);
+    climb('사진처럼 꺾인 선', photo, sp);
+  });
+})();

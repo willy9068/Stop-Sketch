@@ -26,13 +26,20 @@ G.Drop = {
     };
   },
 
+  // 바닥에서 걷기: 발 앞쪽 바닥 면을 따라(경사·낮은 턱이면 그 기울기대로) 목표 속도로 (사용자 요청 2026-10-20: 경사·턱을 매끄럽게)
   control: function (d, scale, fx) {
     var D = G.DATA.drop, M = G.Physics.M, v = d.body.velocity;
     if (!d.grounded) return;
     var boost = d.boostMs > 0 && fx;
     var target = d.speed * (boost ? fx.boostPct / 100 : 1) * d.dir;
-    var vx = v.x + (target - v.x) * Math.min(1, D.accel * (boost ? 2.5 : 1) * scale);
-    M.Body.setVelocity(d.body, { x: vx, y: v.y });
+    var a = Math.min(1, D.accel * (boost ? 2.5 : 1) * scale);
+    var n = d.groundN || { x: 0, y: -1 }, tx = -n.y, ty = n.x;      // 바닥 면 방향 (n = 닿은 점 → 중심)
+    var want = { x: tx * target, y: ty * target };
+    if (want.y < -0.01) {                          // 오르막: 위로 가는 속도는 빨리 맞춰 멈칫하지 않게
+      M.Body.setVelocity(d.body, { x: v.x + (want.x - v.x) * Math.max(a, D.climbAccel * scale), y: v.y + (want.y - v.y) * Math.min(1, D.climbAccel * scale) });
+    } else {
+      M.Body.setVelocity(d.body, { x: v.x + (want.x - v.x) * a, y: v.y });
+    }
   },
 
   // 물리 스텝 직후: 바닥·벽·색 선·가시·끼임 판정
@@ -40,7 +47,7 @@ G.Drop = {
     var D = G.DATA.drop, M = G.Physics.M, b = d.body, r = d.r, gameMs = realMs * scale;
     var stepUp = Math.max(D.stepUpMin, D.stepUp * r / D.heroRadius);
     var touch = G.Physics.touching(engine, b);
-    var ground = false, wall = false, red = null, blue = false, above = null, below = false, low = false;
+    var ground = false, wall = false, red = null, blue = false, above = null, below = false, low = false, front = null;
     d.events.length = 0;
     for (var t = 0; t < touch.length; t++) {
       var pts = touch[t].pts, other = touch[t].other, root = touch[t].root, color = other.inkColor || root.inkColor;
@@ -49,6 +56,7 @@ G.Drop = {
         var dy = pts[i].y - b.position.y, dx = pts[i].x - b.position.x;
         if (dy > r * D.groundCheck) {
           ground = true; below = true;
+          if (!front || dx * d.dir > front.f) front = { f: dx * d.dir, dx: dx, dy: dy };   // 가는 쪽으로 가장 앞선 바닥 접점
           if (dx * d.dir > r * 0.75) low = true;   // 발 앞쪽 모서리에 걸침 → 올라타기
           if (color === 'red') red = other;
           if (color === 'blue') blue = true;
@@ -58,8 +66,12 @@ G.Drop = {
       }
     }
     d.grounded = ground;
-    // 낮은 턱 앞에서 멈칫하면(밀기만 하고 못 넘을 때) 살짝 들어 올려 넘김 (Matter.js 원은 턱을 스스로 넘지 못함)
-    if (low && !wall && scale > 0 && Math.abs(b.velocity.x) < 1.5) M.Body.translate(b, { x: d.dir * 1.5 * scale, y: -4 * scale });
+    if (front) {                                   // 바닥 면 방향 = 앞선 접점에서 중심으로 (턱 모서리면 그 기울기로 타고 오름)
+      var len = Math.sqrt(front.dx * front.dx + front.dy * front.dy) || 1;
+      d.groundN = { x: -front.dx / len, y: -front.dy / len };
+    } else d.groundN = null;
+    // 그래도 낮은 턱 앞에서 멈칫하면 살짝 들어 올려 넘김 (Matter.js 원은 턱을 스스로 넘지 못함)
+    if (low && !wall && scale > 0 && Math.abs(b.velocity.x) < d.speed * 0.4) M.Body.translate(b, { x: d.dir * 1.5 * scale, y: -3 * scale });
     d.onInk = red ? 'red' : blue ? 'blue' : null;
     d.boostMs = Math.max(0, d.boostMs - gameMs);
     d.bounceCdMs = Math.max(0, d.bounceCdMs - gameMs);

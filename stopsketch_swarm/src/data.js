@@ -24,6 +24,7 @@ G.DATA = {
     runSpeed: 5.2,         // 걷는 속도 기본값 (스텝당 px). 스테이지마다 levels.js drops.heroSpeed / smallSpeed 로 바꿈 (레벨 툴)
     collide: false,        // 물방울끼리 부딪히는가 기본값 (사용자 결정 2026-10-20: 서로 통과). 스테이지마다 drops.collide 로 켬 (레벨 툴)
     accel: 0.12,           // 바닥에 있을 때 목표 속도로 다가가는 비율
+    climbAccel: 0.5,       // 오르막·턱에서 바닥 면을 따라가는 속도를 맞추는 비율 (크면 멈칫 없이 타고 오름)
     groundCheck: 0.45,     // 접촉점이 중심보다 반지름 × 이 값 이상 아래면 "바닥"
     stepUp: 16,            // 이 높이 이하의 턱은 넘어감 (작은 물방울은 반지름 비율로 줄이되 stepUpMin 보다 작지 않게)
     stepUpMin: 12,         //   쓰러진 배치된 선(두께 10)을 작은 물방울도 넘어가게
@@ -121,7 +122,7 @@ G.DATA = {
       'deco_cloud_1', 'deco_cloud_2', 'deco_cloud_3',
       'ui_stop_on', 'ui_gauge_frame', 'ui_panel', 'fx_star_pop', 'fx_land', 'star_full', 'star_empty',
       'start_hole', 'goal_jar_empty', 'ink_black', 'ink_red', 'ink_blue', 'ink_yellow', 'ink_green', 'ink_select', 'ui_shelf',
-      'fx_bounce', 'fx_boost', 'fx_absorb', 'eraser_edge', 'ui_arrow'
+      'fx_bounce', 'fx_boost', 'fx_absorb', 'eraser_edge', 'ui_arrow', 'goal_jar_dark'
     ],
     backgrounds: { bg_a: '종이 + 구름', bg_b: '줄 노트', bg_plain: '빈 종이', none: '단색 종이' },
     decos: ['deco_cloud_1', 'deco_cloud_2', 'deco_cloud_3'],
@@ -135,6 +136,7 @@ G.DATA = {
     wallCrop: [5, 32, 247, 193],
     panelHull: null,
     startHole: { size: 190, up: 70 },
+    crystal: { left: 90, right: 16 },  // prop_crystal.png 왼쪽·오른쪽 뾰족한 끝 폭(원본 px, 그림이 비대칭). 가운데는 반복
     goalJar: { w: 170, h: 198, mouth: 0.5 },   // 검은 잉크병: 왼쪽 끝 ≈ 도착 x. 물방울이 이 통 안(가로)에 들어오면 흡수
     shelf: { h: 84, slot: 66, x: 12, bottle: 58 },
     // 카메라 (사용자 결정 2026-10-20): 무리가 다 보이게 자동 줌(최소 minZoom). 휠이 우선, manualMs 동안 휠을 안 쓰면 자동으로

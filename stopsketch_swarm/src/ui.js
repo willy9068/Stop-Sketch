@@ -128,8 +128,13 @@ G.UI = (function () {
     ctx.fillStyle = mix(C.jarDark, C.jarClear, Math.max(0, Math.min(1, purity || 0)));
     ctx.fill();
     ctx.fillStyle = 'rgba(255,255,255,0.25)'; ctx.fillRect(bx + 12, by + 14, 8, bh * 0.55);
-    var empty = G.Assets.get('goal_jar_empty');
+    var empty = G.Assets.get('goal_jar_empty'), dark = G.Assets.get('goal_jar_dark');
     if (empty) ctx.drawImage(empty, x, y, w, h);
+    if (dark && empty) {                           // 검은 잉크병 이미지가 정화된 만큼 옅어짐 (아래 하늘색 잉크가 드러남)
+      ctx.globalAlpha = 1 - Math.max(0, Math.min(1, purity || 0));
+      ctx.drawImage(dark, x, y, w, h);
+      ctx.globalAlpha = 1;
+    }
     else {
       ctx.lineWidth = 4; ctx.strokeStyle = C.outline; ctx.stroke();
       ctx.fillStyle = '#C9A26B';
