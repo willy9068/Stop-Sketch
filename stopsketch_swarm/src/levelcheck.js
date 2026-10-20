@@ -24,6 +24,8 @@ G.LevelCheck = (function () {
     if (o.drops.heroSpeed == null) o.drops.heroSpeed = D.drop.runSpeed;
     if (o.drops.smallSpeed == null) o.drops.smallSpeed = D.drop.runSpeed;
     if (o.drops.collide == null) o.drops.collide = D.drop.collide;
+    if (o.drops.follow == null) o.drops.follow = D.drop.follow.on;   // 대열 따라오기 (사용자 결정 2026-10-20)
+    if (o.drops.gap == null) o.drops.gap = D.drop.follow.gap;
     o.eraser = o.eraser || {};
     if (o.eraser.pct == null) o.eraser.pct = D.eraser.pct;
     if (o.eraser.delayMs == null) o.eraser.delayMs = D.eraser.delayMs;
@@ -125,9 +127,11 @@ G.LevelCheck = (function () {
       ' · 튕김 ' + lv.fx.bounce + ' · 가속 ' + lv.fx.boostPct + '% ' + (lv.fx.boostMs / 1000) + '초 · 떠오름 ' + lv.fx.riseSpeed);
     var crystals = lv.props.filter(function (p) { return p.type === 'crystal'; });
     if (crystals.length && lv.inks.indexOf('yellow') < 0) add('warn', '배치된 선이 있는데 노랑(지우기)을 쓸 수 없어요');
-    add('info', '물방울 속도: 주인공 ' + lv.drops.heroSpeed + ' · 작은 물방울 ' + lv.drops.smallSpeed + ' · 서로 충돌 ' + (lv.drops.collide ? '켬' : '끔'));
+    add('info', '물방울 속도: 주인공 ' + lv.drops.heroSpeed + ' · 작은 물방울 ' + lv.drops.smallSpeed + ' · 서로 충돌 ' + (lv.drops.collide ? '켬' : '끔') +
+      ' · 대열 ' + (lv.drops.follow ? '켬 (간격 ' + lv.drops.gap + ', 작은 물방울 속도는 이탈해 혼자 걸을 때만)' : '끔'));
+    if (lv.drops.follow && lv.drops.gap <= 0) add('error', '대열 간격은 0보다 커야 해요');
     if (lv.drops.heroSpeed <= 0 || lv.drops.smallSpeed <= 0) add('error', '물방울 속도는 0보다 커야 해요');
-    if (lv.drops.smallSpeed < lv.drops.heroSpeed * lv.eraser.pct / 100) add('warn', '작은 물방울이 지우개보다 느려요 — 뒤처진 물방울은 모두 지워져요');
+    if (lv.drops.smallSpeed < lv.drops.heroSpeed * lv.eraser.pct / 100) add('warn', '작은 물방울이 지우개보다 느려요 — ' + (lv.drops.follow ? '대열에서 이탈해 ' : '') + '뒤처진 물방울은 모두 지워져요');
     add('info', '지우개: ' + (lv.eraser.delayMs / 1000) + '초 뒤 출발, 주인공 속도의 ' + lv.eraser.pct + '% · 구간 경계 ' + lv.segments.length + '개');
     return out;
   }

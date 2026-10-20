@@ -20,6 +20,7 @@ G.Drop = {
     G.Physics.add(engine, body);
     return {
       body: body, r: r, hero: !!hero, dir: dir || 1, state: 'walk', grounded: false,
+      mode: hero ? 'hero' : 'free',                // 작은 물방울: free 혼자 걷기 / join 깨어나 대열로 튀는 중 / line 대열 (사용자 결정 2026-10-20)
       speed: (hero ? cfg.heroSpeed : cfg.smallSpeed) || D.runSpeed,
       turnCdMs: 0, turns: 0, boostMs: 0, bounceCdMs: 0, bounces: 0, pinchMs: 0, onInk: null,
       events: [], dead: null
@@ -103,6 +104,26 @@ G.Drop = {
       d.turns += 1;
       d.turnCdMs = D.turnCooldownMs;
     }
+  },
+
+  // 대열 물방울: 가시에 닿았는가, 발밑(반지름 + supportTol 안)에 물방울 아닌 몸체가 있는가
+  //   위치를 직접 옮기므로 걷기 판정 대신 아래로 짧은 광선을 쏴서 봄 (경사에서 살짝 떠도 바닥으로 침)
+  support: function (d, engine) {
+    var b = d.body, touch = G.Physics.touching(engine, b);
+    for (var t = 0; t < touch.length; t++) {
+      if (touch[t].root.label === 'spike' || touch[t].other.label === 'spike') return { ground: true, spike: true };
+    }
+    var M = G.Physics.M, p = b.position, reach = d.r + G.DATA.drop.follow.supportTol;
+    var bodies = G.Physics.allBodies(engine).filter(function (q) { return q.label !== 'drop'; });
+    var hit = M.Query.ray(bodies, { x: p.x, y: p.y }, { x: p.x, y: p.y + reach }, d.r * 1.2);
+    return { ground: hit.length > 0, spike: false };
+  },
+
+  // 대열에 붙는 동안은 아무것과도 안 부딪힘 (통 튀어 날아가는 중), 대열에선 물방울끼리 통과, 혼자 걸을 땐 스테이지 설정대로
+  setFilter: function (d, mode, collide) {
+    var f = d.body.collisionFilter;
+    f.mask = mode === 'join' ? 0 : 0xFFFFFFFF;
+    f.group = mode === 'free' && collide ? 0 : this.GROUP;
   },
 
   remove: function (engine, d) { if (d.body) { G.Physics.remove(engine, d.body); d.body = null; } }

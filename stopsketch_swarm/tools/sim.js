@@ -45,7 +45,7 @@ function play(lv, plans, skip, maxSec) {
 function report(name, g) {
   console.log(name.padEnd(30), g.status.padEnd(5), (g.failReason || '').padEnd(10), 't=' + (g.timeMs / 1000).toFixed(1) + 's',
     '도착 ' + g.rescued + '/' + g.total, '잃음 ' + g.lost, '정화 ' + Math.round(G.Game.purity(g) * 100) + '%', 'ink=' + Math.round(g.ink),
-    g.result ? '별 ' + g.result.stars : '');
+    g.result ? '별 ' + g.result.stars : '', '· 이탈 누적 ' + g.drops.reduce(function (n, d) { return n + (d.detaches || 0); }, 0));
 }
 
 var PLANS = {
@@ -130,10 +130,10 @@ G.LEVELS.forEach(function (lv) {
     return { hero: Math.round(g.hero.body.position.x), small: s ? Math.round(s.body.position.x) : null,
       turns: w.reduce(function (n, d) { return n + d.turns; }, 0), group: s && s.body.collisionFilter.group };
   }
-  var a = run({ heroSpeed: 5.2, smallSpeed: 5.2, collide: false });
-  var b = run({ heroSpeed: 5.2, smallSpeed: 2.6, collide: false });
-  var c = run({ heroSpeed: 5.2, smallSpeed: 5.2, collide: true });
-  console.log('6 물방울 설정 (4초 뒤, 두 벽 사이 왕복)');
+  var a = run({ heroSpeed: 5.2, smallSpeed: 5.2, collide: false, follow: false });
+  var b = run({ heroSpeed: 5.2, smallSpeed: 2.6, collide: false, follow: false });
+  var c = run({ heroSpeed: 5.2, smallSpeed: 5.2, collide: true, follow: false });
+  console.log('6 물방울 설정 (대열 끔, 4초 뒤, 두 벽 사이 왕복)');
   console.log('  기본(통과, 같은 속도)   주인공 x=' + a.hero, '작은 x=' + a.small, '되돌기 합 ' + a.turns, 'group ' + a.group);
   console.log('  작은 물방울 속도 절반   주인공 x=' + b.hero, '작은 x=' + b.small, '되돌기 합 ' + b.turns);
   console.log('  서로 충돌 켬            주인공 x=' + c.hero, '작은 x=' + c.small, '되돌기 합 ' + c.turns, 'group ' + c.group, '(부딪혀 되돌기가 늘어야 정상)');
@@ -170,4 +170,55 @@ G.LEVELS.forEach(function (lv) {
     climb('가파른 선 (약 40°)', [{ x: 760, y: 598 }, { x: 920, y: 478 }], sp);
     climb('사진처럼 꺾인 선', photo, sp);
   });
+})();
+
+// 8. 대열 (사용자 결정 2026-10-20): 주인공이 깨운 물방울은 발자국을 따라옴. 경사·턱·빨강 튕김도 같은 길로, 뒤에 그린 선에 밀리면 이탈
+(function () {
+  function stage(props, extra) {
+    var lv = { id: 't', name: '시험', ink: 3000, stops: 9, start: { x: 0 }, goal: { x: 2600 }, inks: ['black', 'red'],
+      drops: { heroSpeed: 1.5, smallSpeed: 1 }, eraser: { pct: 50, delayMs: 600000 },
+      ground: [{ x0: -400, x1: 900, top: 600 }, { x0: 900, x1: 3000, top: 480 }],
+      props: [{ type: 'drop', x: 120, y: 587 }, { type: 'drop', x: 160, y: 587 }, { type: 'drop', x: 200, y: 587 }, { type: 'drop', x: 240, y: 587 }].concat(props || []) };
+    for (var k in extra) lv[k] = extra[k];
+    var g = G.Game.create('A', lv); G.Game.start(g);
+    drawLine(g, [{ x: 520, y: 598 }, { x: 920, y: 478 }], 'black');          // 언덕 오르막 (20°)
+    return g;
+  }
+  function det(g) { return g.drops.reduce(function (n, d) { return n + (d.detaches || 0); }, 0); }
+  function gaps(g) {
+    var xs = [g.hero].concat(g.line).filter(function (d) { return d.body; }).map(function (d) { return Math.round(d.body.position.x); });
+    return xs.join(' ');
+  }
+  console.log('8 대열 (주인공 1.5 · 작은 1, 잠든 물방울 4마리, 오르막 선)');
+  var g = stage();
+  for (var i = 0; i < 60 * 4; i++) G.Game.update(g, STEP);
+  console.log('  4초: 대열 ' + g.line.length + ' (붙는 중 ' + g.line.filter(function (d) { return d.mode === 'join'; }).length + ') · x ' + gaps(g));
+  for (i = 0; i < 60 * 8; i++) G.Game.update(g, STEP);
+  console.log('  12초(오르막 뒤): 대열 ' + g.line.length + ' · 이탈 ' + det(g) + ' · x ' + gaps(g) + ' · 주인공 y ' + Math.round(g.hero.body.position.y));
+  for (i = 0; i < 60 * 40 && g.status === 'run'; i++) G.Game.update(g, STEP);
+  console.log('  끝: ' + g.status, '도착 ' + g.rescued + '/' + g.total, '잃음 ' + g.lost, '이탈 ' + det(g), '(4/4 · 이탈 0 이어야 정상)');
+
+  // 빨강 튕김: 주인공이 튕긴 궤적을 대열도 같이
+  var r = stage([], { ground: [{ x0: -400, x1: 900, top: 600 }, { x0: 1000, x1: 3000, top: 600 }] });
+  r.lines.forEach(function (l) { G.Draw.drop(r, l, true); });
+  for (i = 0; i < 60 * 3; i++) G.Game.update(r, STEP);
+  drawLine(r, [{ x: 760, y: 598 }, { x: 900, y: 598 }], 'red');
+  var maxUp = 0;
+  for (i = 0; i < 60 * 40 && r.status === 'run'; i++) {
+    G.Game.update(r, STEP);
+    r.line.forEach(function (d) { if (d.body) maxUp = Math.max(maxUp, 600 - d.body.position.y); });
+  }
+  console.log('  빨강 튕김(틈 100 건너기): ' + r.status, r.failReason || '', '도착 ' + r.rescued + '/' + r.total, '이탈 ' + det(r), '· 대열 최고 높이 ' + Math.round(maxUp));
+
+  // 주인공이 지나간 뒤 대열 앞에 벽을 그리면 밀려서 이탈 → 혼자 걷다 벽에서 돌아옴 → 주인공이 돌아오면 재합류
+  var w = stage([{ type: 'wall', x: 1500, y: 280, w: 40, h: 200 }, { type: 'wall', x: -300, y: 400, w: 40, h: 200 }]);
+  for (i = 0; i < 60 * 9; i++) G.Game.update(w, STEP);
+  var hx0 = w.hero.body.position.x;
+  drawLine(w, [{ x: hx0 - 50, y: 380 }, { x: hx0 - 50, y: 478 }], 'black');
+  for (i = 0; i < 60 * 2; i++) G.Game.update(w, STEP);
+  var alone = G.Game.walking(w).filter(function (d) { return d.mode === 'free'; }).length;
+  console.log('  대열 앞에 벽: 이탈 ' + det(w) + ' · 혼자 걷는 중 ' + alone + ' · 대열 ' + w.line.length);
+  for (i = 0; i < 60 * 30 && w.status === 'run'; i++) G.Game.update(w, STEP);
+  alone = G.Game.walking(w).filter(function (d) { return d.mode === 'free'; }).length;
+  console.log('    → 30초 뒤 (주인공이 두 벽 사이를 오가며 다시 만남): 대열 ' + w.line.length + ' · 혼자 ' + alone + ' · 잃음 ' + w.lost + ' (대열 4 이어야 정상)');
 })();

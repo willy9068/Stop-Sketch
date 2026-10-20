@@ -185,18 +185,25 @@ G.UI = (function () {
     }
   }
 
-  // 물방울 그림: 주인공·작은 물방울 같은 그림, 크기만 다름
+  // 물방울 그림: 주인공·작은 물방울 같은 그림, 크기만 다름. 대열·붙는 중인 물방울은 위치를 직접 옮기므로 옮긴 거리로 속도를 봄
+  function dropVel(d) { return (d.mode === 'line' || d.mode === 'join') && d.vel ? d.vel : d.body.velocity; }
   function dropImage(d) {
-    var v = d.body.velocity, A = G.DATA.art, get = G.Assets.get.bind(G.Assets);
+    var v = dropVel(d), A = G.DATA.art, get = G.Assets.get.bind(G.Assets);
     if (!d.grounded && v.y < -A.airVy) return get('char_jump') || get('char_idle');
     if (!d.grounded && v.y > A.airVy) return get('char_fall') || get('char_idle');
     return (Math.abs(v.x) > 1 && get('char_run')) || get('char_idle');
   }
-  function drawDrop(ctx, d) {
-    var b = d.body, r = d.r, v = b.velocity;
+  // lineLen: 주인공이면 머리 위에 대열 길이 "×N" (사용자 결정 2026-10-20)
+  function drawDrop(ctx, d, lineLen) {
+    var b = d.body, r = d.r, v = dropVel(d);
     var stretch = Math.max(-0.25, Math.min(0.25, -v.y * 0.03));
     ctx.save();
     ctx.translate(b.position.x, b.position.y);
+    if (d.join && d.join.t < d.join.wake) {        // 깨어나는 모션: 기지개(위로 늘었다 줄기) + 좌우 흔들기
+      var k = d.join.t / d.join.wake;
+      ctx.translate(0, r); ctx.rotate(Math.sin(k * Math.PI * 4) * 0.22 * (1 - k)); ctx.translate(0, -r);
+      stretch = Math.sin(k * Math.PI) * 0.25;
+    }
     ctx.scale((1 - stretch * 0.6) * d.dir, 1 + stretch);
     var img = dropImage(d);
     if (img) { var s = r * G.DATA.art.charSize; ctx.drawImage(img, -s / 2, r - s, s, s); }
@@ -210,6 +217,12 @@ G.UI = (function () {
     if (d.hero) {                                  // 주인공 표시: 머리 위 작은 왕관 점
       ctx.fillStyle = C.star; ctx.strokeStyle = C.outline; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.arc(b.position.x, b.position.y - r * 2.2, 5, 0, 6.283); ctx.fill(); ctx.stroke();
+      if (lineLen) {
+        ctx.font = 'bold 18px sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(255,253,246,0.95)';
+        ctx.strokeText('×' + lineLen, b.position.x, b.position.y - r * 2.2 - 12);
+        ctx.fillStyle = C.outline; ctx.fillText('×' + lineLen, b.position.x, b.position.y - r * 2.2 - 12);
+        ctx.textAlign = 'left';
+      }
     }
   }
 
@@ -243,7 +256,7 @@ G.UI = (function () {
       ctx.globalAlpha = 0.6; drawInkLine(ctx, game.stroke.pts, game.stroke.color, true); ctx.globalAlpha = 1;
     }
     G.Game.walking(game).forEach(function (d) { if (!d.hero) drawDrop(ctx, d); });
-    if (game.hero.state === 'walk') drawDrop(ctx, game.hero);
+    if (game.hero.state === 'walk') drawDrop(ctx, game.hero, game.level.data.drops.follow ? game.line.length : 0);
     drawFx(ctx, game);
     drawEraser(ctx, game);
 
@@ -354,7 +367,10 @@ G.UI = (function () {
     ctx.fillStyle = C.outline; ctx.font = 'bold 17px sans-serif';
     ctx.fillText('물방울 ' + game.rescued + '/' + game.total + ' 도착', px, 30);
     ctx.font = '13px sans-serif';
-    ctx.fillText('걷는 중 ' + walking + ' · 잠듦 ' + sleeping + ' · 잃음 ' + game.lost, px, 48);
+    if (game.level.data.drops.follow) {           // 대열 · 이탈(혼자 걷는 중) · 잠듦 · 잃음 (사용자 결정 2026-10-20)
+      var alone = G.Game.walking(game).filter(function (d) { return d.mode === 'free'; }).length;
+      ctx.fillText('대열 ' + game.line.length + ' · 이탈 ' + alone + ' · 잠듦 ' + sleeping + ' · 잃음 ' + game.lost, px, 48);
+    } else ctx.fillText('걷는 중 ' + walking + ' · 잠듦 ' + sleeping + ' · 잃음 ' + game.lost, px, 48);
 
     ctx.textAlign = 'right'; ctx.font = '15px sans-serif';
     var lv = game.level.data;

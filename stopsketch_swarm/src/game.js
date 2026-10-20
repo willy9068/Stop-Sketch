@@ -1,6 +1,8 @@
 // 게임 상태와 한 스텝 진행 — 물방울 무리 시험판 (사용자 결정 2026-10-20). 화면(DOM)과 무관 → 브라우저 밖에서도 돌릴 수 있다.
 //   주인공이 죽으면 실패. 검은 잉크병(도착)에 닿은 물방울은 흡수되어 잉크병이 정화됨.
 //   주인공이 도착하면 스킵 가능(남은 물방울은 죽은 것으로). 걷는 물방울이 하나도 안 남으면 바로 클리어
+//   대열 (사용자 결정 2026-10-20): 주인공이 깨운 물방울은 주인공 발자국(game.trail)을 그대로 따라옴. 밀리거나 발밑이 사라지면 이탈,
+//   혼자 걷다가 주인공에 닿으면 다시 대열 끝으로. game.line = 대열 순서 (통 튀어 붙는 중인 물방울 포함)
 var G = G || {};
 
 G.Game = {
@@ -31,6 +33,10 @@ G.Game = {
     if (top == null) top = 600;
     game.hero = G.Drop.create(game.engine, lv.start.x, top - D.drop.heroRadius - 1, true, 1, lv.drops);
     game.drops = [game.hero];                      // 깨어난 물방울 (주인공 포함)
+    game.line = [];                                // 대열 (주인공 뒤 순서대로)
+    var hp = game.hero.body.position;
+    game.trail = [{ x: hp.x, y: hp.y, s: 0, nx: 0, ny: -1, g: true }];   // 주인공 발자국 (s = 지나온 길이)
+    game.trailS = 0;
     game.total = game.level.sleepers.length;       // 배치된 작은 물방울 수 (평가 기준)
     game.rescued = 0;                              // 도착한 작은 물방울
     game.lost = 0;                                 // 죽은 작은 물방울
@@ -101,17 +107,24 @@ G.Game = {
     if (s <= 0) return;                            // 완전 정지: 물리·지우개 모두 멈춤
     var fx = game.level.data.fx, self = this, walk = this.walking(game);
     game.runMs += realMs * s;
+    var free = walk.filter(function (d) { return d.mode === 'hero' || d.mode === 'free'; });
+    var liners = walk.filter(function (d) { return d.mode === 'line'; });
+    var joiners = walk.filter(function (d) { return d.mode === 'join'; });
 
-    var vyBefore = walk.map(function (d) { return { g: d.grounded, vy: d.body.velocity.y }; });
-    walk.forEach(function (d) { G.Drop.control(d, s, fx); });
+    var vyBefore = free.map(function (d) { return { g: d.grounded, vy: d.body.velocity.y }; });
+    free.forEach(function (d) { G.Drop.control(d, s, fx); });
+    liners.forEach(function (d) { self.placeLine(game, d); });
     G.Physics.step(game.engine, s);
-    walk.forEach(function (d, k) {
+    liners.forEach(function (d) { self.checkLine(game, d); });
+    free.forEach(function (d, k) {
       G.Drop.sense(d, game.engine, realMs, s, fx);
       d.events.forEach(function (e) { game.fx.push({ type: e, x: d.body.position.x, y: d.body.position.y + d.r, dir: d.dir, t: game.timeMs }); });
       if (!vyBefore[k].g && d.grounded && vyBefore[k].vy >= G.DATA.art.fx.landVy && d.hero) {
         game.fx.push({ type: 'land', x: d.body.position.x, y: d.body.position.y + d.r, t: game.timeMs });
       }
     });
+    this.recordTrail(game);
+    joiners.forEach(function (d) { self.moveJoin(game, d, realMs * s); });
     G.Draw.rise(game, s, fx);
     G.Draw.cleanup(game);
     this.moveEraser(game, s);
@@ -123,7 +136,8 @@ G.Game = {
       if (p.y > game.failY) return self.kill(game, d, '떨어졌어요');
       if (p.x - d.r < game.eraserX) return self.kill(game, d, '지우개에 지워졌어요');
       self.collect(game, d);
-      self.wake(game, d);
+      if (d.hero || !game.level.data.drops.follow) self.wake(game, d);
+      if (d.mode === 'free' && game.level.data.drops.follow) self.rejoin(game, d);
       if (p.x >= game.level.goalX) self.arrive(game, d);
     });
     if (game.status !== 'run') return;
@@ -142,7 +156,120 @@ G.Game = {
     }
   },
 
-  // 잠든 물방울: 걷는 물방울이 닿으면 깨어나 그 물방울이 가던 방향으로 출발 (사용자 결정 2026-10-20)
+  // ── 대열 ──
+  // 주인공 발자국: 1px 이상 움직일 때마다 위치·바닥 방향·바닥에 있었는지 기록. 대열이 다 지나간 앞부분은 버림
+  recordTrail: function (game) {
+    var h = game.hero, tr = game.trail;
+    if (h.state !== 'walk' || !h.body) return;
+    var p = h.body.position, last = tr[tr.length - 1], dx = p.x - last.x, dy = p.y - last.y, len = Math.sqrt(dx * dx + dy * dy);
+    if (len < 1) return;
+    var n = h.groundN || { x: 0, y: -1 };
+    game.trailS += len;
+    tr.push({ x: p.x, y: p.y, s: game.trailS, nx: n.x, ny: n.y, g: !!h.grounded });
+    if (tr.length > 3000) {
+      var minS = game.trailS - game.level.data.drops.gap * (game.line.length + 2);
+      game.line.forEach(function (d) { if (d.s != null) minS = Math.min(minS, d.s); });
+      var cut = 0;
+      while (cut < tr.length - 2 && tr[cut + 1].s < minS - 50) cut++;
+      if (cut) tr.splice(0, cut);
+    }
+  },
+
+  // 발자국 위 길이 s 지점 (사이는 보간). 작은 물방울 중심 = 주인공 중심을 바닥 방향으로 반지름 차만큼 내린 곳
+  trailAt: function (game, s, r) {
+    var tr = game.trail, lo = 0, hi = tr.length - 1;
+    if (s <= tr[0].s) hi = 0;
+    else if (s >= tr[hi].s) lo = hi;
+    else {
+      while (hi - lo > 1) { var mid = (lo + hi) >> 1; if (tr[mid].s <= s) lo = mid; else hi = mid; }
+    }
+    var a = tr[lo], b = tr[hi], u = b.s > a.s ? (s - a.s) / (b.s - a.s) : 0, off = G.DATA.drop.heroRadius - r;
+    return { x: a.x + (b.x - a.x) * u - a.nx * off, y: a.y + (b.y - a.y) * u - a.ny * off, g: a.g && b.g };
+  },
+
+  // 대열에서 내 자리: 주인공 뒤 (순서 + 1) × 간격. 주인공이 도착했으면 모두 발자국 끝(잉크병)으로
+  slotS: function (game, d) {
+    if (game.heroHome) return game.trailS;
+    return Math.max(game.trail[0].s, game.trailS - game.level.data.drops.gap * (game.line.indexOf(d) + 1));
+  },
+
+  // 물리 스텝 전: 대열 물방울을 제자리(발자국 위)로 옮김
+  placeLine: function (game, d) {
+    var F = G.DATA.drop.follow, M = G.Physics.M, want = this.slotS(game, d);
+    if (game.heroHome) d.s = Math.min(want, d.s + Math.max(game.level.data.drops.heroSpeed, (want - d.s) * F.catchUp));
+    else if (want > d.s) d.s += (want - d.s) * F.catchUp;
+    var t = this.trailAt(game, d.s, d.r);
+    d.prev = { x: d.body.position.x, y: d.body.position.y };
+    d.expect = t;
+    M.Body.setPosition(d.body, { x: t.x, y: t.y });
+    M.Body.setVelocity(d.body, { x: 0, y: 0 });
+  },
+
+  // 물리 스텝 뒤: 밀렸거나(새로 그린 선·떨어지는 선) 주인공이 밟았던 바닥이 사라졌으면 이탈
+  checkLine: function (game, d) {
+    var F = G.DATA.drop.follow, M = G.Physics.M, b = d.body, e = d.expect;
+    var dx = b.position.x - e.x, dy = b.position.y - e.y, disp = Math.sqrt(dx * dx + dy * dy);
+    var sup = G.Drop.support(d, game.engine);
+    if (sup.spike) { d.dead = '가시에 찔렸어요'; return; }
+    d.vel = { x: e.x - d.prev.x, y: e.y - d.prev.y };
+    if (Math.abs(d.vel.x) > 0.05) d.dir = d.vel.x > 0 ? 1 : -1;
+    d.nudge = disp > F.nudgeDist ? (d.nudge || 0) + 1 : 0;
+    d.unsup = e.g && !sup.ground ? (d.unsup || 0) + 1 : 0;
+    if (disp > F.breakDist || d.nudge > F.nudgeSteps || d.unsup > F.unsupportedSteps) { this.detach(game, d); return; }
+    M.Body.setPosition(b, { x: e.x, y: e.y });     // 중력으로 살짝 내려간 만큼 되돌림
+    d.grounded = e.g;
+  },
+
+  detach: function (game, d) {
+    this.unline(game, d);
+    d.mode = 'free';
+    G.Drop.setFilter(d, 'free', game.level.data.drops.collide);
+    G.Physics.M.Body.setVelocity(d.body, d.vel || { x: 0, y: 0 });
+    d.nudge = d.unsup = 0; d.s = null; d.turnCdMs = 0;
+    d.detaches = (d.detaches || 0) + 1;
+  },
+
+  unline: function (game, d) { var i = game.line.indexOf(d); if (i >= 0) game.line.splice(i, 1); },
+
+  // 대열 끝에 붙기 시작: wakeMs 동안 제자리에서 깨어나는 모션 → hopMs 동안 대열 끝자리로 통 튐 (사용자 결정 2026-10-20)
+  startJoin: function (game, d, wakeMs) {
+    d.mode = 'join';
+    G.Drop.setFilter(d, 'join');
+    game.line.push(d);
+    d.join = { t: 0, wake: wakeMs, from: { x: d.body.position.x, y: d.body.position.y } };
+    d.s = null;
+  },
+
+  moveJoin: function (game, d, ms) {
+    var F = G.DATA.drop.follow, M = G.Physics.M, j = d.join, prev = { x: d.body.position.x, y: d.body.position.y }, p;
+    j.t += ms;
+    if (j.t < j.wake) p = j.from;
+    else {
+      var u = Math.min(1, (j.t - j.wake) / F.hopMs), slot = this.slotS(game, d), tp = this.trailAt(game, slot, d.r);
+      p = { x: j.from.x + (tp.x - j.from.x) * u, y: j.from.y + (tp.y - j.from.y) * u - F.hopHeight * 4 * u * (1 - u) };
+      if (u >= 1) {
+        d.mode = 'line'; d.s = slot; d.join = null; d.nudge = d.unsup = 0;
+        G.Drop.setFilter(d, 'line');
+      }
+    }
+    M.Body.setPosition(d.body, p);
+    M.Body.setVelocity(d.body, { x: 0, y: 0 });
+    d.vel = { x: p.x - prev.x, y: p.y - prev.y };
+    if (Math.abs(d.vel.x) > 0.05) d.dir = d.vel.x > 0 ? 1 : -1;
+    d.grounded = d.mode === 'line' || j.t < j.wake;
+  },
+
+  // 혼자 걷는 물방울이 주인공에 닿으면 다시 대열 끝으로
+  rejoin: function (game, d) {
+    var h = game.hero;
+    if (h.state !== 'walk' || !h.body) return;
+    var reach = (d.r + h.r) * G.DATA.drop.follow.rejoinReach, dx = d.body.position.x - h.body.position.x, dy = d.body.position.y - h.body.position.y;
+    if (dx * dx + dy * dy > reach * reach) return;
+    this.startJoin(game, d, 0);
+    game.fx.push({ type: 'star', x: d.body.position.x, y: d.body.position.y, t: game.timeMs });
+  },
+
+  // 잠든 물방울: 주인공이 닿으면 깨어나 대열 끝에 붙음 (대열 켬). 대열 끔이면 걷는 물방울 누구나 깨우고 그 방향으로 출발 (사용자 결정 2026-10-20)
   wake: function (game, d) {
     var D = G.DATA.drop, p = d.body.position;
     game.level.sleepers.forEach(function (sl) {
@@ -152,6 +279,7 @@ G.Game = {
       sl.state = 'awake';
       var nd = G.Drop.create(game.engine, sl.x, sl.y, false, d.dir, game.level.data.drops);
       game.drops.push(nd);
+      if (game.level.data.drops.follow) G.Game.startJoin(game, nd, G.DATA.drop.follow.wakeMs);
       game.fx.push({ type: 'star', x: sl.x, y: sl.y, t: game.timeMs });
     });
   },
@@ -181,6 +309,7 @@ G.Game = {
 
   arrive: function (game, d) {
     d.state = 'home';
+    this.unline(game, d);
     G.Drop.remove(game.engine, d);
     game.fx.push({ type: 'absorb', x: game.level.goalX + 60, y: 0, t: game.timeMs });
     if (d.hero) { game.heroHome = true; game.toast('주인공 도착! Enter: 남은 물방울을 기다리지 않고 끝내기'); }
@@ -189,6 +318,7 @@ G.Game = {
 
   kill: function (game, d, reason) {
     d.state = 'dead';
+    this.unline(game, d);
     G.Drop.remove(game.engine, d);
     if (d.hero) { this.finish(game, 'fail', reason); return; }
     game.lost += 1;
