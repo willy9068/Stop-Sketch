@@ -133,6 +133,8 @@ G.Drop = {
   // 물들기 (사용자 결정 2026-10-20): d.tc = 물든 색 [r,g,b], d.ta = 세기 0~1, d.tHold = 내려온 뒤 유지 남은 시간
   tint: function (d, ms) {
     var T = G.DATA.tint, c = d.under && T.colors[d.under];
+    if (c && T.touchColors.indexOf(d.under) >= 0) d.tKick = { c: c, ms: T.inMs };   // 빨강: 닿으면 그 뒤로도 천천히 끝까지
+    if (!c && d.tKick && d.tKick.ms > 0) { c = d.tKick.c; d.tKick.ms -= ms; }
     if (c) {
       if (!d.tc || (d.ta || 0) <= 0.01) d.tc = c.slice();
       var k = 1 - Math.exp(-3 * ms / T.inMs);        // 다른 색이면 섞이며 넘어감

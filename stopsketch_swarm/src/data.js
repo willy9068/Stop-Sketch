@@ -60,7 +60,8 @@ G.DATA = {
   //   내려와도 holdMs 동안 유지, 그 뒤 fadeMs 에 걸쳐 원래 하늘색으로. 잉크병에 들어갈 때의 색이 정화된 잉크병 색에 섞임
   tint: {
     colors: { black: [96, 92, 106], red: [232, 70, 60], blue: [50, 118, 232], green: [64, 178, 86] },   // 검정은 진한 회색까지
-    inMs: 1200, holdMs: 6000, fadeMs: 3000
+    inMs: 1200, holdMs: 6000, fadeMs: 3000,
+    touchColors: ['red']   // 닿자마자 튕겨 나가는 색: 한 번 닿으면 떨어져도 inMs 동안 계속 물듦 (사용자 요청 2026-10-20)
   },
 
   stop: { perSection: 3 }, // 스테이지당 정지 횟수 (levels.js stops 로 바꿈)

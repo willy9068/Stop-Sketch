@@ -672,3 +672,50 @@ spikes around the border, thick dark brown line, empty inside, plain white backg
 | 53 | 정지 +1 아이템 | item_stop.png | 256×256 | 투명 | ☆ 무리 시험판 |
 | 54 | 흡수 효과 | fx_absorb.png | 256×256 | 투명 | ☆ 무리 시험판 |
 | 55 | 화면 밖 화살표 | ui_arrow.png | 64×64 | 투명 | ○ 무리 시험판 |
+
+## 14. 6차 이미지 요청 — 지우개 연출 (2026-10-20, 사용자 요청)
+
+> 지금 지우개는 `eraser_edge.png`(세로로 긴 가장자리) 한 장이라 **벽이 밀려오는 느낌**입니다 (사용자 의견 2026-10-20).
+> **진짜 지우개가 종이를 문지르며 다가오고, 지나간 자리는 하얗게 지워지는** 연출로 바꿉니다. 모든 프롬프트 앞에 2장 스타일 블록을 붙입니다.
+> 파일을 `stopsketch/assets/` 에 넣으면 Claude가 코드로 연결합니다(아래 "코드로 할 연출"). 지금은 기존 그림으로 동작합니다.
+
+| 우선 | 파일 | 크기 | 쓰이는 곳 | 만들 때 주의 |
+|---|---|---|---|---|
+| ★ | `eraser_body.png` | 512×768, 투명 | **지우개 본체**. 화면 왼쪽 가장자리에서 위아래로 문지르며 오른쪽으로 다가옴 | 큰 직사각형 고무 지우개를 **옆에서 본 모습, 오른쪽으로 살짝 기울어짐**. 아래·오른쪽 모서리가 닳아 둥글고, 위쪽 절반은 종이 덮개(띠)에 싸여 있음. 몸통은 연한 분홍 또는 흰색, 덮개는 하늘색이나 노랑. **글자·로고·상표 없음**. 굵은 외곽선, 평면 2D |
+| ★ | `eraser_crumb_1.png` ~ `_3.png` | 128×128, 투명 (3장) | **지우개 가루**. 문지를 때 오른쪽으로 튀어 나가 떨어짐 (코드가 여러 개를 흩뿌림) | 지우개와 같은 색의 작은 **말린 고무 부스러기**, 모양만 조금씩 다르게(가늘게 말린 것·뭉친 것·부서진 것). 한 장에 하나씩 가운데 |
+| ☆ | `eraser_smudge.png` | 256×1024, 투명, **위아래 이음매 없음** | **지운 자리 경계 띠**. 지우개 바로 뒤에 세로로 반복해서, 지워진 흰 종이와 아직 안 지운 종이 사이를 이어 줌 | **왼쪽 끝은 완전 흰색(불투명)**, 오른쪽으로 갈수록 투명해지며 연한 회색 **문지른 자국·남은 연필 흔적**이 가로로 몇 줄. 위아래로 반복해도 끊기지 않게 |
+| ○ | `fx_erase_puff.png` | 256×256, 투명 | 물방울·선이 **지우개에 지워지는 순간** 퍼지는 효과 | 지우개 가루와 하얀 먼지가 둥글게 퍼지는 모양, 가운데는 비어 있음 |
+
+```
+(eraser_body)    a big rectangular rubber eraser seen from the side, tilted slightly to the
+                 right, its bottom-right corner worn round from rubbing, the upper half wrapped
+                 in a simple paper sleeve band, soft pink rubber body with a light blue sleeve,
+                 no text, no logo, thick dark outline, flat 2D doodle, plain white background
+(eraser_crumb)   a single small curled crumb of pink rubber eraser dust, [VARIATION: thin curl /
+                 small lump / broken flake], thick dark outline, flat colors, centered,
+                 plain white background, isolated
+(eraser_smudge)  a vertical strip of paper where the left edge is clean pure white and toward the
+                 right it fades into faint gray horizontal rubbing marks and leftover pencil
+                 smudges, soft and light, seamless tileable top to bottom, plain background
+(fx_erase_puff)  a small round puff of white dust and pink eraser crumbs bursting outward,
+                 empty center, thick doodle lines, plain white background
+```
+- 네거티브에 `text, letters, logo, brand, label` 추가 (실제 문구용품 상표처럼 보이지 않게)
+- 지우개 가루 3장은 **시드를 고정하고 VARIATION 단어만 바꿔** 뽑습니다
+- `eraser_smudge` 는 왼쪽이 불투명 흰색이어야 지워진 쪽과 이어집니다. 배경 제거 때 **왼쪽 흰 부분까지 지워지지 않게** 주의 (투명으로 바뀌면 Claude에게 말해 주세요, 코드로 흰색을 채울 수 있음)
+- 기존 `eraser_edge.png` 는 새 그림이 들어오면 쓰지 않습니다 (지우개 그림이 없을 때만 대신 씀)
+
+**코드로 할 연출 (이미지를 넣은 뒤 Claude가 연결)**
+| 연출 | 방법 |
+|---|---|
+| 문지르기 | 지우개 본체를 지우개 위치(가장자리)에서 위아래로 빠르게 흔들고 살짝 기울기를 바꿈. 화면 높이가 크면 본체를 위아래로 2개 |
+| 가루 | 문지를 때마다 가루 그림을 오른쪽으로 튀어 나가게 하고 중력으로 떨어뜨림 (정지 중엔 멈춤) |
+| 지운 자리 | 지우개 왼쪽은 흰 종이로 덮고, 경계에 `eraser_smudge` 띠를 세로로 반복 |
+| 지워질 때 | 물방울·선이 지워지는 자리에 `fx_erase_puff` + 물방울은 `char_erased` 로 잠깐 바뀐 뒤 사라짐 |
+
+| # | 구분 | 파일명 | 크기 | 배경 | 우선 |
+|---|---|---|---|---|---|
+| 56 | 지우개 본체 | eraser_body.png | 512×768 | 투명 | ★ 지우개 연출 |
+| 57~59 | 지우개 가루 3종 | eraser_crumb_1~3.png | 128×128 | 투명 | ★ 지우개 연출 |
+| 60 | 지운 자리 경계 띠 | eraser_smudge.png | 256×1024 | 투명(왼쪽 흰색) | ☆ 지우개 연출 |
+| 61 | 지워지는 순간 효과 | fx_erase_puff.png | 256×256 | 투명 | ○ 지우개 연출 |

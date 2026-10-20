@@ -97,7 +97,8 @@ G.DATA = {
   //   내려와도 holdMs 동안 유지, 그 뒤 fadeMs 에 걸쳐 원래 하늘색으로. 잉크병에 들어갈 때의 색이 정화된 잉크병 색에 섞임
   tint: {
     colors: { black: [96, 92, 106], red: [232, 70, 60], blue: [50, 118, 232], green: [64, 178, 86] },   // 검정은 진한 회색까지
-    inMs: 1200, holdMs: 6000, fadeMs: 3000
+    inMs: 1200, holdMs: 6000, fadeMs: 3000,
+    touchColors: ['red']   // 닿자마자 튕겨 나가는 색: 한 번 닿으면 떨어져도 inMs 동안 계속 물듦 (사용자 요청 2026-10-20)
   },
 
   stop: { perSection: 3 }, // 스테이지당 정지 횟수 (levels.js stops 로 바꿈)
@@ -1186,6 +1187,8 @@ G.Drop = {
   // 물들기 (사용자 결정 2026-10-20): d.tc = 물든 색 [r,g,b], d.ta = 세기 0~1, d.tHold = 내려온 뒤 유지 남은 시간
   tint: function (d, ms) {
     var T = G.DATA.tint, c = d.under && T.colors[d.under];
+    if (c && T.touchColors.indexOf(d.under) >= 0) d.tKick = { c: c, ms: T.inMs };   // 빨강: 닿으면 그 뒤로도 천천히 끝까지
+    if (!c && d.tKick && d.tKick.ms > 0) { c = d.tKick.c; d.tKick.ms -= ms; }
     if (c) {
       if (!d.tc || (d.ta || 0) <= 0.01) d.tc = c.slice();
       var k = 1 - Math.exp(-3 * ms / T.inMs);        // 다른 색이면 섞이며 넘어감

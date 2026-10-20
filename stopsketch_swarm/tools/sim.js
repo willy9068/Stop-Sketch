@@ -316,3 +316,14 @@ G.LEVELS.forEach(function (lv) {
   for (i = 0; i < 60 * 40 && g.status === 'run'; i++) G.Game.update(g, STEP);
   console.log('   잉크병 색 ' + G.Game.jarColor(g).map(Math.round).join(',') + ' (기본 하늘색 ' + D.colors.jarClear.join(',') + ')', g.status);
 })();
+
+// 15. 빨강은 닿자마자 튕기지만 그 뒤로도 천천히 끝까지 물듦 (사용자 요청 2026-10-20)
+(function () {
+  var lv = { id: 't', name: '시험', ink: 3000, stops: 9, start: { x: 0 }, goal: { x: 3000 }, inks: ['red'],
+    drops: { heroSpeed: 3 }, eraser: { pct: 50, delayMs: 600000 }, ground: [{ x0: -400, x1: 4000, top: 600 }], props: [] };
+  var g = G.Game.create('A', lv); G.Game.start(g);
+  drawLine(g, [{ x: 100, y: 598 }, { x: 180, y: 598 }], 'red');
+  var log = [];
+  for (var i = 1; i <= 60 * 4; i++) { G.Game.update(g, STEP); if (i % 30 === 0) log.push((i / 60).toFixed(1) + 's ' + (g.hero.ta || 0).toFixed(2)); }
+  console.log('15 빨강 물들기: ' + log.join(' · ') + ' (튕긴 뒤에도 1까지 올라가야 정상)');
+})();
