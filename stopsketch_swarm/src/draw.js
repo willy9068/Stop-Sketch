@@ -66,8 +66,10 @@ G.Draw = {
   },
 
   // 우클릭: p(월드) 가까운 선을 빨아들여 잉크를 전부 돌려받음 (달리는 중에도, 정지 중에도. 사용자 결정 2026-10-20)
-  suck: function (game, p) {
-    var reach = G.DATA.ink.suckReach, best = null, bestD = reach;
+  //   reach: 판정 거리(세계 px). 없으면 기본값 (화면에서 부를 때는 줌을 반영해 넘김)
+  suck: function (game, p, reach) {
+    reach = reach || G.DATA.ink.suckReach;
+    var best = null, bestD = reach;
     for (var i = 0; i < game.lines.length; i++) {
       var pts = this.worldPts(game.lines[i]);
       for (var j = 1; j < pts.length; j++) {

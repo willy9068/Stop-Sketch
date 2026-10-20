@@ -74,14 +74,14 @@ G.DATA = {
     thickness: 9,          // 선 두께 (물리 바디도 같은 두께)
     friction: 0.4,         // 떨어지는 선끼리·땅과의 마찰 (선이 미끄러져 내려가지 않게)
     density: 0.006,        // 선 밀도 (물방울보다 훨씬 무거움 → 걷는 물방울이 밀어도 거의 안 움직임)
-    suckReach: 18,         // 우클릭한 곳에서 이 거리 안의 선을 빨아들임
+    suckReach: 36,         // 우클릭한 곳에서 화면 기준 이 거리(px) 안의 선을 빨아들임. 줌 아웃하면 세계 거리로는 더 넓어짐 (사용자 요청 2026-10-20: 18 → 36)
     yellowCut: 14,         // 노랑이 지나간 자리에서 배치된 선을 끊는 폭의 절반
     simplifyTol: 3         // 선 점 줄이기 허용 오차 (물리 조각을 길게 → 떨어질 때 안정)
   },
 
   // 물감 5색 (사용자 결정 2026-10-20). 키 1~5, 아래 병 순서. 모든 선은 떨어짐(초록 예외: 천천히 떠오름)
   inks: {
-    order: ['black', 'red', 'blue', 'yellow', 'green'],
+    order: ['black', 'red', 'blue', 'green', 'yellow'],   // 4 초록 · 5 노랑 (사용자 요청 2026-10-20: 순서 바꿈)
     black:  { name: '검정 · 기본' },
     red:    { name: '빨강 · 튕김' },
     blue:   { name: '파랑 · 가속' },
@@ -164,7 +164,7 @@ G.DATA = {
     goalJar: { w: 170, h: 198, mouth: 0.5 },   // 검은 잉크병: 왼쪽 끝 ≈ 도착 x. 물방울이 이 통 안(가로)에 들어오면 흡수
     shelf: { h: 84, slot: 66, x: 12, bottle: 58 },
     // 카메라 (사용자 결정 2026-10-20): 무리가 다 보이게 자동 줌(최소 minZoom). 휠이 우선, manualMs 동안 휠을 안 쓰면 자동으로
-    camera: { minZoom: 0.5, maxZoom: 1.3, margin: 160, manualMs: 3000, ease: 0.06 }
+    camera: { minZoom: 0.5, maxZoom: 1.3, margin: 160, manualMs: 3000, ease: 0.06, zoomOutEase: 0.08, zoomInEase: 0.012 }   // zoomInEase: 다시 모일 때 천천히 줌 인 (약 3초, 사용자 요청 2026-10-20)
   },
 
   save: {

@@ -98,7 +98,7 @@ var G = G || {};
   canvas.addEventListener('mousedown', function (e) {
     var g = app.game, sp = mouseScreen(e);
     if (e.button === 2) {                          // 우클릭: 선 빨아들이기 (달리는 중에도)
-      if (g.status === 'run' && !G.Draw.suck(g, G.UI.toWorld(sp.x, sp.y))) g.toast('빨아들일 선이 없어요');
+      if (g.status === 'run' && !G.Draw.suck(g, G.UI.toWorld(sp.x, sp.y), D.ink.suckReach / G.UI.cam.z)) g.toast('빨아들일 선이 없어요');
       return;
     }
     if (e.button !== 0) return;

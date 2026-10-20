@@ -39,10 +39,13 @@ G.UI = (function () {
     if (cam.manualMs > 0 && G.Game.scale(game) > 0) cam.manualMs -= realMs || 16;
     if (cam.manualMs <= 0) cam.manualZ = null;
     var tz = cam.manualZ != null ? cam.manualZ : G.Rules.fitZoom(box, V, A);
-    cam.z += (tz - cam.z) * (cam.inited ? 0.08 : 1);
+    // 줌 아웃은 빠르게(물방울을 놓치지 않게), 줌 인은 천천히 (사용자 요청 2026-10-20: 다시 모일 때 화면이 확 바뀌지 않게). 휠 줌은 바로
+    var k = cam.manualZ != null ? A.zoomOutEase : (tz > cam.z ? A.zoomInEase : A.zoomOutEase);
+    cam.z += (tz - cam.z) * (cam.inited ? Math.min(1, k * (realMs || 16) / 16.7) : 1);
     var vw = V.w / cam.z, vh = V.h / cam.z;
-    var fits = box.x1 - box.x0 + A.margin * 2 <= vw;
-    var cx = fits ? (box.x0 + box.x1) / 2 : box.hx;  // 다 안 들어오면 주인공(앞장선 물방울) 중심
+    // 무리 가운데를 보되, 주인공(앞장선 물방울)이 화면 밖으로 나가지 않게 (가운데 ↔ 주인공 중심이 툭 바뀌지 않고 이어짐)
+    var room = Math.max(0, vw / 2 - A.margin);
+    var cx = Math.max(box.hx - room, Math.min(box.hx + room, (box.x0 + box.x1) / 2));
     var cy = (box.y0 + box.y1) / 2;
     var lowest = game.failY - G.DATA.physics.failY + 600;            // 이 스테이지의 가장 낮은 땅 (우물 바닥 등)
     var tx = cx - vw / 2, ty = Math.min(cy - vh * 0.72, lowest + 120 - vh);   // 땅이 화면 아래쪽에 오게, 가장 낮은 땅 아래로는 안 내려감
