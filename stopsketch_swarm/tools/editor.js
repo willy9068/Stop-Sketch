@@ -84,7 +84,7 @@ var G = G || {};
     var l = lv(), top;
     if (!sel) return null;
     if (sel.kind === 'prop') return P.rect(l.props[sel.i]);
-    if (sel.kind === 'ground') { var g = l.ground[sel.i]; return { x: g.x0, y: g.top, w: g.x1 - g.x0, h: 60 }; }
+    if (sel.kind === 'ground') { var g = l.ground[sel.i]; return { x: g.x0, y: g.top, w: g.x1 - g.x0, h: g.h || D.level.groundDepth }; }
     if (sel.kind === 'start') { top = LC.groundTopAt(l, l.start.x); if (top == null) top = 600; return { x: l.start.x - 28, y: top - 72, w: 56, h: 72 }; }
     if (sel.kind === 'goal') { top = LC.groundTopAt(l, l.goal.x); if (top == null) top = 600; return { x: l.goal.x - 12, y: top - 140, w: 84, h: 140 }; }
     if (sel.kind === 'seg') return (l.segments || [])[sel.i] ? segRect(sel.i) : null;
@@ -96,7 +96,7 @@ var G = G || {};
     var s = S.sel, o = selObj();
     if (!o || s.kind === 'start' || s.kind === 'goal' || s.kind === 'seg') return [];
     var r = selRect(s), mx = r.x + r.w / 2, my = r.y + r.h / 2, out = [];
-    if (s.kind === 'ground') return [['w', o.x0, o.top + 30], ['e', o.x1, o.top + 30], ['n', (o.x0 + o.x1) / 2, o.top]];
+    if (s.kind === 'ground') { var gh = o.h || D.level.groundDepth; return [['w', o.x0, o.top + gh / 2], ['e', o.x1, o.top + gh / 2], ['n', (o.x0 + o.x1) / 2, o.top], ['s', (o.x0 + o.x1) / 2, o.top + gh]]; }
     var d = P.def(o.type);
     if (d.box) {
       out = [['nw', r.x, r.y], ['n', mx, r.y], ['ne', r.x + r.w, r.y], ['e', r.x + r.w, my],
@@ -281,7 +281,7 @@ var G = G || {};
     }
     for (i = l.ground.length - 1; i >= 0; i--) {
       var g = l.ground[i];
-      if (w.x >= g.x0 && w.x <= g.x1 && w.y >= g.top - 6 && w.y <= g.top + D.level.groundDepth) return { kind: 'ground', i: i };
+      if (w.x >= g.x0 && w.x <= g.x1 && w.y >= g.top - 6 && w.y <= g.top + (g.h || D.level.groundDepth)) return { kind: 'ground', i: i };
     }
     for (i = segs.length - 1; i >= 0; i--) if (Math.abs(w.x - segs[i].x) <= 5 / S.view.zoom) return { kind: 'seg', i: i };   // 빈 곳의 보라 점선
     return null;
@@ -408,7 +408,9 @@ var G = G || {};
     if (S.sel.kind === 'ground') {
       if (h === 'w') o.x0 = Math.min(snap(q.x0 + dx), o.x1 - 20);
       if (h === 'e') o.x1 = Math.max(snap(q.x1 + dx), o.x0 + 20);
-      if (h === 'n') o.top = snap(q.top + dy);
+      var qh = q.h || D.level.groundDepth;           // 위 손잡이: 아랫면은 그대로 두고 윗면만 / 아래 손잡이: 높이 (사용자 요청 2026-10-20)
+      if (h === 'n') { o.top = Math.min(snap(q.top + dy), q.top + qh - 20); o.h = q.top + qh - o.top; }
+      if (h === 's') o.h = Math.max(20, snap(q.top + qh + dy) - q.top);
       return;
     }
     if (h === 'size') {
@@ -432,7 +434,7 @@ var G = G || {};
       var x0 = Math.min(dr.x0, dr.x1), x1 = Math.max(dr.x0, dr.x1);
       if (x1 - x0 < 20) x1 = x0 + 400;               // 그냥 클릭하면 400px 땅
       pushUndo();
-      lv().ground.push({ x0: x0, x1: x1, top: dr.top });
+      lv().ground.push({ x0: x0, x1: x1, top: dr.top, h: D.level.groundDepth });
       S.sel = { kind: 'ground', i: lv().ground.length - 1 };
       if (!dr.keep) setTool('select');
       changed();
@@ -452,12 +454,13 @@ var G = G || {};
   cv.addEventListener('wheel', function (e) {
     e.preventDefault();
     var m = mousePos(e);
-    if (e.ctrlKey) {
+    // 휠 = 마우스 위치 기준 줌, Shift+휠 = 가로 이동 (사용자 결정 2026-10-20). 화면 이동은 우클릭·가운데·스페이스 드래그
+    if (e.shiftKey) S.view.x += (e.deltaY || e.deltaX) / S.view.zoom;
+    else if (e.deltaY) {
       var before = toWorld(m.sx, m.sy);
       setZoom(S.view.zoom * (e.deltaY < 0 ? 1.15 : 1 / 1.15));
       S.view.x = before.x - m.sx / S.view.zoom; S.view.y = before.y - m.sy / S.view.zoom;
-    } else if (e.shiftKey) S.view.y += e.deltaY / S.view.zoom;
-    else S.view.x += (e.deltaY + e.deltaX) / S.view.zoom;
+    }
     render();
   }, { passive: false });
 
@@ -607,7 +610,7 @@ var G = G || {};
     } else if (s.kind === 'start' || s.kind === 'goal') {
       h = '<b>' + (s.kind === 'start' ? '시작 위치' : '도착 위치') + '</b>' + num('f_x', 'x', o.x) + '<div>높이는 그 자리 땅 위로 자동</div>';
     } else if (s.kind === 'ground') {
-      h = '<b>땅</b>' + num('f_x0', '왼쪽 x', o.x0) + num('f_x1', '오른쪽 x', o.x1) + num('f_top', '윗면 y', o.top) +
+      h = '<b>땅</b>' + num('f_x0', '왼쪽 x', o.x0) + num('f_x1', '오른쪽 x', o.x1) + num('f_top', '윗면 y', o.top) + num('f_h', '높이', o.h || D.level.groundDepth) +
           '<div>폭 ' + (o.x1 - o.x0) + '</div>';
     } else {
       var d = P.def(o.type);
@@ -675,6 +678,7 @@ var G = G || {};
       var f = id.slice(2);
       if (f === 'type') { o.type = v; }
       else if (f === 'img' || f === 'text' || f === 'pin') o[f] = v;
+      else if (f === 'h' && S.sel.kind === 'ground') o.h = Math.max(20, v);
       else o[f] = v;
     }
     changed(!isChange || id === 'f_text' || id === 'l_name' || id === 'f_name');

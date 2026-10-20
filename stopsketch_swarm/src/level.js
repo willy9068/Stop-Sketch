@@ -4,11 +4,11 @@ var G = G || {};
 
 G.Level = {
   build: function (engine, raw, account) {
-    var P = G.Physics, lv = G.LevelCheck.normalize(raw), depth = G.DATA.level.groundDepth;
+    var P = G.Physics, lv = G.LevelCheck.normalize(raw);
     var owned = (account && account.bottles) || {};
     var out = { data: lv, goalX: lv.goal.x, sleepers: [], items: [], crystals: [], statics: [] };
     lv.ground.forEach(function (g) {
-      out.statics.push(P.add(engine, P.staticRect((g.x0 + g.x1) / 2, g.top + depth / 2, g.x1 - g.x0, depth)));
+      out.statics.push(P.add(engine, P.staticRect((g.x0 + g.x1) / 2, g.top + g.h / 2, g.x1 - g.x0, g.h)));
     });
     var nBottle = 0, nStar = 0;
     lv.props.forEach(function (p) {

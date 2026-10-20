@@ -218,14 +218,15 @@ G.Props = (function () {
   // 땅 여러 개를 한꺼번에 (사용자 요청 2026-10-20: 겹치거나 맞붙인 땅의 이음새가 안 보이게)
   //   1) 채우기 전부 → 2) 세로 테두리는 바깥쪽이 빈 곳인 부분만 → 3) 윗면 그림은 더 높은 땅 속에 묻힌 부분을 빼고, 세계 좌표에 맞춰 이어 붙임
   function drawGrounds(ctx, list) {
-    var C = G.DATA.colors, A = G.DATA.art, depth = G.DATA.level.groundDepth;
+    var C = G.DATA.colors, A = G.DATA.art, D0 = G.DATA.level.groundDepth;
+    function hh(g) { return g.h || D0; }          // 땅 높이 (사용자 결정 2026-10-20: 땅마다 h)
     var fill = G.Assets.get('ground_fill'), top = G.Assets.get('ground_top');
     if (fill) {
       if (!patterns.fill) patterns.fill = ctx.createPattern(fill, 'repeat');
       ctx.fillStyle = patterns.fill;
     } else ctx.fillStyle = C.ground;
-    list.forEach(function (g) { ctx.fillRect(g.x0, g.top, g.x1 - g.x0, depth); });
-    if (fill && A.groundTint) { ctx.fillStyle = A.groundTint; list.forEach(function (g) { ctx.fillRect(g.x0, g.top, g.x1 - g.x0, depth); }); }
+    list.forEach(function (g) { ctx.fillRect(g.x0, g.top, g.x1 - g.x0, hh(g)); });
+    if (fill && A.groundTint) { ctx.fillStyle = A.groundTint; list.forEach(function (g) { ctx.fillRect(g.x0, g.top, g.x1 - g.x0, hh(g)); }); }
 
     // 구간 [a, b] 에서 빼야 할 구간들을 뺀 나머지
     function minus(a, b, cuts) {
@@ -247,14 +248,19 @@ G.Props = (function () {
     list.forEach(function (g) {                   // 세로 테두리: 바로 바깥(ox)에 다른 땅이 있는 높이는 숨김
       [[g.x0, g.x0 - eps], [g.x1, g.x1 + eps]].forEach(function (e) {
         var cuts = list.filter(function (h) { return h !== g && h.x0 <= e[1] && e[1] <= h.x1; })
-          .map(function (h) { return [h.top, h.top + depth]; });
-        minus(g.top, g.top + depth, cuts).forEach(function (s) { ctx.moveTo(e[0], s[0]); ctx.lineTo(e[0], s[1]); });
+          .map(function (h) { return [h.top, h.top + hh(h)]; });
+        minus(g.top, g.top + hh(g), cuts).forEach(function (s) { ctx.moveTo(e[0], s[0]); ctx.lineTo(e[0], s[1]); });
       });
+    });
+    list.forEach(function (g) {                   // 아랫면: 바로 아래에 다른 땅이 있는 폭은 숨김 (공중 땅의 밑면)
+      var by = g.top + hh(g), cuts = list.filter(function (h) { return h !== g && h.top <= by + eps && by + eps <= h.top + hh(h); })
+        .map(function (h) { return [h.x0, h.x1]; });
+      minus(g.x0, g.x1, cuts).forEach(function (sp) { ctx.moveTo(sp[0], by); ctx.lineTo(sp[1], by); });
     });
     ctx.stroke();
 
     list.forEach(function (g) {                   // 윗면: 더 높은 땅의 채우기 속에 있는 부분은 빼고 그림
-      var cuts = list.filter(function (h) { return h !== g && h.top < g.top - 1 && g.top < h.top + depth; })
+      var cuts = list.filter(function (h) { return h !== g && h.top < g.top - 1 && g.top < h.top + hh(h); })
         .map(function (h) { return [h.x0, h.x1]; });
       var spans = minus(g.x0, g.x1, cuts);
       if (top) {

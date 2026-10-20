@@ -163,6 +163,7 @@ t('검사: 벽에 묻힌 물방울, 물방울 없음 경고', function () {
   if (!hasMsg(LC.check(mini()), 'warn', '잠든 물방울이 없어요')) throw new Error('없음 경고 없음');
 });
 t('예전 평가 조건(rate)은 지움', function () { eq(LC.normalize({ rate: { timeSec: 45 } }).rate, undefined); });
+t('땅 높이 기본값 400, 있는 값은 유지', function () { var n = LC.normalize({ ground: [{ x0: 0, x1: 100, top: 600 }, { x0: 0, x1: 100, top: 300, h: 80 }] }); eq(n.ground[0].h, D.level.groundDepth); eq(n.ground[1].h, 80); });
 t('지우개·구간 기본값', function () { var n = LC.normalize({}); eq(n.eraser.pct, D.eraser.pct); eq(n.segments.length, 0); });
 t('물방울 속도·충돌 기본값, 있는 값은 유지', function () {
   var n = LC.normalize({}); eq(n.drops.heroSpeed, D.drop.runSpeed); eq(n.drops.smallSpeed, D.drop.runSpeed); eq(n.drops.collide, false);

@@ -13,6 +13,7 @@ G.LevelCheck = (function () {
     o.start = o.start || { x: 200 };
     o.goal = o.goal || { x: 2000 };
     o.ground = o.ground || [];
+    o.ground.forEach(function (g) { if (g.h == null) g.h = D.level.groundDepth; });   // 땅 높이 (그림·충돌 같게, 사용자 결정 2026-10-20)
     o.props = o.props || [];
     delete o.rate;                                 // 시간·물방울%·시도 조건은 없앰 (사용자 결정 2026-10-20: 평가 = 별 n/3 + 정화 %)
     o.segments = o.segments || [];                 // 구간(설계 용어): [{x, name}] — 레벨 툴에 경계와 이름만 표시

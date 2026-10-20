@@ -272,3 +272,14 @@ G.LEVELS.forEach(function (lv) {
   for (i = 0; i < 60 * 8; i++) G.Game.update(g, STEP);
   console.log('11 초록 겹쳐 그리기: 벽 가로지른 선 3초에 ' + Math.round(y0 - y1) + 'px 오름 (0이면 안 됨) · 땅에 겹친 선 멈춘 높이 y=' + Math.round(l2.body.position.y) + ' 떠오르는 중 ' + l2.rising + ' (발판 밑 y≈225 에서 멈춰야)');
 })();
+
+// 12. 땅 높이 h (사용자 결정 2026-10-20): 얇은 공중 땅 밑으로는 지나가고 위에는 설 수 있음
+(function () {
+  var lv = { id: 't', name: '시험', ink: 3000, stops: 9, start: { x: 0 }, goal: { x: 2600 }, inks: ['black'],
+    drops: { heroSpeed: 3 }, eraser: { pct: 50, delayMs: 600000 },
+    ground: [{ x0: -400, x1: 3000, top: 600 }, { x0: 300, x1: 700, top: 450, h: 60 }], props: [] };
+  var g = G.Game.create('A', lv); G.Game.start(g);
+  for (var i = 0; i < 60 * 6; i++) G.Game.update(g, STEP);
+  var under = Math.round(g.hero.body.position.x);
+  console.log('12 공중 땅(높이 60) 밑 지나가기: 6초 뒤 x=' + under + ' (900 넘으면 정상, 높이 400이면 벽에 막힘)');
+})();
