@@ -108,20 +108,22 @@ G.Rules = (function () {
   // 잉크 웅덩이에 닿아 있는 동안 초당 rate 만큼 줄어든다 (0 아래로는 안 감)
   function drainInk(ink, rate, ms) { return Math.max(0, ink - rate * ms / 1000); }
 
-  // ---- 클리어 평가: 조건을 몇 개 만족했는가 → 별 0~3 ----
-  // 사용자 결정 2026-10-20: "수집 별 모두" → "물방울 n% 이상 도착" (배치된 작은 물방울 수 기준)
-  // rate = { timeSec, rescuePct, maxTries } (levels.js 스테이지마다), res = { timeMs, rescued, total, tries }
-  function needRescue(rate, total) { return Math.ceil(total * rate.rescuePct / 100 - 1e-9); }
-  function rateClear(rate, res) {
-    var need = needRescue(rate, res.total);
-    var checks = [
-      { key: 'time', ok: res.timeMs <= rate.timeSec * 1000, label: rate.timeSec + '초 안에 도착' },
-      { key: 'rescue', ok: res.rescued >= need,
-        label: '물방울 ' + rate.rescuePct + '% 이상 (' + res.rescued + '/' + res.total + ', 필요 ' + need + ')' },
-      { key: 'tries', ok: res.tries <= rate.maxTries, label: rate.maxTries + '번 안에 성공 (' + res.tries + '번째)' }
-    ];
-    var n = checks.filter(function (c) { return c.ok; }).length;
-    return { checks: checks, stars: n };
+  // ---- 클리어 결과 (사용자 결정 2026-10-20): 별(이번 판에 주인공이 주운 수 / 배치된 수)과 정화(들어간 물방울 / 전체)를 따로 ----
+  //   res = { stars: 주운 별 key 목록, starsTotal, rescued, total(작은 물방울), heroIn, timeMs }
+  function clearResult(res) {
+    var all = res.total + 1, inJar = res.rescued + (res.heroIn ? 1 : 0);
+    return { stars: res.stars.length, starKeys: res.stars.slice(), starsTotal: res.starsTotal,
+             purity: inJar / all, inJar: inJar, all: all, timeMs: res.timeMs };
+  }
+  // 최고 기록: 별은 클리어한 판에서 주운 별의 합집합(판마다 달라도 누적), 정화는 최고 %, 시간은 가장 빠른 것
+  function mergeRecord(rec, r) {
+    rec = rec || {};
+    if (!rec.starKeys) rec.starKeys = {};             // 예전 기록(별이 조건 수)은 새로 셈
+    r.starKeys.forEach(function (k) { rec.starKeys[k] = true; });
+    rec.stars = Object.keys(rec.starKeys).length;
+    rec.bestPurity = Math.max(rec.bestPurity || 0, r.purity);
+    if (!rec.bestMs || r.timeMs < rec.bestMs) rec.bestMs = Math.round(r.timeMs);
+    return rec;
   }
 
   // ---- 색 잉크 (사용자 결정 2026-10-19) ----
@@ -203,8 +205,8 @@ G.Rules = (function () {
     dist: dist, polylineLength: polylineLength,
     newStroke: newStroke, addSample: addSample, smooth: smooth, finishStroke: finishStroke,
     lineAlpha: lineAlpha, lineExpired: lineExpired,
-    refundInk: refundInk, drainInk: drainInk, rateClear: rateClear, needRescue: needRescue,
-    segHit: segHit, cutCrystal: cutCrystal, fitZoom: fitZoom,
+    refundInk: refundInk, drainInk: drainInk,
+    segHit: segHit, cutCrystal: cutCrystal, fitZoom: fitZoom, clearResult: clearResult, mergeRecord: mergeRecord,
     nextColor: nextColor, bounceVelocity: bounceVelocity, pointSegDist: pointSegDist, simplify: simplify,
     newStops: newStops, canStop: canStop, useStop: useStop, rechargeStops: rechargeStops,
     timeScale: timeScale, shouldAutoResume: shouldAutoResume

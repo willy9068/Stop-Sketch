@@ -91,7 +91,7 @@ G.DATA = {
 
   // 잉크병에 들어가기 (사용자 요청 2026-10-20): 닿은 순서대로 병 앞에 줄 서고, 맨 앞부터 gapMs 마다 하나씩 enterMs 동안 입구로 뛰어듦.
   //   병은 들어간 만큼 jarFadePerSec 속도로 서서히 밝아짐
-  goalEnter: { gapMs: 420, enterMs: 650, hopHeight: 70, endScale: 0.35, spacing: 26, slide: 0.15, jarFadePerSec: 0.35 },
+  goalEnter: { gapMs: 420, enterMs: 650, hopHeight: 70, endScale: 0.35, spacing: 26, slide: 0.15, jarFadePerSec: 0.35, resultDelayMs: 1000 },   // resultDelayMs: 병이 다 밝아진 뒤 결과 창까지 (사용자 요청 2026-10-20)
 
   stop: { perSection: 3 }, // 스테이지당 정지 횟수 (levels.js stops 로 바꿈)
   stopUp: 1,               // 정지 +1 아이템 하나당 (그 스테이지에서만)
@@ -150,8 +150,7 @@ G.DATA = {
   level: {
     groundDepth: 400,
     pickup: 0.45,          // 아이템 크기 × 이 값 + 물방울 반지름 안이면 획득
-    // 평가 (사용자 결정 2026-10-20): 목표 시간 안 · 물방울 n% 이상 도착(배치된 작은 물방울 기준, 기본 100%) · 시도 횟수 안
-    rate: { timeSec: 90, rescuePct: 100, maxTries: 3 }
+    starsPerStage: 3      // 수집 별 (사용자 결정 2026-10-20: 평가 = 별 n/3 + 정화 %, 시간·시도 조건은 없앰)
   },
 
   // 프랍. 벽·발판·가시·배치된 선은 왼쪽 위 x,y + w,h. 물방울·아이템·장식은 가운데
@@ -163,7 +162,7 @@ G.DATA = {
     // 배치된 선: 검은 다이아몬드처럼 광이 나는 막대. 고정. 노랑으로 자르면 양 끝이 붙은 조각은 남고 가운데 조각은 떨어짐
     crystal:  { name: '배치된 선', solid: true, box: true, w: 200, h: 10, pin: 'both', color: '#1B1A24', imgs: [['prop_crystal', 'nine']] },
     spike:    { name: '가시', solid: true, box: true, w: 120, h: 30, color: '#6B6470', imgs: [['obs_spike', 'tile']] },
-    star:     { name: '별', size: 56, imgs: [['star_full', 'fit']] },               // 결과 쪽지의 평가 별 그림용 (배치하지 않음)
+    star:     { name: '별', collect: true, size: 56, imgs: [['star_full', 'fit']] },   // 수집 별: 스테이지당 3개, 주인공이 닿으면 획득 (사용자 결정 2026-10-20)
     drop:     { name: '잠든 물방울', size: 30 },                                  // 닿으면 합류
     stopup:   { name: '정지 +1', collect: true, size: 56, imgs: [['item_stop', 'fit']] },
     inkup:    { name: '잉크 병', collect: true, size: 60, imgs: [['item_ink', 'fit']] },
@@ -224,7 +223,6 @@ G.LEVELS = [
     "bg": "bg_plain",
     "ink": 1600,
     "stops": 3,
-    "rate": {"timeSec":60,"rescuePct":100,"maxTries":3},
     "inks": ["black"],
     "fx": {"bounce":15,"boostPct":190,"boostMs":1200,"riseSpeed":1.2},
     "drops": {"heroSpeed":3,"smallSpeed":4,"collide":false,"follow":true,"gap":25},
@@ -244,6 +242,9 @@ G.LEVELS = [
     ],
     "props": [
       {"type":"wall","x":-1170,"y":380,"w":40,"h":200},
+      {"type":"star","x":-500,"y":530,"size":56},
+      {"type":"star","x":1760,"y":455,"size":56},
+      {"type":"star","x":3120,"y":500,"size":56},
       {"type":"spike","x":2940,"y":550,"w":360,"h":30},
       {"type":"drop","x":-410,"y":560},
       {"type":"drop","x":70,"y":640},
@@ -278,7 +279,6 @@ G.LEVELS = [
     "bg": "bg_a",
     "ink": 2200,
     "stops": 3,
-    "rate": {"timeSec":120,"rescuePct":100,"maxTries":3},
     "inks": ["black","red","blue","yellow","green"],
     "fx": {"bounce":15,"boostPct":190,"boostMs":1200,"riseSpeed":1.2},
     "drops": {"heroSpeed":5.2,"smallSpeed":5.2,"collide":false,"follow":true,"gap":32},
@@ -294,6 +294,9 @@ G.LEVELS = [
     ],
     "props": [
       {"type":"wall","x":-760,"y":300,"w":40,"h":300},
+      {"type":"star","x":450,"y":565,"size":56},
+      {"type":"star","x":1860,"y":865,"size":56},
+      {"type":"star","x":4300,"y":715,"size":56},
       {"type":"crystal","x":900,"y":470,"w":10,"h":130,"pin":"end"},
       {"type":"crystal","x":1104,"y":470,"w":10,"h":130,"pin":"end"},
       {"type":"drop","x":950,"y":587},
@@ -430,20 +433,22 @@ G.Rules = (function () {
   // 잉크 웅덩이에 닿아 있는 동안 초당 rate 만큼 줄어든다 (0 아래로는 안 감)
   function drainInk(ink, rate, ms) { return Math.max(0, ink - rate * ms / 1000); }
 
-  // ---- 클리어 평가: 조건을 몇 개 만족했는가 → 별 0~3 ----
-  // 사용자 결정 2026-10-20: "수집 별 모두" → "물방울 n% 이상 도착" (배치된 작은 물방울 수 기준)
-  // rate = { timeSec, rescuePct, maxTries } (levels.js 스테이지마다), res = { timeMs, rescued, total, tries }
-  function needRescue(rate, total) { return Math.ceil(total * rate.rescuePct / 100 - 1e-9); }
-  function rateClear(rate, res) {
-    var need = needRescue(rate, res.total);
-    var checks = [
-      { key: 'time', ok: res.timeMs <= rate.timeSec * 1000, label: rate.timeSec + '초 안에 도착' },
-      { key: 'rescue', ok: res.rescued >= need,
-        label: '물방울 ' + rate.rescuePct + '% 이상 (' + res.rescued + '/' + res.total + ', 필요 ' + need + ')' },
-      { key: 'tries', ok: res.tries <= rate.maxTries, label: rate.maxTries + '번 안에 성공 (' + res.tries + '번째)' }
-    ];
-    var n = checks.filter(function (c) { return c.ok; }).length;
-    return { checks: checks, stars: n };
+  // ---- 클리어 결과 (사용자 결정 2026-10-20): 별(이번 판에 주인공이 주운 수 / 배치된 수)과 정화(들어간 물방울 / 전체)를 따로 ----
+  //   res = { stars: 주운 별 key 목록, starsTotal, rescued, total(작은 물방울), heroIn, timeMs }
+  function clearResult(res) {
+    var all = res.total + 1, inJar = res.rescued + (res.heroIn ? 1 : 0);
+    return { stars: res.stars.length, starKeys: res.stars.slice(), starsTotal: res.starsTotal,
+             purity: inJar / all, inJar: inJar, all: all, timeMs: res.timeMs };
+  }
+  // 최고 기록: 별은 클리어한 판에서 주운 별의 합집합(판마다 달라도 누적), 정화는 최고 %, 시간은 가장 빠른 것
+  function mergeRecord(rec, r) {
+    rec = rec || {};
+    if (!rec.starKeys) rec.starKeys = {};             // 예전 기록(별이 조건 수)은 새로 셈
+    r.starKeys.forEach(function (k) { rec.starKeys[k] = true; });
+    rec.stars = Object.keys(rec.starKeys).length;
+    rec.bestPurity = Math.max(rec.bestPurity || 0, r.purity);
+    if (!rec.bestMs || r.timeMs < rec.bestMs) rec.bestMs = Math.round(r.timeMs);
+    return rec;
   }
 
   // ---- 색 잉크 (사용자 결정 2026-10-19) ----
@@ -525,8 +530,8 @@ G.Rules = (function () {
     dist: dist, polylineLength: polylineLength,
     newStroke: newStroke, addSample: addSample, smooth: smooth, finishStroke: finishStroke,
     lineAlpha: lineAlpha, lineExpired: lineExpired,
-    refundInk: refundInk, drainInk: drainInk, rateClear: rateClear, needRescue: needRescue,
-    segHit: segHit, cutCrystal: cutCrystal, fitZoom: fitZoom,
+    refundInk: refundInk, drainInk: drainInk,
+    segHit: segHit, cutCrystal: cutCrystal, fitZoom: fitZoom, clearResult: clearResult, mergeRecord: mergeRecord,
     nextColor: nextColor, bounceVelocity: bounceVelocity, pointSegDist: pointSegDist, simplify: simplify,
     newStops: newStops, canStop: canStop, useStop: useStop, rechargeStops: rechargeStops,
     timeScale: timeScale, shouldAutoResume: shouldAutoResume
@@ -552,11 +557,7 @@ G.LevelCheck = (function () {
     o.goal = o.goal || { x: 2000 };
     o.ground = o.ground || [];
     o.props = o.props || [];
-    var r = D.level.rate;                          // 클리어 평가 조건 (빠진 칸만 기본값)
-    o.rate = o.rate || {};
-    if (o.rate.timeSec == null) o.rate.timeSec = r.timeSec;
-    if (o.rate.rescuePct == null) o.rate.rescuePct = r.rescuePct;
-    delete o.rate.allStars;
+    delete o.rate;                                 // 시간·물방울%·시도 조건은 없앰 (사용자 결정 2026-10-20: 평가 = 별 n/3 + 정화 %)
     o.segments = o.segments || [];                 // 구간(설계 용어): [{x, name}] — 레벨 툴에 경계와 이름만 표시
     o.drops = o.drops || {};                       // 물방울 이동 속도·서로 충돌 (레벨 툴 "스테이지 설정 → 물방울")
     if (o.drops.heroSpeed == null) o.drops.heroSpeed = D.drop.runSpeed;
@@ -567,7 +568,6 @@ G.LevelCheck = (function () {
     o.eraser = o.eraser || {};
     if (o.eraser.pct == null) o.eraser.pct = D.eraser.pct;
     if (o.eraser.delayMs == null) o.eraser.delayMs = D.eraser.delayMs;
-    if (o.rate.maxTries == null) o.rate.maxTries = r.maxTries;
     // 쓸 수 있는 색 (없으면 3색 모두), 색 효과 세기 (빠진 칸만 기본값)
     o.inks = (o.inks || D.inks.order).filter(function (c) { return D.inks[c]; });
     o.fx = o.fx || {};
@@ -654,8 +654,8 @@ G.LevelCheck = (function () {
     if (drops.length > 20) add('warn', '물방울이 ' + drops.length + '마리예요 (시험판 권장 최대 20)');
 
     var minTime = Math.ceil((lv.goal.x - lv.start.x) / (lv.drops.heroSpeed * 60));
-    if (lv.rate.timeSec < minTime) add('warn', '목표 시간 ' + lv.rate.timeSec + '초는 너무 짧아요 (쉬지 않고 걸어도 약 ' + minTime + '초)');
-    add('info', '별 평가 조건: ' + lv.rate.timeSec + '초 안 · 물방울 ' + lv.rate.rescuePct + '% 이상(' + G.Rules.needRescue(lv.rate, drops.length) + '/' + drops.length + ') · ' + lv.rate.maxTries + '번 안');
+    var nStar = lv.props.filter(function (p) { return p.type === 'star'; }).length;
+    add(nStar === D.level.starsPerStage ? 'info' : 'warn', '별 ' + nStar + '개 (스테이지당 ' + D.level.starsPerStage + '개 권장, 주인공이 닿아야 획득) · 쉬지 않고 걸으면 약 ' + minTime + '초');
     var est = estimateInk(lv);
     add('info', '틈 ' + gaps(lv).length + '개 · 막는 벽 ' + blockingWalls(lv).length + '개 · 모범 풀이 잉크 합계 약 ' + est + ' / 기본 잉크 ' + lv.ink + ' (우클릭으로 빨아들이면 다시 씀)');
     if (est > lv.ink * 1.5) add('warn', '잉크가 많이 모자라요 — 선을 여러 번 빨아들여 다시 써야 해요');
@@ -697,7 +697,7 @@ G.makeRng = function (seed) {
 
 // 계정 저장. localStorage가 막혀 있어도(사생활 보호 모드 등) 게임은 돌아가게 한다
 //   inkBonus: 잉크 병으로 늘어난 최대량(영구) / bottles: 먹은 잉크 병 { "구간id:병id": true }
-//   records: 구간별 기록 { 구간id: { stars(최고), bestMs, clears, tries } }
+//   records: 스테이지별 기록 { id: { starKeys{별key:true}, stars(모은 별 수), bestPurity(0~1), bestMs, clears, tries } }
 G.Save = {
   blank: function () {
     return { v: G.DATA.version, timeMode: G.DATA.defaultTimeMode, stats: {}, inkBonus: 0, bottles: {}, records: {} };
@@ -858,7 +858,7 @@ G.Level = {
     lv.ground.forEach(function (g) {
       out.statics.push(P.add(engine, P.staticRect((g.x0 + g.x1) / 2, g.top + depth / 2, g.x1 - g.x0, depth)));
     });
-    var nBottle = 0;
+    var nBottle = 0, nStar = 0;
     lv.props.forEach(function (p) {
       if (p.type === 'crystal') {                  // 자를 수 있게 복사본으로 (원본 데이터는 그대로)
         var c = { x: p.x, y: p.y, w: p.w, h: p.h, pin: p.pin || 'both', body: null };
@@ -870,6 +870,7 @@ G.Level = {
       if (b) out.statics.push(b);
       if (p.type === 'drop') out.sleepers.push({ prop: p, x: p.x, y: p.y, state: 'sleep' });
       if (p.type === 'stopup') out.items.push({ prop: p, kind: 'stopup', got: false });
+      if (p.type === 'star') out.items.push({ prop: p, kind: 'star', key: 'star' + nStar++, got: false });   // 다시 하면 다시 나타남 (클리어해야 기록)
       if (p.type === 'inkup') {
         var key = lv.id + ':' + (p.id || 'inkup' + nBottle++);
         out.items.push({ prop: p, kind: 'inkup', key: key, got: !!owned[key], owned: !!owned[key] });
@@ -1233,6 +1234,8 @@ G.Game = {
     game.finishedAt = 0;
     game.result = null;
     game.stopsUsedThisRun = 0;
+    game.starKeys = [];                            // 이번 판에 주인공이 주운 별
+    game.starsTotal = game.level.items.filter(function (it) { return it.kind === 'star'; }).length;
     game.attempt += 1;
     if (lv.inks.indexOf(game.color) < 0) game.color = lv.inks.indexOf('black') >= 0 ? 'black' : (lv.inks[0] || 'black');
   },
@@ -1460,17 +1463,19 @@ G.Game = {
     });
   },
 
-  // 아이템: 아무 물방울이나 닿으면 획득 (사용자 결정 2026-10-20). 정지 +1 은 이 스테이지에서만
+  // 아이템: 아무 물방울이나 닿으면 획득, 별은 주인공만 (사용자 결정 2026-10-20). 정지 +1 은 이 스테이지에서만
   collect: function (game, d) {
     var D = G.DATA, p = d.body.position, acc = game.account;
     game.level.items.forEach(function (it) {
       if (it.got) return;
+      if (it.kind === 'star' && !d.hero) return;   // 별은 주인공만 (사용자 결정 2026-10-20)
       var q = it.prop, reach = d.r + (q.size || D.props[it.kind].size) * D.level.pickup;
       var dx = q.x - p.x, dy = q.y - p.y;
       if (dx * dx + dy * dy > reach * reach) return;
       it.got = true; it.gotMs = game.timeMs;
       game.fx.push({ type: 'star', x: q.x, y: q.y, t: game.timeMs });
-      if (it.kind === 'stopup') {
+      if (it.kind === 'star') game.starKeys.push(it.key);
+      else if (it.kind === 'stopup') {
         game.stops.left += D.stopUp; game.stops.max += D.stopUp;
         game.toast('정지 +' + D.stopUp + ' (이 스테이지에서만)');
       } else if (it.kind === 'inkup') {
@@ -1572,8 +1577,9 @@ G.Game = {
     game.stroke = null;
     game.result = null;
     if (status === 'clear') {
-      game.result = G.Rules.rateClear(game.level.data.rate, {
-        timeMs: game.lastReachMs || game.timeMs, rescued: game.rescued, total: game.total, tries: game.attempt
+      game.result = G.Rules.clearResult({
+        stars: game.starKeys, starsTotal: game.starsTotal, rescued: game.rescued, total: game.total, heroIn: game.heroIn,
+        timeMs: game.lastReachMs || game.timeMs
       });
     }
     if (game.onFinish) game.onFinish(game);
@@ -2321,10 +2327,12 @@ G.UI = (function () {
       ctx.fillText('대열 ' + game.line.length + ' · 이탈 ' + alone + ' · 잠듦 ' + sleeping + ' · 잃음 ' + game.lost, px, 48);
     } else ctx.fillText('걷는 중 ' + walking + ' · 잠듦 ' + sleeping + ' · 잃음 ' + game.lost, px, 48);
 
-    ctx.textAlign = 'right'; ctx.font = '15px sans-serif';
-    var lv = game.level.data;
-    ctx.fillText(lv.name + '  ·  ' + game.attempt + '번째  ·  ' + (game.timeMs / 1000).toFixed(1) + '/' + lv.rate.timeSec + '초  ·  정화 ' +
-      Math.round(G.Game.purity(game) * 100) + '%', V.w - 20, 35);
+    // 오른쪽: 이번 판에 주운 별 (사용자 결정 2026-10-20) + 스테이지 이름·시간·정화
+    var lv = game.level.data, sx = V.w - 22 - 26 * Math.max(0, game.starsTotal - 1);
+    for (var k = 0; k < game.starsTotal; k++) drawStarIcon(ctx, sx + k * 26 - 4, 20, 11, k < game.starKeys.length);
+    ctx.textAlign = 'right'; ctx.font = '13px sans-serif';
+    ctx.fillText(lv.name + '  ·  ' + game.attempt + '번째  ·  ' + (game.timeMs / 1000).toFixed(1) + '초  ·  정화 ' +
+      Math.round(G.Game.purity(game) * 100) + '%', V.w - 20, 48);
     ctx.textAlign = 'left';
   }
 
@@ -2410,6 +2418,24 @@ G.UI = (function () {
     ctx.globalAlpha = 1; ctx.textAlign = 'left';
   }
 
+  // 별 하나 (on = 주움). 그림이 있으면 그림, 없으면 도형
+  function drawStarIcon(ctx, x, y, r, on) {
+    var img = G.Assets.get(on ? 'star_full' : 'star_empty');
+    if (img) { ctx.drawImage(img, x - r, y - r, r * 2, r * 2); return; }
+    G.Props.drawStarShape(ctx, x, y, r);
+    if (on) { ctx.fillStyle = C.star; ctx.fill(); }
+    ctx.lineWidth = 2; ctx.strokeStyle = on ? C.outline : 'rgba(43,33,24,0.35)'; ctx.stroke();
+  }
+
+  // 클리어 결과 창은 잉크병이 다 밝아진 뒤 resultDelayMs 더 기다렸다가 (사용자 요청 2026-10-20: 정화되는 모습을 1초 더)
+  var jarDoneAt = 0;
+  function resultReady(game) {
+    if (game.status !== 'clear') return true;
+    if (jarShown < G.Game.purity(game) - 1e-6) { jarDoneAt = 0; return false; }
+    if (!jarDoneAt) jarDoneAt = Date.now();
+    return Date.now() - jarDoneAt >= G.DATA.goalEnter.resultDelayMs;
+  }
+
   function drawResult(ctx, game) {
     if (game.status === 'run') return;
     if (game.status === 'ready') {
@@ -2420,35 +2446,35 @@ G.UI = (function () {
       ctx.textAlign = 'left';
       return;
     }
-    if (game.status === 'clear' && Date.now() - game.finishedAt < 700) return;
+    if (!resultReady(game)) return;
     ctx.fillStyle = 'rgba(43,33,24,0.35)';
     ctx.fillRect(0, 0, V.w, V.h);
     var clear = game.status === 'clear' && game.result;
-    var w = 560, h = clear ? 330 : 250, x = (V.w - w) / 2, y = (V.h - h) / 2;
+    var w = 560, h = clear ? 340 : 250, x = (V.w - w) / 2, y = (V.h - h) / 2;
     var panel = G.Assets.get('ui_panel');
     if (panel) ctx.drawImage(panel, x - 40, y - 30, w + 80, h + 60);
     else { ctx.fillStyle = C.paper; ctx.fillRect(x, y, w, h); ctx.strokeStyle = C.outline; ctx.lineWidth = 4; ctx.strokeRect(x, y, w, h); }
     var face = G.Assets.get(game.status === 'fail' ? 'char_erased' : 'char_goal');
-    if (face) ctx.drawImage(face, x + 66, y + 22, 80, 80);
+    if (face) ctx.drawImage(face, x + 28, y + 6, 136, 136);   // 사용자 요청 2026-10-20: 80 → 136
     ctx.textAlign = 'center'; ctx.fillStyle = game.status === 'clear' ? C.green : C.red;
     ctx.font = 'bold 40px sans-serif';
     ctx.fillText(game.status === 'clear' ? '정화!' : game.failReason, V.w / 2, y + 70);
     ctx.fillStyle = C.outline;
-    if (clear) {
-      for (var k = 0; k < 3; k++) {
-        var sx0 = V.w / 2 + (k - 1) * 56, sy0 = y + 112, emptyStar = G.Assets.get('star_empty');
-        if (k < game.result.stars) G.Props.draw(ctx, { type: 'star', x: sx0, y: sy0, size: 50 });
-        else if (emptyStar) ctx.drawImage(emptyStar, sx0 - 25, sy0 - 25, 50, 50);
-        else { G.Props.drawStarShape(ctx, sx0, sy0, 25); ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(43,33,24,0.35)'; ctx.stroke(); }
-      }
-      ctx.font = '18px sans-serif';
-      game.result.checks.forEach(function (c, i) {
-        ctx.fillStyle = c.ok ? C.green : 'rgba(43,33,24,0.45)';
-        ctx.fillText((c.ok ? '✓ ' : '✗ ') + c.label, V.w / 2, y + 162 + i * 26);
-      });
+    if (clear) {                                   // 별 n/3 과 정화 % 를 따로 (사용자 결정 2026-10-20)
+      var r = game.result, best = game.best;
+      ctx.font = 'bold 17px sans-serif'; ctx.fillStyle = C.outline;
+      ctx.fillText('별 ' + r.stars + ' / ' + r.starsTotal, V.w / 2, y + 102);
+      for (var k = 0; k < r.starsTotal; k++) drawStarIcon(ctx, V.w / 2 + (k - (r.starsTotal - 1) / 2) * 56, y + 136, 25, k < r.stars);
+      // 정화 막대
+      var bw = 300, bx = V.w / 2 - bw / 2, by = y + 186;
+      ctx.font = 'bold 17px sans-serif'; ctx.fillStyle = C.outline;
+      ctx.fillText('정화 ' + Math.round(r.purity * 100) + '%  (물방울 ' + r.inJar + ' / ' + r.all + ')', V.w / 2, by - 8);
+      ctx.fillStyle = 'rgba(43,33,24,0.12)'; ctx.fillRect(bx, by, bw, 14);
+      ctx.fillStyle = mix(C.jarDark, C.jarClear, r.purity); ctx.fillRect(bx, by, bw * r.purity, 14);
+      ctx.lineWidth = 2; ctx.strokeStyle = C.outline; ctx.strokeRect(bx, by, bw, 14);
       ctx.fillStyle = C.outline; ctx.font = '15px sans-serif';
-      var best = game.best ? ' · 최고 기록 별 ' + game.best.stars + '개 · ' + (game.best.bestMs / 1000).toFixed(1) + '초' : '';
-      ctx.fillText((game.timeMs / 1000).toFixed(1) + '초 · 정화 ' + Math.round(G.Game.purity(game) * 100) + '%' + best, V.w / 2, y + 252);
+      ctx.fillText((r.timeMs / 1000).toFixed(1) + '초' + (best ? '  ·  최고 기록: 별 ' + (best.stars || 0) + '/' + r.starsTotal +
+        ' · 정화 ' + Math.round((best.bestPurity || 0) * 100) + '%' : ''), V.w / 2, y + 236);
     } else {
       ctx.font = '20px sans-serif';
       ctx.fillText('물방울 ' + game.rescued + '/' + game.total + ' 도착 · ' + game.attempt + '번째 시도', V.w / 2, y + 125);
@@ -2563,7 +2589,7 @@ G.Debug = {
     var acc = app.account || app.save, rec = acc.records[g.level.data.id];
     html += '<div class="row">계정' + (app.testMode ? ' (테스트: 저장 안 됨)' : '') + ': 잉크 최대량 +' + (acc.inkBonus || 0) +
       ' (먹은 병 ' + Object.keys(acc.bottles || {}).length + '개)' +
-      (rec ? ' · 이 구간 최고 별 ' + rec.stars + '개, ' + rec.clears + '/' + rec.tries + '번 성공' : '') + '</div>';
+      (rec ? ' · 이 스테이지 별 ' + (rec.stars || 0) + ' · 최고 정화 ' + Math.round((rec.bestPurity || 0) * 100) + '%, ' + rec.clears + '/' + rec.tries + '번 성공' : '') + '</div>';
     html += '<button data-act="account">계정 초기화 (잉크 성장·구간 기록)</button>';
     this.el.innerHTML = html;
   }
@@ -2624,13 +2650,11 @@ var G = G || {};
     st.tries += 1;
     st[g.status === 'clear' ? 'clears' : 'fails'] += 1;
     st.stopsUsed += g.stopsUsedThisRun;
-    var id = g.level.data.id, rec = app.account.records[id] || (app.account.records[id] = { stars: 0, bestMs: 0, clears: 0, tries: 0 });
+    var id = g.level.data.id, rec = app.account.records[id] || (app.account.records[id] = { clears: 0, tries: 0 });
     rec.tries += 1;
-    if (g.status === 'clear' && g.result) {       // 구간 최고 기록 (별 많은 것 우선, 같으면 빠른 시간)
+    if (g.status === 'clear' && g.result) {       // 최고 기록: 별(모은 별 누적)·정화(최고 %) 따로 (사용자 결정 2026-10-20)
       rec.clears += 1;
-      if (g.result.stars > rec.stars || (g.result.stars === rec.stars && (!rec.bestMs || g.timeMs < rec.bestMs))) {
-        rec.stars = g.result.stars; rec.bestMs = Math.round(g.timeMs);
-      }
+      G.Rules.mergeRecord(rec, g.result);
     }
     g.best = rec.clears ? rec : null;
     persist();

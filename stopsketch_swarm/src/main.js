@@ -50,13 +50,11 @@ var G = G || {};
     st.tries += 1;
     st[g.status === 'clear' ? 'clears' : 'fails'] += 1;
     st.stopsUsed += g.stopsUsedThisRun;
-    var id = g.level.data.id, rec = app.account.records[id] || (app.account.records[id] = { stars: 0, bestMs: 0, clears: 0, tries: 0 });
+    var id = g.level.data.id, rec = app.account.records[id] || (app.account.records[id] = { clears: 0, tries: 0 });
     rec.tries += 1;
-    if (g.status === 'clear' && g.result) {       // 구간 최고 기록 (별 많은 것 우선, 같으면 빠른 시간)
+    if (g.status === 'clear' && g.result) {       // 최고 기록: 별(모은 별 누적)·정화(최고 %) 따로 (사용자 결정 2026-10-20)
       rec.clears += 1;
-      if (g.result.stars > rec.stars || (g.result.stars === rec.stars && (!rec.bestMs || g.timeMs < rec.bestMs))) {
-        rec.stars = g.result.stars; rec.bestMs = Math.round(g.timeMs);
-      }
+      G.Rules.mergeRecord(rec, g.result);
     }
     g.best = rec.clears ? rec : null;
     persist();

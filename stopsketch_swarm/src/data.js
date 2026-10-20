@@ -54,7 +54,7 @@ G.DATA = {
 
   // 잉크병에 들어가기 (사용자 요청 2026-10-20): 닿은 순서대로 병 앞에 줄 서고, 맨 앞부터 gapMs 마다 하나씩 enterMs 동안 입구로 뛰어듦.
   //   병은 들어간 만큼 jarFadePerSec 속도로 서서히 밝아짐
-  goalEnter: { gapMs: 420, enterMs: 650, hopHeight: 70, endScale: 0.35, spacing: 26, slide: 0.15, jarFadePerSec: 0.35 },
+  goalEnter: { gapMs: 420, enterMs: 650, hopHeight: 70, endScale: 0.35, spacing: 26, slide: 0.15, jarFadePerSec: 0.35, resultDelayMs: 1000 },   // resultDelayMs: 병이 다 밝아진 뒤 결과 창까지 (사용자 요청 2026-10-20)
 
   stop: { perSection: 3 }, // 스테이지당 정지 횟수 (levels.js stops 로 바꿈)
   stopUp: 1,               // 정지 +1 아이템 하나당 (그 스테이지에서만)
@@ -113,8 +113,7 @@ G.DATA = {
   level: {
     groundDepth: 400,
     pickup: 0.45,          // 아이템 크기 × 이 값 + 물방울 반지름 안이면 획득
-    // 평가 (사용자 결정 2026-10-20): 목표 시간 안 · 물방울 n% 이상 도착(배치된 작은 물방울 기준, 기본 100%) · 시도 횟수 안
-    rate: { timeSec: 90, rescuePct: 100, maxTries: 3 }
+    starsPerStage: 3      // 수집 별 (사용자 결정 2026-10-20: 평가 = 별 n/3 + 정화 %, 시간·시도 조건은 없앰)
   },
 
   // 프랍. 벽·발판·가시·배치된 선은 왼쪽 위 x,y + w,h. 물방울·아이템·장식은 가운데
@@ -126,7 +125,7 @@ G.DATA = {
     // 배치된 선: 검은 다이아몬드처럼 광이 나는 막대. 고정. 노랑으로 자르면 양 끝이 붙은 조각은 남고 가운데 조각은 떨어짐
     crystal:  { name: '배치된 선', solid: true, box: true, w: 200, h: 10, pin: 'both', color: '#1B1A24', imgs: [['prop_crystal', 'nine']] },
     spike:    { name: '가시', solid: true, box: true, w: 120, h: 30, color: '#6B6470', imgs: [['obs_spike', 'tile']] },
-    star:     { name: '별', size: 56, imgs: [['star_full', 'fit']] },               // 결과 쪽지의 평가 별 그림용 (배치하지 않음)
+    star:     { name: '별', collect: true, size: 56, imgs: [['star_full', 'fit']] },   // 수집 별: 스테이지당 3개, 주인공이 닿으면 획득 (사용자 결정 2026-10-20)
     drop:     { name: '잠든 물방울', size: 30 },                                  // 닿으면 합류
     stopup:   { name: '정지 +1', collect: true, size: 56, imgs: [['item_stop', 'fit']] },
     inkup:    { name: '잉크 병', collect: true, size: 60, imgs: [['item_ink', 'fit']] },

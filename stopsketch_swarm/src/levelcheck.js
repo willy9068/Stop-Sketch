@@ -14,11 +14,7 @@ G.LevelCheck = (function () {
     o.goal = o.goal || { x: 2000 };
     o.ground = o.ground || [];
     o.props = o.props || [];
-    var r = D.level.rate;                          // 클리어 평가 조건 (빠진 칸만 기본값)
-    o.rate = o.rate || {};
-    if (o.rate.timeSec == null) o.rate.timeSec = r.timeSec;
-    if (o.rate.rescuePct == null) o.rate.rescuePct = r.rescuePct;
-    delete o.rate.allStars;
+    delete o.rate;                                 // 시간·물방울%·시도 조건은 없앰 (사용자 결정 2026-10-20: 평가 = 별 n/3 + 정화 %)
     o.segments = o.segments || [];                 // 구간(설계 용어): [{x, name}] — 레벨 툴에 경계와 이름만 표시
     o.drops = o.drops || {};                       // 물방울 이동 속도·서로 충돌 (레벨 툴 "스테이지 설정 → 물방울")
     if (o.drops.heroSpeed == null) o.drops.heroSpeed = D.drop.runSpeed;
@@ -29,7 +25,6 @@ G.LevelCheck = (function () {
     o.eraser = o.eraser || {};
     if (o.eraser.pct == null) o.eraser.pct = D.eraser.pct;
     if (o.eraser.delayMs == null) o.eraser.delayMs = D.eraser.delayMs;
-    if (o.rate.maxTries == null) o.rate.maxTries = r.maxTries;
     // 쓸 수 있는 색 (없으면 3색 모두), 색 효과 세기 (빠진 칸만 기본값)
     o.inks = (o.inks || D.inks.order).filter(function (c) { return D.inks[c]; });
     o.fx = o.fx || {};
@@ -116,8 +111,8 @@ G.LevelCheck = (function () {
     if (drops.length > 20) add('warn', '물방울이 ' + drops.length + '마리예요 (시험판 권장 최대 20)');
 
     var minTime = Math.ceil((lv.goal.x - lv.start.x) / (lv.drops.heroSpeed * 60));
-    if (lv.rate.timeSec < minTime) add('warn', '목표 시간 ' + lv.rate.timeSec + '초는 너무 짧아요 (쉬지 않고 걸어도 약 ' + minTime + '초)');
-    add('info', '별 평가 조건: ' + lv.rate.timeSec + '초 안 · 물방울 ' + lv.rate.rescuePct + '% 이상(' + G.Rules.needRescue(lv.rate, drops.length) + '/' + drops.length + ') · ' + lv.rate.maxTries + '번 안');
+    var nStar = lv.props.filter(function (p) { return p.type === 'star'; }).length;
+    add(nStar === D.level.starsPerStage ? 'info' : 'warn', '별 ' + nStar + '개 (스테이지당 ' + D.level.starsPerStage + '개 권장, 주인공이 닿아야 획득) · 쉬지 않고 걸으면 약 ' + minTime + '초');
     var est = estimateInk(lv);
     add('info', '틈 ' + gaps(lv).length + '개 · 막는 벽 ' + blockingWalls(lv).length + '개 · 모범 풀이 잉크 합계 약 ' + est + ' / 기본 잉크 ' + lv.ink + ' (우클릭으로 빨아들이면 다시 씀)');
     if (est > lv.ink * 1.5) add('warn', '잉크가 많이 모자라요 — 선을 여러 번 빨아들여 다시 써야 해요');

@@ -65,6 +65,8 @@ G.Game = {
     game.finishedAt = 0;
     game.result = null;
     game.stopsUsedThisRun = 0;
+    game.starKeys = [];                            // 이번 판에 주인공이 주운 별
+    game.starsTotal = game.level.items.filter(function (it) { return it.kind === 'star'; }).length;
     game.attempt += 1;
     if (lv.inks.indexOf(game.color) < 0) game.color = lv.inks.indexOf('black') >= 0 ? 'black' : (lv.inks[0] || 'black');
   },
@@ -292,17 +294,19 @@ G.Game = {
     });
   },
 
-  // 아이템: 아무 물방울이나 닿으면 획득 (사용자 결정 2026-10-20). 정지 +1 은 이 스테이지에서만
+  // 아이템: 아무 물방울이나 닿으면 획득, 별은 주인공만 (사용자 결정 2026-10-20). 정지 +1 은 이 스테이지에서만
   collect: function (game, d) {
     var D = G.DATA, p = d.body.position, acc = game.account;
     game.level.items.forEach(function (it) {
       if (it.got) return;
+      if (it.kind === 'star' && !d.hero) return;   // 별은 주인공만 (사용자 결정 2026-10-20)
       var q = it.prop, reach = d.r + (q.size || D.props[it.kind].size) * D.level.pickup;
       var dx = q.x - p.x, dy = q.y - p.y;
       if (dx * dx + dy * dy > reach * reach) return;
       it.got = true; it.gotMs = game.timeMs;
       game.fx.push({ type: 'star', x: q.x, y: q.y, t: game.timeMs });
-      if (it.kind === 'stopup') {
+      if (it.kind === 'star') game.starKeys.push(it.key);
+      else if (it.kind === 'stopup') {
         game.stops.left += D.stopUp; game.stops.max += D.stopUp;
         game.toast('정지 +' + D.stopUp + ' (이 스테이지에서만)');
       } else if (it.kind === 'inkup') {
@@ -404,8 +408,9 @@ G.Game = {
     game.stroke = null;
     game.result = null;
     if (status === 'clear') {
-      game.result = G.Rules.rateClear(game.level.data.rate, {
-        timeMs: game.lastReachMs || game.timeMs, rescued: game.rescued, total: game.total, tries: game.attempt
+      game.result = G.Rules.clearResult({
+        stars: game.starKeys, starsTotal: game.starsTotal, rescued: game.rescued, total: game.total, heroIn: game.heroIn,
+        timeMs: game.lastReachMs || game.timeMs
       });
     }
     if (game.onFinish) game.onFinish(game);

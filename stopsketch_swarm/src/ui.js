@@ -417,10 +417,12 @@ G.UI = (function () {
       ctx.fillText('대열 ' + game.line.length + ' · 이탈 ' + alone + ' · 잠듦 ' + sleeping + ' · 잃음 ' + game.lost, px, 48);
     } else ctx.fillText('걷는 중 ' + walking + ' · 잠듦 ' + sleeping + ' · 잃음 ' + game.lost, px, 48);
 
-    ctx.textAlign = 'right'; ctx.font = '15px sans-serif';
-    var lv = game.level.data;
-    ctx.fillText(lv.name + '  ·  ' + game.attempt + '번째  ·  ' + (game.timeMs / 1000).toFixed(1) + '/' + lv.rate.timeSec + '초  ·  정화 ' +
-      Math.round(G.Game.purity(game) * 100) + '%', V.w - 20, 35);
+    // 오른쪽: 이번 판에 주운 별 (사용자 결정 2026-10-20) + 스테이지 이름·시간·정화
+    var lv = game.level.data, sx = V.w - 22 - 26 * Math.max(0, game.starsTotal - 1);
+    for (var k = 0; k < game.starsTotal; k++) drawStarIcon(ctx, sx + k * 26 - 4, 20, 11, k < game.starKeys.length);
+    ctx.textAlign = 'right'; ctx.font = '13px sans-serif';
+    ctx.fillText(lv.name + '  ·  ' + game.attempt + '번째  ·  ' + (game.timeMs / 1000).toFixed(1) + '초  ·  정화 ' +
+      Math.round(G.Game.purity(game) * 100) + '%', V.w - 20, 48);
     ctx.textAlign = 'left';
   }
 
@@ -506,6 +508,24 @@ G.UI = (function () {
     ctx.globalAlpha = 1; ctx.textAlign = 'left';
   }
 
+  // 별 하나 (on = 주움). 그림이 있으면 그림, 없으면 도형
+  function drawStarIcon(ctx, x, y, r, on) {
+    var img = G.Assets.get(on ? 'star_full' : 'star_empty');
+    if (img) { ctx.drawImage(img, x - r, y - r, r * 2, r * 2); return; }
+    G.Props.drawStarShape(ctx, x, y, r);
+    if (on) { ctx.fillStyle = C.star; ctx.fill(); }
+    ctx.lineWidth = 2; ctx.strokeStyle = on ? C.outline : 'rgba(43,33,24,0.35)'; ctx.stroke();
+  }
+
+  // 클리어 결과 창은 잉크병이 다 밝아진 뒤 resultDelayMs 더 기다렸다가 (사용자 요청 2026-10-20: 정화되는 모습을 1초 더)
+  var jarDoneAt = 0;
+  function resultReady(game) {
+    if (game.status !== 'clear') return true;
+    if (jarShown < G.Game.purity(game) - 1e-6) { jarDoneAt = 0; return false; }
+    if (!jarDoneAt) jarDoneAt = Date.now();
+    return Date.now() - jarDoneAt >= G.DATA.goalEnter.resultDelayMs;
+  }
+
   function drawResult(ctx, game) {
     if (game.status === 'run') return;
     if (game.status === 'ready') {
@@ -516,35 +536,35 @@ G.UI = (function () {
       ctx.textAlign = 'left';
       return;
     }
-    if (game.status === 'clear' && Date.now() - game.finishedAt < 700) return;
+    if (!resultReady(game)) return;
     ctx.fillStyle = 'rgba(43,33,24,0.35)';
     ctx.fillRect(0, 0, V.w, V.h);
     var clear = game.status === 'clear' && game.result;
-    var w = 560, h = clear ? 330 : 250, x = (V.w - w) / 2, y = (V.h - h) / 2;
+    var w = 560, h = clear ? 340 : 250, x = (V.w - w) / 2, y = (V.h - h) / 2;
     var panel = G.Assets.get('ui_panel');
     if (panel) ctx.drawImage(panel, x - 40, y - 30, w + 80, h + 60);
     else { ctx.fillStyle = C.paper; ctx.fillRect(x, y, w, h); ctx.strokeStyle = C.outline; ctx.lineWidth = 4; ctx.strokeRect(x, y, w, h); }
     var face = G.Assets.get(game.status === 'fail' ? 'char_erased' : 'char_goal');
-    if (face) ctx.drawImage(face, x + 66, y + 22, 80, 80);
+    if (face) ctx.drawImage(face, x + 28, y + 6, 136, 136);   // 사용자 요청 2026-10-20: 80 → 136
     ctx.textAlign = 'center'; ctx.fillStyle = game.status === 'clear' ? C.green : C.red;
     ctx.font = 'bold 40px sans-serif';
     ctx.fillText(game.status === 'clear' ? '정화!' : game.failReason, V.w / 2, y + 70);
     ctx.fillStyle = C.outline;
-    if (clear) {
-      for (var k = 0; k < 3; k++) {
-        var sx0 = V.w / 2 + (k - 1) * 56, sy0 = y + 112, emptyStar = G.Assets.get('star_empty');
-        if (k < game.result.stars) G.Props.draw(ctx, { type: 'star', x: sx0, y: sy0, size: 50 });
-        else if (emptyStar) ctx.drawImage(emptyStar, sx0 - 25, sy0 - 25, 50, 50);
-        else { G.Props.drawStarShape(ctx, sx0, sy0, 25); ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(43,33,24,0.35)'; ctx.stroke(); }
-      }
-      ctx.font = '18px sans-serif';
-      game.result.checks.forEach(function (c, i) {
-        ctx.fillStyle = c.ok ? C.green : 'rgba(43,33,24,0.45)';
-        ctx.fillText((c.ok ? '✓ ' : '✗ ') + c.label, V.w / 2, y + 162 + i * 26);
-      });
+    if (clear) {                                   // 별 n/3 과 정화 % 를 따로 (사용자 결정 2026-10-20)
+      var r = game.result, best = game.best;
+      ctx.font = 'bold 17px sans-serif'; ctx.fillStyle = C.outline;
+      ctx.fillText('별 ' + r.stars + ' / ' + r.starsTotal, V.w / 2, y + 102);
+      for (var k = 0; k < r.starsTotal; k++) drawStarIcon(ctx, V.w / 2 + (k - (r.starsTotal - 1) / 2) * 56, y + 136, 25, k < r.stars);
+      // 정화 막대
+      var bw = 300, bx = V.w / 2 - bw / 2, by = y + 186;
+      ctx.font = 'bold 17px sans-serif'; ctx.fillStyle = C.outline;
+      ctx.fillText('정화 ' + Math.round(r.purity * 100) + '%  (물방울 ' + r.inJar + ' / ' + r.all + ')', V.w / 2, by - 8);
+      ctx.fillStyle = 'rgba(43,33,24,0.12)'; ctx.fillRect(bx, by, bw, 14);
+      ctx.fillStyle = mix(C.jarDark, C.jarClear, r.purity); ctx.fillRect(bx, by, bw * r.purity, 14);
+      ctx.lineWidth = 2; ctx.strokeStyle = C.outline; ctx.strokeRect(bx, by, bw, 14);
       ctx.fillStyle = C.outline; ctx.font = '15px sans-serif';
-      var best = game.best ? ' · 최고 기록 별 ' + game.best.stars + '개 · ' + (game.best.bestMs / 1000).toFixed(1) + '초' : '';
-      ctx.fillText((game.timeMs / 1000).toFixed(1) + '초 · 정화 ' + Math.round(G.Game.purity(game) * 100) + '%' + best, V.w / 2, y + 252);
+      ctx.fillText((r.timeMs / 1000).toFixed(1) + '초' + (best ? '  ·  최고 기록: 별 ' + (best.stars || 0) + '/' + r.starsTotal +
+        ' · 정화 ' + Math.round((best.bestPurity || 0) * 100) + '%' : ''), V.w / 2, y + 236);
     } else {
       ctx.font = '20px sans-serif';
       ctx.fillText('물방울 ' + game.rescued + '/' + game.total + ' 도착 · ' + game.attempt + '번째 시도', V.w / 2, y + 125);

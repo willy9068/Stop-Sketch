@@ -70,18 +70,17 @@ console.log('잉크 회수 (사용자 결정 2026-10-20: 선은 사라지지 않
 t('빨아들인 선만큼 돌려받음', function () { eq(R.refundInk(500, 200, 1800), 700); });
 t('돌려받아도 최대량을 넘지 않음', function () { eq(R.refundInk(1700, 300, 1800), 1800); });
 
-console.log('클리어 평가 (조건 수 = 별, 사용자 결정 2026-10-20: 물방울 n% 이상 도착)');
-var rate = { timeSec: 30, rescuePct: 100, maxTries: 3 };
-t('조건 3개 모두 → 별 3', function () { eq(R.rateClear(rate, { timeMs: 29000, rescued: 5, total: 5, tries: 1 }).stars, 3); });
-t('한 마리 잃으면 100% 조건 실패 → 별 2', function () { eq(R.rateClear(rate, { timeMs: 29000, rescued: 4, total: 5, tries: 1 }).stars, 2); });
-t('시간 초과 + 물방울 부족 + 4번째 → 별 0', function () { eq(R.rateClear(rate, { timeMs: 40000, rescued: 1, total: 5, tries: 4 }).stars, 0); });
-t('70%: 10마리 중 7마리면 성공, 6마리는 실패 (올림)', function () {
-  var r70 = { timeSec: 30, rescuePct: 70, maxTries: 3 };
-  eq(R.needRescue(r70, 10), 7); eq(R.needRescue(r70, 5), 4);
-  eq(R.rateClear(r70, { timeMs: 1, rescued: 7, total: 10, tries: 1 }).checks[1].ok, true);
-  eq(R.rateClear(r70, { timeMs: 1, rescued: 6, total: 10, tries: 1 }).checks[1].ok, false);
+console.log('클리어 결과 (사용자 결정 2026-10-20: 별 n/3 + 정화 % 따로, 최고 기록은 별 누적·정화 최고)');
+t('별·정화 따로 집계', function () {
+  var r = R.clearResult({ stars: ['star0', 'star2'], starsTotal: 3, rescued: 6, total: 8, heroIn: true, timeMs: 35600 });
+  eq(r.stars, 2); eq(r.starsTotal, 3); eq(r.inJar, 7); eq(r.all, 9); near(r.purity, 7 / 9);
 });
-t('배치된 물방울이 0이면 물방울 조건은 늘 성공', function () { eq(R.rateClear(rate, { timeMs: 1, rescued: 0, total: 0, tries: 1 }).checks[1].ok, true); });
+t('최고 기록: 판마다 다른 별을 먹어도 누적, 정화는 최고', function () {
+  var rec = R.mergeRecord({ clears: 1, tries: 1 }, R.clearResult({ stars: ['star0'], starsTotal: 3, rescued: 8, total: 8, heroIn: true, timeMs: 40000 }));
+  R.mergeRecord(rec, R.clearResult({ stars: ['star1', 'star2'], starsTotal: 3, rescued: 2, total: 8, heroIn: true, timeMs: 30000 }));
+  eq(rec.stars, 3); eq(rec.bestPurity, 1); eq(rec.bestMs, 30000);
+});
+t('예전 기록(별이 숫자)도 읽음', function () { eq(R.mergeRecord({ stars: 2, bestMs: 1 }, R.clearResult({ stars: [], starsTotal: 3, rescued: 0, total: 0, heroIn: true, timeMs: 5 })).stars, 0); });
 
 console.log('배치된 선 자르기 (사용자 결정 2026-10-20: 노랑은 그은 자리만, 붙은 끝 조각은 남고 나머지는 떨어짐)');
 var bar = { x: 0, y: 100, w: 200, h: 10 };
@@ -163,10 +162,7 @@ t('검사: 벽에 묻힌 물방울, 물방울 없음 경고', function () {
   if (!hasMsg(w, 'warn', '묻혀')) throw new Error('묻힘 경고 없음');
   if (!hasMsg(LC.check(mini()), 'warn', '잠든 물방울이 없어요')) throw new Error('없음 경고 없음');
 });
-t('평가 조건 기본값 채우기, 있는 값은 유지', function () {
-  var n = LC.normalize({ rate: { timeSec: 45, allStars: true } });
-  eq(n.rate.timeSec, 45); eq(n.rate.rescuePct, D.level.rate.rescuePct); eq(n.rate.maxTries, D.level.rate.maxTries); eq(n.rate.allStars, undefined);
-});
+t('예전 평가 조건(rate)은 지움', function () { eq(LC.normalize({ rate: { timeSec: 45 } }).rate, undefined); });
 t('지우개·구간 기본값', function () { var n = LC.normalize({}); eq(n.eraser.pct, D.eraser.pct); eq(n.segments.length, 0); });
 t('물방울 속도·충돌 기본값, 있는 값은 유지', function () {
   var n = LC.normalize({}); eq(n.drops.heroSpeed, D.drop.runSpeed); eq(n.drops.smallSpeed, D.drop.runSpeed); eq(n.drops.collide, false);

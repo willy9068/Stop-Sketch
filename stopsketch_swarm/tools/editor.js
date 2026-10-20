@@ -25,7 +25,7 @@ var G = G || {};
   };
   var TOOLS = [
     ['select', '선택', 'V'], ['ground', '땅', 'G'], ['wall', '벽', 'W'], ['platform', '발판', 'P'],
-    ['drop', '물방울', 'B'], ['spike', '가시', 'K'], ['crystal', '배치된 선', 'L'], ['stopup', '정지 +1', 'Z'], ['inkup', '잉크 병', 'I'], ['segment', '구간 경계', 'J'],
+    ['drop', '물방울', 'B'], ['spike', '가시', 'K'], ['crystal', '배치된 선', 'L'], ['star', '별', 'S'], ['stopup', '정지 +1', 'Z'], ['inkup', '잉크 병', 'I'], ['segment', '구간 경계', 'J'],
     ['deco', '장식', 'C'], ['text', '글자', 'T']
   ];
   var GRID = 10, HANDLE = 7;
@@ -200,7 +200,7 @@ var G = G || {};
     drawSegments(l);
     G.UI.drawGoal(ctx, l.goal.x, LC.groundTopAt(l, l.goal.x));
     label('도착', l.goal.x + 4, (LC.groundTopAt(l, l.goal.x) || 600) - D.art.goalJar.h - 8, '#1FA655');
-    l.props.forEach(function (p) { if (p.type === 'drop' || p.type === 'stopup' || p.type === 'inkup') P.draw(ctx, p, { editor: true }); });
+    l.props.forEach(function (p) { if (p.type === 'drop' || p.type === 'star' || p.type === 'stopup' || p.type === 'inkup') P.draw(ctx, p, { editor: true }); });
     drawStart(l);
 
     // 땅 만들기 중
@@ -272,7 +272,7 @@ var G = G || {};
     for (i = segs.length - 1; i >= 0; i--) if (inRect(w, segRect(i))) return { kind: 'seg', i: i };   // 구간 이름표가 가장 먼저
     if (inRect(w, selRect({ kind: 'start' }))) return { kind: 'start' };
     if (inRect(w, selRect({ kind: 'goal' }))) return { kind: 'goal' };
-    var order = [function (p) { return p.type === 'drop' || p.type === 'stopup' || p.type === 'inkup'; }, function (p) { var d = P.def(p.type); return d && d.solid; },
+    var order = [function (p) { return p.type === 'drop' || p.type === 'star' || p.type === 'stopup' || p.type === 'inkup'; }, function (p) { var d = P.def(p.type); return d && d.solid; },
                  function (p) { return p.type === 'text' || p.type === 'deco'; }];
     for (var o = 0; o < order.length; o++) {
       for (i = l.props.length - 1; i >= 0; i--) {
@@ -322,6 +322,7 @@ var G = G || {};
     }
     else if (tool === 'crystal') p = { type: 'crystal', x: snap(w.x - d.w / 2), y: snap(w.y - d.h / 2), w: d.w, h: d.h, pin: d.pin };
     else if (tool === 'stopup') p = { type: 'stopup', x: snap(w.x), y: snap(w.y), size: d.size };
+    else if (tool === 'star') p = { type: 'star', x: snap(w.x), y: snap(w.y), size: d.size };
     else if (tool === 'segment') {                   // 구간 경계: 클릭한 x 에 새 경계, 이름은 오른쪽 "선택" 칸에서
       l.segments = l.segments || [];
       l.segments.push({ x: snap(w.x), name: '새 구간' });
@@ -570,10 +571,7 @@ var G = G || {};
       '<div class="f"><label>배경</label><select id="l_bg">' + opts(bgs, l.bg) + '</select></div>' +
       num('l_ink', '잉크', l.ink) + num('l_stops', '정지 횟수', l.stops) +
       num('l_start', '시작 x', l.start.x) + num('l_goal', '도착 x', l.goal.x) +
-      sec('별 평가 조건', '만족한 수 = 별 0~3') +
-      num('r_time', '시간(초) 안', l.rate.timeSec) +
-      num('r_rescue', '물방울 % 이상', l.rate.rescuePct) + hint('잠든 물방울 ' + LC.dropCount(l) + '마리 중 ' + G.Rules.needRescue(l.rate, LC.dropCount(l)) + '마리') +
-      num('r_tries', '시도 횟수 안', l.rate.maxTries) +
+      sec('평가', '별 n/3 + 정화 %') + hint('별: 주인공이 닿아야 획득, 스테이지당 ' + D.level.starsPerStage + '개 (왼쪽 도구 "별"). 정화: 잉크병에 들어간 물방울 비율') +
       sec('쓸 수 있는 색', '게임 키 1~5') +
       '<div class="f"><label></label><div>' +
       D.inks.order.map(function (c) {
@@ -658,8 +656,6 @@ var G = G || {};
     if (id === 'l_name') l.name = v; else if (id === 'l_id') l.id = v; else if (id === 'l_bg') l.bg = v;
     else if (id === 'l_ink') l.ink = v; else if (id === 'l_stops') l.stops = v;
     else if (id === 'l_start') l.start.x = v; else if (id === 'l_goal') l.goal.x = v;
-    else if (id === 'r_time') l.rate.timeSec = v; else if (id === 'r_tries') l.rate.maxTries = v;
-    else if (id === 'r_rescue') l.rate.rescuePct = Math.max(0, Math.min(100, v));
     else if (id === 'e_pct') l.eraser.pct = v; else if (id === 'e_delayMs') l.eraser.delayMs = v;
     else if (id === 'd_heroSpeed' || id === 'd_smallSpeed') l.drops[id.slice(2)] = Math.max(0.1, Math.round(+t.value * 10) / 10);
     else if (id === 'd_collide') l.drops.collide = t.checked;
@@ -732,7 +728,7 @@ var G = G || {};
   function levelsText() {
     var body = S.levels.map(function (l) {
       var lines = ['  {'];
-      ['id', 'name', 'bg', 'ink', 'stops', 'rate', 'inks', 'fx', 'drops', 'eraser', 'segments', 'start', 'goal'].forEach(function (k) {
+      ['id', 'name', 'bg', 'ink', 'stops', 'inks', 'fx', 'drops', 'eraser', 'segments', 'start', 'goal'].forEach(function (k) {
         var v = k === 'segments' ? (l.segments || []).slice().sort(function (a, b) { return a.x - b.x; }) : l[k];   // 구간 경계는 x 순서로 저장
         lines.push('    ' + JSON.stringify(k) + ': ' + JSON.stringify(v) + ',');
       });

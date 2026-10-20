@@ -15,7 +15,7 @@ G.makeRng = function (seed) {
 
 // 계정 저장. localStorage가 막혀 있어도(사생활 보호 모드 등) 게임은 돌아가게 한다
 //   inkBonus: 잉크 병으로 늘어난 최대량(영구) / bottles: 먹은 잉크 병 { "구간id:병id": true }
-//   records: 구간별 기록 { 구간id: { stars(최고), bestMs, clears, tries } }
+//   records: 스테이지별 기록 { id: { starKeys{별key:true}, stars(모은 별 수), bestPurity(0~1), bestMs, clears, tries } }
 G.Save = {
   blank: function () {
     return { v: G.DATA.version, timeMode: G.DATA.defaultTimeMode, stats: {}, inkBonus: 0, bottles: {}, records: {} };

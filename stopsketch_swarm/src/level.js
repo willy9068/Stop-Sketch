@@ -10,7 +10,7 @@ G.Level = {
     lv.ground.forEach(function (g) {
       out.statics.push(P.add(engine, P.staticRect((g.x0 + g.x1) / 2, g.top + depth / 2, g.x1 - g.x0, depth)));
     });
-    var nBottle = 0;
+    var nBottle = 0, nStar = 0;
     lv.props.forEach(function (p) {
       if (p.type === 'crystal') {                  // 자를 수 있게 복사본으로 (원본 데이터는 그대로)
         var c = { x: p.x, y: p.y, w: p.w, h: p.h, pin: p.pin || 'both', body: null };
@@ -22,6 +22,7 @@ G.Level = {
       if (b) out.statics.push(b);
       if (p.type === 'drop') out.sleepers.push({ prop: p, x: p.x, y: p.y, state: 'sleep' });
       if (p.type === 'stopup') out.items.push({ prop: p, kind: 'stopup', got: false });
+      if (p.type === 'star') out.items.push({ prop: p, kind: 'star', key: 'star' + nStar++, got: false });   // 다시 하면 다시 나타남 (클리어해야 기록)
       if (p.type === 'inkup') {
         var key = lv.id + ':' + (p.id || 'inkup' + nBottle++);
         out.items.push({ prop: p, kind: 'inkup', key: key, got: !!owned[key], owned: !!owned[key] });
