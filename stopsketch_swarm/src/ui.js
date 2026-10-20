@@ -147,19 +147,57 @@ G.UI = (function () {
     ctx.restore();
   }
 
+  // 지우개 (사용자 요청 2026-10-20: 벽이 아니라 진짜 지우개가 문지르며 다가오게). 그림이 없으면 예전 eraser_edge / 점선
+  //   본체는 게임 시간(정지 중엔 멈춤)으로 위아래로 문지르고, 가루는 화면에만 있는 효과(물리 없음)
+  var crumbs = [], lastRun = 0, crumbAcc = 0;
   function drawEraser(ctx, game) {
-    var ex = game.eraserX, top = cam.y - 50, bottom = cam.y + V.h / cam.z + 50;
-    if (ex < cam.x - 10) return;
+    var E = G.DATA.art.eraser, ex = game.eraserX, top = cam.y - 50, vh = V.h / cam.z, bottom = cam.y + vh + 50;
+    var body = G.Assets.get('eraser_body'), smudge = G.Assets.get('eraser_smudge');
+    var dt = game.runMs - lastRun; lastRun = game.runMs;
+    if (dt < 0 || dt > 200) { dt = 0; crumbs = []; }          // 새 판이거나 오래 멈췄다 돌아오면 가루 비움
+    if (ex < cam.x - 300) { crumbs = []; return; }
+    // 지운 자리: 흰 종이
     ctx.fillStyle = '#FFFFFF';
-    ctx.fillRect(cam.x - 10, top, ex - cam.x + 10, bottom - top);
-    var img = G.Assets.get('eraser_edge');
-    if (img) {
-      var eh = bottom - top, ew = img.width * eh / img.height * 0.6;
-      ctx.drawImage(img, ex - ew * 0.75, top, ew, eh);
-    } else {
-      ctx.strokeStyle = 'rgba(43,33,24,0.25)'; ctx.lineWidth = 3; ctx.setLineDash([6, 8]);
-      ctx.beginPath(); ctx.moveTo(ex, top); ctx.lineTo(ex, bottom); ctx.stroke(); ctx.setLineDash([]);
+    if (ex > cam.x - 10) ctx.fillRect(cam.x - 10, top, ex - cam.x + 10, bottom - top);
+    if (!body) {                                    // 그림이 없을 때: 예전 가장자리 그림
+      var img = G.Assets.get('eraser_edge');
+      if (img) { var eh = bottom - top, ew = img.width * eh / img.height * 0.6; ctx.drawImage(img, ex - ew * 0.75, top, ew, eh); }
+      else { ctx.strokeStyle = 'rgba(43,33,24,0.25)'; ctx.lineWidth = 3; ctx.setLineDash([6, 8]); ctx.beginPath(); ctx.moveTo(ex, top); ctx.lineTo(ex, bottom); ctx.stroke(); ctx.setLineDash([]); }
+      return;
     }
+    // 경계 띠: 왼쪽 흰색이 지운 자리와 이어지고 오른쪽으로 문지른 자국이 옅어짐. 세로로 반복
+    if (smudge) {
+      var sw = E.smudgeW, sh = smudge.height * sw / smudge.width, sx = ex - sw * 0.35;
+      for (var y = Math.floor(top / sh) * sh; y < bottom; y += sh) ctx.drawImage(smudge, sx, y, sw, sh);
+    }
+    // 본체: 닳은 아래 모서리가 경계 앞 땅(없으면 화면 아래쪽)까지 내려왔다 올라가며 문지름
+    var bh = vh * E.bodyH, bw = body.width * bh / body.height, ph = game.runMs / E.rubMs * Math.PI * 2;
+    var gTop = G.Level.groundTopAt(game.level.data, ex + 30), base = gTop == null ? cam.y + vh * 0.8 : Math.min(gTop, cam.y + vh * 0.95);
+    var cornerY = base - Math.abs(Math.sin(ph)) * vh * E.rubAmp * 2, tilt = Math.sin(ph * 2) * 0.05;
+    // 가루: 문지르는 동안 경계에서 오른쪽 위로 튀어 나가 떨어짐 (게임 시간 기준)
+    var parts = [G.Assets.get('eraser_crumb_1'), G.Assets.get('eraser_crumb_2'), G.Assets.get('eraser_crumb_3')].filter(Boolean);
+    if (parts.length && dt > 0) {
+      crumbAcc += dt;
+      while (crumbAcc >= E.crumbMs) {
+        crumbAcc -= E.crumbMs;
+        var rnd = Math.random;
+        crumbs.push({ x: ex + 6, y: cornerY - rnd() * 30, vx: 1.5 + rnd() * 3.5, vy: -2 - rnd() * 3, a: rnd() * 6.28, va: (rnd() - 0.5) * 0.3,
+          s: E.crumb[0] + rnd() * (E.crumb[1] - E.crumb[0]), img: parts[Math.floor(rnd() * parts.length)], life: E.crumbLife });
+      }
+    }
+    var k = dt / 16.7;
+    crumbs = crumbs.filter(function (c) {
+      c.life -= dt; c.x += c.vx * k; c.y += c.vy * k; c.vy += 0.25 * k; c.vx *= Math.pow(0.98, k); c.a += c.va * k;
+      return c.life > 0;
+    });
+    ctx.save();
+    ctx.translate(ex, cornerY); ctx.rotate(tilt);
+    ctx.drawImage(body, -bw * 0.97, -bh * 0.85, bw, bh);   // 그림 오른쪽 아래(닳은 모서리)가 경계에
+    ctx.restore();
+    crumbs.forEach(function (c) {
+      ctx.save(); ctx.globalAlpha = Math.min(1, c.life / 400); ctx.translate(c.x, c.y); ctx.rotate(c.a);
+      ctx.drawImage(c.img, -c.s / 2, -c.s / 2, c.s, c.s); ctx.restore();
+    });
   }
 
   // 물감 선 + 색각 보조 무늬 (검정=없음, 빨강=점, 파랑=화살, 노랑=X, 초록=위 화살)
@@ -325,8 +363,8 @@ G.UI = (function () {
     G.Game.walking(game).forEach(function (d) { if (!d.hero) drawDrop(ctx, d); });
     if (game.hero.state === 'walk') drawDrop(ctx, game.hero, game.level.data.drops.follow ? game.line.length : 0);
     drawGoalDrops(ctx, game);
-    drawFx(ctx, game);
     drawEraser(ctx, game);
+    drawFx(ctx, game);                             // 지워지는 순간 효과가 흰 종이 위에 보이게 지우개 다음에
 
     if (debug.showBoxes) {
       ctx.lineWidth = 1.5 / cam.z; ctx.strokeStyle = '#ff00cc';
@@ -348,6 +386,22 @@ G.UI = (function () {
         ctx.save(); ctx.globalAlpha = 1 - t; ctx.setLineDash([4, 6]);
         ctx.lineWidth = (f.type === 'cut' ? G.DATA.ink.yellowCut * 2 : G.DATA.ink.thickness) * (1 - t); ctx.strokeStyle = f.type === 'cut' ? C.yellow : (C[f.color] || C.ink);
         path(ctx, f.pts); ctx.stroke(); ctx.restore();
+        return;
+      }
+      if (f.type === 'erasePuff') {                 // 지우개에 지워지는 순간 (화면 시간): 가루 퍼짐 + 물방울은 지워진 얼굴이 흐려짐
+        t = (Date.now() - f.real) / G.DATA.art.eraser.puffMs;
+        if (t < 0 || t >= 1) return;
+        img = G.Assets.get('fx_erase_puff');
+        ctx.save();
+        if (!f.line) {
+          var face = G.Assets.get('char_erased');
+          if (face) { var fs = f.r * G.DATA.art.charSize; ctx.globalAlpha = 1 - t; ctx.drawImage(face, f.x - fs / 2, f.y + f.r - fs, fs, fs); }
+        }
+        k = f.r * (3 + t * 3);
+        ctx.globalAlpha = 1 - t * t;
+        if (img) ctx.drawImage(img, f.x - k / 2, f.y - k / 2, k, k);
+        else { ctx.strokeStyle = 'rgba(43,33,24,0.5)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(f.x, f.y, k / 2, 0, 6.283); ctx.stroke(); }
+        ctx.restore();
         return;
       }
       if (f.type === 'absorb') {

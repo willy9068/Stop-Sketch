@@ -715,7 +715,9 @@ spikes around the border, thick dark brown line, empty inside, plain white backg
 
 | # | 구분 | 파일명 | 크기 | 배경 | 우선 |
 |---|---|---|---|---|---|
-| 56 | 지우개 본체 | eraser_body.png | 512×768 | 투명 | ★ 지우개 연출 |
-| 57~59 | 지우개 가루 3종 | eraser_crumb_1~3.png | 128×128 | 투명 | ★ 지우개 연출 |
-| 60 | 지운 자리 경계 띠 | eraser_smudge.png | 256×1024 | 투명(왼쪽 흰색) | ☆ 지우개 연출 |
-| 61 | 지워지는 순간 효과 | fx_erase_puff.png | 256×256 | 투명 | ○ 지우개 연출 |
+| 56 | 지우개 본체 | eraser_body.png | 512×768 | 투명 | ★ 지우개 연출 ✅ |
+| 57~59 | 지우개 가루 3종 | eraser_crumb_1~3.png | 128×128 | 투명 | ★ 지우개 연출 ✅ |
+| 60 | 지운 자리 경계 띠 | eraser_smudge.png | 256×1024 | 투명(왼쪽 흰색) | ☆ 지우개 연출 ✅ |
+| 61 | 지워지는 순간 효과 | fx_erase_puff.png | 256×256 | 투명 | ○ 지우개 연출 ✅ |
+
+> 6차 이미지 6장 적용 완료 (2026-10-20). 문지르는 속도·크기는 `stopsketch_swarm/src/data.js` 의 `art.eraser`

@@ -153,7 +153,8 @@ G.DATA = {
       'deco_cloud_1', 'deco_cloud_2', 'deco_cloud_3',
       'ui_stop_on', 'ui_gauge_frame', 'ui_panel', 'fx_star_pop', 'fx_land', 'star_full', 'star_empty',
       'start_hole', 'goal_jar_empty', 'ink_black', 'ink_red', 'ink_blue', 'ink_yellow', 'ink_green', 'ink_select', 'ui_shelf',
-      'fx_bounce', 'fx_boost', 'fx_absorb', 'eraser_edge', 'ui_arrow', 'goal_jar_dark'
+      'fx_bounce', 'fx_boost', 'fx_absorb', 'eraser_edge', 'ui_arrow', 'goal_jar_dark',
+      'eraser_body', 'eraser_crumb_1', 'eraser_crumb_2', 'eraser_crumb_3', 'eraser_smudge', 'fx_erase_puff'
     ],
     backgrounds: { bg_a: '종이 + 구름', bg_b: '줄 노트', bg_plain: '빈 종이', none: '단색 종이' },
     decos: ['deco_cloud_1', 'deco_cloud_2', 'deco_cloud_3'],
@@ -166,6 +167,10 @@ G.DATA = {
     groundTint: null,
     slices: { prop_wall: { src: 14, dst: 5 }, prop_platform: { src: 8, dst: 3.5 }, prop_crystal: { src: 12, dst: 5 } },
     fx: { starPopMs: 450, landMs: 350, landVy: 6, inkMs: 400 },
+    // 지우개 연출 (사용자 요청 2026-10-20, 6차 이미지): 본체가 가장자리에서 위아래로 문지르며 다가오고, 가루가 튀고, 지나간 자리는 흰 종이 + 문지른 자국 띠
+    //   bodyH: 본체 높이(화면 높이 비율) · rubMs: 한 번 문지르는 시간 · rubAmp: 위아래 폭(화면 높이 비율) · crumbMs: 가루 나오는 간격
+    //   crumb: 가루 크기 [최소, 최대] · crumbLife: 가루 수명 · smudgeW: 경계 띠 폭 · puffMs: 지워질 때 효과 시간
+    eraser: { bodyH: 0.55, rubMs: 420, rubAmp: 0.22, crumbMs: 70, crumb: [12, 22], crumbLife: 1300, smudgeW: 120, puffMs: 600 },
     wallCrop: [5, 32, 247, 193],
     panelHull: null,
     startHole: { size: 190, up: 70 },

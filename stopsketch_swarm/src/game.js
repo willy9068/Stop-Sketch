@@ -106,7 +106,7 @@ G.Game = {
       if (game.messages[i].ms <= 0) game.messages.splice(i, 1);
     }
     if (game.status !== 'run') return;
-    if (game.fx.length) game.fx = game.fx.filter(function (f) { return game.timeMs - f.t < 1000; });
+    if (game.fx.length) game.fx = game.fx.filter(function (f) { return f.real ? Date.now() - f.real < 1500 : game.timeMs - f.t < 1000; });
     if (game.stopped) game.stoppedMs += realMs;
     game.timeMs += realMs;
     var s = this.scale(game);
@@ -160,7 +160,11 @@ G.Game = {
     for (var i = game.lines.length - 1; i >= 0; i--) {   // 지우개가 지나간 선도 지움 (잉크는 돌아오지 않음)
       var ln = game.lines[i], pts = G.Draw.worldPts(ln), maxX = -Infinity;
       pts.forEach(function (q) { maxX = Math.max(maxX, q.x); });
-      if (maxX < game.eraserX) G.Draw.drop(game, ln, false);
+      if (maxX < game.eraserX) {
+        var lp = pts[pts.length - 1];
+        game.fx.push({ type: 'erasePuff', x: lp.x, y: lp.y, r: 14, line: true, real: Date.now(), t: game.timeMs });
+        G.Draw.drop(game, ln, false);
+      }
     }
   },
 
@@ -385,6 +389,9 @@ G.Game = {
   },
 
   kill: function (game, d, reason) {
+    if (reason === '지우개에 지워졌어요' && d.body) {   // 지워지는 순간: 가루 효과 + 지워진 얼굴 (화면 시간으로, 실패 뒤에도 재생)
+      game.fx.push({ type: 'erasePuff', x: d.body.position.x, y: d.body.position.y, r: d.r, real: Date.now(), t: game.timeMs });
+    }
     d.state = 'dead';
     this.unline(game, d);
     G.Drop.remove(game.engine, d);
