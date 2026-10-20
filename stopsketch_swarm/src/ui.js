@@ -273,7 +273,7 @@ G.UI = (function () {
     ctx.translate(-cam.x, -cam.y);
     var lv = game.level.data;
     lv.props.forEach(function (p) { if (p.type === 'deco' || p.type === 'text') G.Props.draw(ctx, p); });
-    lv.ground.forEach(function (g) { G.Props.drawGround(ctx, g); });
+    G.Props.drawGrounds(ctx, lv.ground);
     lv.props.forEach(function (p) { var d = G.Props.def(p.type); if (d && d.solid && p.type !== 'crystal') G.Props.draw(ctx, p); });
     game.level.crystals.forEach(function (c) { G.Props.drawCrystal(ctx, c); });
     game.fallen.forEach(function (f) {             // 잘려 떨어진 배치된 선 조각

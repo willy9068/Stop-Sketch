@@ -188,7 +188,7 @@ var G = G || {};
     drawGrid();
     drawGapsAndGuides(l);
     l.props.forEach(function (p) { if (p.type === 'deco' || p.type === 'text') P.draw(ctx, p, { editor: true }); });
-    l.ground.forEach(function (g) { P.drawGround(ctx, g); });
+    P.drawGrounds(ctx, l.ground);
     l.props.forEach(function (p) { var d = P.def(p.type); if (d && d.solid) P.draw(ctx, p, { editor: true }); });
     l.props.forEach(function (p) {                   // 배치된 선: 붙은 끝(빨간 점) 표시 — 노랑으로 자르면 붙은 끝이 있는 조각만 남음
       if (p.type !== 'crystal') return;
@@ -559,35 +559,41 @@ var G = G || {};
 
   function buildLevelForm() {
     var l = lv(), bgs = Object.keys(D.art.backgrounds).map(function (k) { return [k, D.art.backgrounds[k] + ' (' + k + ')']; });
+    function sec(t, sub) { return '<div class="sec">' + t + (sub ? '<small>' + sub + '</small>' : '') + '</div>'; }
+    function hint(t) { return '<div class="hint">' + t + '</div>'; }
+    function check(id, label, on, text) {
+      return '<div class="f"><label>' + label + '</label><label><input type="checkbox" id="' + id + '"' + (on ? ' checked' : '') + '>' + text + '</label></div>';
+    }
     $('lvForm').innerHTML =
       '<div class="f"><label>이름</label><input id="l_name" value="' + esc(l.name) + '"></div>' +
       '<div class="f"><label>id</label><input id="l_id" value="' + esc(l.id) + '"></div>' +
       '<div class="f"><label>배경</label><select id="l_bg">' + opts(bgs, l.bg) + '</select></div>' +
       num('l_ink', '잉크', l.ink) + num('l_stops', '정지 횟수', l.stops) +
       num('l_start', '시작 x', l.start.x) + num('l_goal', '도착 x', l.goal.x) +
-      '<div class="row"><b>별 평가 조건</b>&nbsp;(만족한 수 = 별 0~3)</div>' +
+      sec('별 평가 조건', '만족한 수 = 별 0~3') +
       num('r_time', '시간(초) 안', l.rate.timeSec) +
-      num('r_rescue', '물방울 % 이상', l.rate.rescuePct) + '<div>잠든 물방울 ' + LC.dropCount(l) + '마리 중 ' + G.Rules.needRescue(l.rate, LC.dropCount(l)) + '마리</div>' +
+      num('r_rescue', '물방울 % 이상', l.rate.rescuePct) + hint('잠든 물방울 ' + LC.dropCount(l) + '마리 중 ' + G.Rules.needRescue(l.rate, LC.dropCount(l)) + '마리') +
       num('r_tries', '시도 횟수 안', l.rate.maxTries) +
-      '<div class="row"><b>쓸 수 있는 색</b>&nbsp;(게임 키 1~5)</div><div class="f">' +
+      sec('쓸 수 있는 색', '게임 키 1~5') +
+      '<div class="f"><label></label><div>' +
       D.inks.order.map(function (c) {
-        return '<label><input type="checkbox" id="k_' + c + '"' + (l.inks.indexOf(c) >= 0 ? ' checked' : '') + '> ' + D.inks[c].name + '</label>';
-      }).join('<br>') + '</div>' +
-      '<div class="row"><b>색 효과 세기</b></div>' +
-      num('fx_bounce', '빨강 튕김', l.fx.bounce) + '<div>15 ≈ 약 400px 높이</div>' +
+        return '<label class="opt"><input type="checkbox" id="k_' + c + '"' + (l.inks.indexOf(c) >= 0 ? ' checked' : '') + '>' + D.inks[c].name + '</label>';
+      }).join('') + '</div></div>' +
+      sec('색 효과 세기') +
+      num('fx_bounce', '빨강 튕김', l.fx.bounce) + hint('15 ≈ 약 400px 높이') +
       num('fx_boostPct', '파랑 속도 %', l.fx.boostPct) + num('fx_boostMs', '파랑 유지 ms', l.fx.boostMs) +
-      num('fx_riseSpeed', '초록 떠오름', l.fx.riseSpeed) + '<div>스텝당 px (1.2 ≈ 초당 72px)</div>' +
-      '<div class="row"><b>물방울</b></div>' +
+      num('fx_riseSpeed', '초록 떠오름', l.fx.riseSpeed) + hint('스텝당 px (1.2 ≈ 초당 72px)') +
+      sec('물방울', '속도는 스텝당 px, 5.2 ≈ 초당 312px') +
       num('d_heroSpeed', '주인공 속도', l.drops.heroSpeed) + num('d_smallSpeed', '작은 물방울 속도', l.drops.smallSpeed) +
-      '<div>스텝당 px (5.2 ≈ 초당 312px). 소수 첫째 자리까지</div>' +
-      '<div class="f"><label>서로 충돌</label><label><input type="checkbox" id="d_collide"' + (l.drops.collide ? ' checked' : '') + '> 물방울끼리 부딪힘</label></div>' +
-      '<div>끄면 서로 통과(기본). 켜면 부딪혀 뒤로 돌거나 위에 올라탐</div>' +
-      '<div class="f"><label>대열</label><label><input type="checkbox" id="d_follow"' + (l.drops.follow ? ' checked' : '') + '> 주인공 발자국을 따라옴</label></div>' +
-      num('d_gap', '대열 간격', l.drops.gap) + '<div>발자국 길이 px. 켜면 작은 물방울 속도는 이탈해 혼자 걸을 때만 씀</div>' +
-      '<div class="row"><b>지우개</b></div>' +
+      hint('소수 첫째 자리까지. 대열을 켜면 작은 물방울 속도는 이탈해 혼자 걸을 때만 씀') +
+      check('d_collide', '서로 충돌', l.drops.collide, '물방울끼리 부딪힘') +
+      hint('끄면 서로 통과(기본). 켜면 부딪혀 뒤로 돌거나 위에 올라탐') +
+      check('d_follow', '대열', l.drops.follow, '주인공 발자국을 따라옴') +
+      num('d_gap', '대열 간격', l.drops.gap) + hint('발자국 길이 px') +
+      sec('지우개') +
       num('e_pct', '속도 % (주인공)', l.eraser.pct) + num('e_delayMs', '출발 ms', l.eraser.delayMs) +
-      '<div class="row"><b>구간 경계</b>&nbsp;(설계 표시만, "x:이름" 한 줄에 하나)</div>' +
-      '<div class="f"><textarea id="l_segments" rows="5">' +
+      sec('구간 경계', '설계 표시만, "x:이름" 한 줄에 하나') +
+      '<div class="f"><label>경계</label><textarea id="l_segments" rows="5">' +
       esc((l.segments || []).map(function (sg) { return sg.x + ':' + sg.name; }).join('\n')) + '</textarea></div>';
     $('lvSel').innerHTML = S.levels.map(function (x, i) { return '<option value="' + i + '"' + (i === S.cur ? ' selected' : '') + '>' + (i + 1) + '. ' + esc(x.name) + '</option>'; }).join('');
   }

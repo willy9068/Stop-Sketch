@@ -56,6 +56,16 @@ G.Physics = (function () {
 
   // body 가 bodies 중 하나와 겹치는가 (초록이 떠오르다 닿았는지)
   function overlapsAny(body, bodies) { return M.Query.collides(body, bodies).length > 0; }
+  // body 와 겹친 몸체 목록 (조각이면 바깥 몸체로)
+  function overlapping(body, bodies) {
+    var out = [];
+    M.Query.collides(body, bodies).forEach(function (c) {
+      var o = c.bodyA.parent === body || c.bodyA === body ? c.bodyB : c.bodyA;
+      o = o.parent || o;
+      if (out.indexOf(o) < 0) out.push(o);
+    });
+    return out;
+  }
 
   // 시간 배율 scale 로 한 스텝 진행 (scale 0이면 진행하지 않음)
   function step(engine, scale) {
@@ -96,7 +106,7 @@ G.Physics = (function () {
 
   return {
     M: M, create: create, add: add, remove: remove, staticRect: staticRect,
-    segment: segment, lineBody: lineBody, overlapsAny: overlapsAny,
+    segment: segment, lineBody: lineBody, overlapsAny: overlapsAny, overlapping: overlapping,
     step: step, contacts: contacts, touching: touching, allBodies: allBodies
   };
 })();

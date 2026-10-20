@@ -23,8 +23,17 @@
   #side { overflow-y: auto; padding: 8px; background: var(--paper); border-left: 1px solid var(--line); }
   #side h3 { margin: 12px 0 6px; font-size: 13px; border-bottom: 1px solid var(--line); padding-bottom: 3px; }
   #side h3:first-child { margin-top: 0; }
-  .f { display: grid; grid-template-columns: 70px 1fr; gap: 4px; align-items: center; margin: 3px 0; }
+  /* 설정 칸: 이름 열(오른쪽 맞춤) | 입력 열. 설명(.hint)·여러 줄 칸(.wide)은 입력 열에 맞춤 (사용자 요청 2026-10-20: 줄 맞추기) */
+  .f { display: grid; grid-template-columns: 112px 1fr; column-gap: 8px; align-items: center; margin: 4px 0; }
+  .f > label:first-child { text-align: right; color: #4d4232; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .f input, .f select, .f textarea { width: 100%; font: inherit; padding: 2px 4px; }
+  .f input[type=checkbox] { width: auto; margin: 0 4px 0 0; vertical-align: middle; }
+  .f .opt { display: block; padding: 1px 0; }
+  .hint { margin: -1px 0 6px 120px; color: #8a7b62; font-size: 11px; line-height: 1.35; }
+  .sec { margin: 14px 0 6px; padding: 3px 0 2px; border-bottom: 1px solid var(--line); font-weight: bold; }
+  .sec small { font-weight: normal; color: #8a7b62; margin-left: 4px; }
+  .wide { margin: 4px 0 4px 120px; }
+  .wide textarea { width: 100%; font: inherit; padding: 2px 4px; }
   .row { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0; }
   button { font: inherit; padding: 3px 8px; cursor: pointer; background: #fff; border: 1px solid #b9a98a; border-radius: 3px; }
   button:hover { background: #fff8e6; }
@@ -32,6 +41,7 @@
   button.on small { color: #dbe8ff; }
   button.main { background: var(--ink); color: #fff; border-color: var(--ink); }
   input[type=number] { width: 70px; }
+  .f input[type=number] { width: 100%; }
   #checks div { padding: 3px 6px; margin: 2px 0; border-radius: 3px; }
   #checks .error { background: #fbd9d6; }
   #checks .warn { background: #fff0c2; }

@@ -215,28 +215,64 @@ G.Props = (function () {
 
   // 땅: 속은 ground_fill 무늬(없으면 색), 윗면은 ground_top 띠(없으면 굵은 선)
   var patterns = {};
-  function drawGround(ctx, g) {
+  // 땅 여러 개를 한꺼번에 (사용자 요청 2026-10-20: 겹치거나 맞붙인 땅의 이음새가 안 보이게)
+  //   1) 채우기 전부 → 2) 세로 테두리는 바깥쪽이 빈 곳인 부분만 → 3) 윗면 그림은 더 높은 땅 속에 묻힌 부분을 빼고, 세계 좌표에 맞춰 이어 붙임
+  function drawGrounds(ctx, list) {
     var C = G.DATA.colors, A = G.DATA.art, depth = G.DATA.level.groundDepth;
-    var w = g.x1 - g.x0, fill = G.Assets.get('ground_fill'), top = G.Assets.get('ground_top');
+    var fill = G.Assets.get('ground_fill'), top = G.Assets.get('ground_top');
     if (fill) {
       if (!patterns.fill) patterns.fill = ctx.createPattern(fill, 'repeat');
       ctx.fillStyle = patterns.fill;
     } else ctx.fillStyle = C.ground;
-    ctx.fillRect(g.x0, g.top, w, depth);
-    if (fill && A.groundTint) { ctx.fillStyle = A.groundTint; ctx.fillRect(g.x0, g.top, w, depth); }
-    if (top) {
-      ctx.lineWidth = 3; ctx.strokeStyle = C.outline;   // 땅 양 끝 세로 테두리 (틈이 틈으로 보이게)
-      ctx.beginPath(); ctx.moveTo(g.x0, g.top); ctx.lineTo(g.x0, g.top + depth); ctx.moveTo(g.x1, g.top); ctx.lineTo(g.x1, g.top + depth); ctx.stroke();
-      var th = A.groundTop.h, tw = top.width * th / top.height, y = g.top - A.groundTop.up;
-      ctx.save();
-      ctx.beginPath(); ctx.rect(g.x0, y - 2, w, th + 4); ctx.clip();
-      for (var x = g.x0; x < g.x1; x += tw) ctx.drawImage(top, x, y, tw, th);
-      ctx.restore();
-    } else {
-      ctx.lineWidth = 4; ctx.strokeStyle = C.outline;
-      ctx.beginPath(); ctx.moveTo(g.x0, g.top + depth); ctx.lineTo(g.x0, g.top); ctx.lineTo(g.x1, g.top); ctx.lineTo(g.x1, g.top + depth); ctx.stroke();
+    list.forEach(function (g) { ctx.fillRect(g.x0, g.top, g.x1 - g.x0, depth); });
+    if (fill && A.groundTint) { ctx.fillStyle = A.groundTint; list.forEach(function (g) { ctx.fillRect(g.x0, g.top, g.x1 - g.x0, depth); }); }
+
+    // 구간 [a, b] 에서 빼야 할 구간들을 뺀 나머지
+    function minus(a, b, cuts) {
+      var out = [[a, b]];
+      cuts.forEach(function (c) {
+        var next = [];
+        out.forEach(function (s) {
+          if (c[1] <= s[0] || c[0] >= s[1]) { next.push(s); return; }
+          if (c[0] > s[0]) next.push([s[0], c[0]]);
+          if (c[1] < s[1]) next.push([c[1], s[1]]);
+        });
+        out = next;
+      });
+      return out.filter(function (s) { return s[1] - s[0] > 0.5; });
     }
+    var eps = 1.5;
+    ctx.lineWidth = top ? 3 : 4; ctx.strokeStyle = C.outline;
+    ctx.beginPath();
+    list.forEach(function (g) {                   // 세로 테두리: 바로 바깥(ox)에 다른 땅이 있는 높이는 숨김
+      [[g.x0, g.x0 - eps], [g.x1, g.x1 + eps]].forEach(function (e) {
+        var cuts = list.filter(function (h) { return h !== g && h.x0 <= e[1] && e[1] <= h.x1; })
+          .map(function (h) { return [h.top, h.top + depth]; });
+        minus(g.top, g.top + depth, cuts).forEach(function (s) { ctx.moveTo(e[0], s[0]); ctx.lineTo(e[0], s[1]); });
+      });
+    });
+    ctx.stroke();
+
+    list.forEach(function (g) {                   // 윗면: 더 높은 땅의 채우기 속에 있는 부분은 빼고 그림
+      var cuts = list.filter(function (h) { return h !== g && h.top < g.top - 1 && g.top < h.top + depth; })
+        .map(function (h) { return [h.x0, h.x1]; });
+      var spans = minus(g.x0, g.x1, cuts);
+      if (top) {
+        var th = A.groundTop.h, tw = top.width * th / top.height, y = g.top - A.groundTop.up;
+        spans.forEach(function (s) {
+          ctx.save();
+          ctx.beginPath(); ctx.rect(s[0], y - 2, s[1] - s[0], th + 4); ctx.clip();
+          for (var x = Math.floor(s[0] / tw) * tw; x < s[1]; x += tw) ctx.drawImage(top, x, y, tw, th);   // 세계 좌표 기준 → 맞붙여도 무늬가 이어짐
+          ctx.restore();
+        });
+      } else {
+        ctx.beginPath();
+        spans.forEach(function (s) { ctx.moveTo(s[0], g.top); ctx.lineTo(s[1], g.top); });
+        ctx.stroke();
+      }
+    });
   }
+  function drawGround(ctx, g) { drawGrounds(ctx, [g]); }
 
   // 물리: 단단한 프랍만 정적 사각형으로
   function build(engine, p) {
@@ -246,6 +282,6 @@ G.Props = (function () {
     return G.Physics.add(engine, G.Physics.staticRect(p.x + p.w / 2, p.y + p.h / 2, p.w, p.h, { label: p.type }));
   }
 
-  return { def: def, rect: rect, draw: draw, drawGround: drawGround, build: build, drawStarShape: drawStarShape,
+  return { def: def, rect: rect, draw: draw, drawGround: drawGround, drawGrounds: drawGrounds, build: build, drawStarShape: drawStarShape,
            drawCrystal: drawCrystal, drawSleeper: drawSleeper };
 })();

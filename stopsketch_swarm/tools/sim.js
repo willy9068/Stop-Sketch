@@ -256,3 +256,19 @@ G.LEVELS.forEach(function (lv) {
   }
   console.log('10 잉크병 들어가기: 들어간 시각 ' + times.join(' ') + ' · 마지막 닿음 ' + (g.lastReachMs / 1000).toFixed(2) + 's · 끝 ' + (g.timeMs / 1000).toFixed(2) + 's', g.status, '정화 ' + Math.round(G.Game.purity(g) * 100) + '%');
 })();
+
+// 11. 초록을 벽에 겹쳐 그려도 떠오름 (사용자 요청 2026-10-20)
+(function () {
+  var lv = { id: 't', name: '시험', ink: 3000, stops: 9, start: { x: 0 }, goal: { x: 2600 }, inks: ['green'],
+    drops: { heroSpeed: 1 }, eraser: { pct: 50, delayMs: 600000 }, ground: [{ x0: -400, x1: 3000, top: 600 }],
+    props: [{ type: 'wall', x: 400, y: 300, w: 40, h: 300 }, { type: 'platform', x: 700, y: 200, w: 300, h: 20 }] };
+  var g = G.Game.create('A', lv); G.Game.start(g);
+  drawLine(g, [{ x: 300, y: 500 }, { x: 600, y: 500 }], 'green');            // 벽을 가로지름
+  var ln = g.lines[0], y0 = ln.body.position.y;
+  for (var i = 0; i < 60 * 3; i++) G.Game.update(g, STEP);
+  var y1 = ln.body.position.y;
+  drawLine(g, [{ x: 650, y: 560 }, { x: 900, y: 560 }], 'green');            // 땅에 겹침 → 발판 밑에서 멈춰야
+  var l2 = g.lines[1];
+  for (i = 0; i < 60 * 8; i++) G.Game.update(g, STEP);
+  console.log('11 초록 겹쳐 그리기: 벽 가로지른 선 3초에 ' + Math.round(y0 - y1) + 'px 오름 (0이면 안 됨) · 땅에 겹친 선 멈춘 높이 y=' + Math.round(l2.body.position.y) + ' 떠오르는 중 ' + l2.rising + ' (발판 밑 y≈225 에서 멈춰야)');
+})();
