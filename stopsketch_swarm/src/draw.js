@@ -9,12 +9,14 @@ G.Draw = {
     if (game.status !== 'run' || game.ink <= 0) return false;
     game.stroke = G.Rules.newStroke(p);
     game.stroke.color = game.color;
+    game.stroke.cost = game.color === 'yellow' ? G.DATA.ink.yellowCost : 1;   // 길이당 잉크 비율
     return true;
   },
 
   move: function (game, p) {
     if (!game.stroke) return;
-    game.ink -= G.Rules.addSample(game.stroke, p, game.ink, G.DATA.ink);
+    var k = game.stroke.cost || 1;
+    game.ink -= G.Rules.addSample(game.stroke, p, game.ink / k, G.DATA.ink) * k;
     if (game.stroke.full) this.end(game);
   },
 
@@ -23,7 +25,7 @@ G.Draw = {
     if (!s) return;
     game.stroke = null;
     var r = G.Rules.finishStroke(s, G.DATA.ink);
-    if (!r.ok) { game.ink += r.refund; game.toast('선이 너무 짧아요 (잉크 반환)'); return; }
+    if (!r.ok) { game.ink += r.refund * (s.cost || 1); game.toast('선이 너무 짧아요 (잉크 반환)'); return; }
     var line = { pts: G.Rules.simplify(r.pts, G.DATA.ink.simplifyTol), color: s.color || 'black', len: s.len, active: false, body: null, local: null, rising: false };
     game.lines.push(line);
     if (!game.stopped) this.activate(game, line);
@@ -104,6 +106,22 @@ G.Draw = {
           M.Body.setAngularVelocity(body, (game.fallen.length % 2 ? 0.02 : -0.02));   // 세워진 채 떨어져 다시 서지 않게 살짝 기울임
           game.fallen.push({ w: q.w, h: q.h, body: P.add(game.engine, body) });
         }
+      });
+    }
+    // 이미 떨어진 조각도 칠하면 지워짐 (사용자 요청 2026-10-20). 남은 조각은 계속 떨어지는 조각으로 (속도·회전 이어받음)
+    for (var f = game.fallen.length - 1; f >= 0; f--) {
+      var fb = game.fallen[f], b = fb.body, deg = b.angle * 180 / Math.PI;
+      var rest = G.Rules.eraseCrystal({ x: b.position.x - fb.w / 2, y: b.position.y - fb.h / 2, w: fb.w, h: fb.h, angle: deg, pin: 'none' }, line.pts, r);
+      if (!rest) continue;
+      n++;
+      P.remove(game.engine, b);
+      game.fallen.splice(f, 1);
+      rest.forEach(function (q) {
+        var body = M.Bodies.rectangle(q.x + q.w / 2, q.y + q.h / 2, q.w, q.h, { friction: G.DATA.ink.friction, label: 'crystal', angle: b.angle });
+        M.Body.setDensity(body, G.DATA.ink.density);
+        M.Body.setVelocity(body, b.velocity);
+        M.Body.setAngularVelocity(body, b.angularVelocity);
+        game.fallen.push({ w: q.w, h: q.h, body: P.add(game.engine, body) });
       });
     }
     if (n) game.fx.push({ type: 'cut', pts: line.pts, t: game.timeMs });

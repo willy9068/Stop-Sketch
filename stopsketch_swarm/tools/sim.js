@@ -283,3 +283,19 @@ G.LEVELS.forEach(function (lv) {
   var under = Math.round(g.hero.body.position.x);
   console.log('12 공중 땅(높이 60) 밑 지나가기: 6초 뒤 x=' + under + ' (900 넘으면 정상, 높이 400이면 벽에 막힘)');
 })();
+
+// 13. 노랑: 잉크 절반, 떨어진 조각도 다시 지움 (사용자 요청 2026-10-20)
+(function () {
+  var lv = { id: 't', name: '시험', ink: 3000, stops: 9, start: { x: 0 }, goal: { x: 2600 }, inks: ['black', 'yellow'],
+    drops: { heroSpeed: 1 }, eraser: { pct: 50, delayMs: 600000 }, ground: [{ x0: -400, x1: 3000, top: 600 }],
+    props: [{ type: 'crystal', x: 400, y: 300, w: 200, h: 10, angle: 0, pin: 'none' }, { type: 'wall', x: -300, y: 400, w: 40, h: 200 }] };
+  var g = G.Game.create('A', lv); G.Game.start(g);
+  var ink0 = g.ink;
+  drawLine(g, [{ x: 500, y: 250 }, { x: 500, y: 350 }], 'yellow');            // 가운데를 가로질러 칠함 → 두 조각 떨어짐
+  var used = ink0 - g.ink;
+  for (var i = 0; i < 60 * 3; i++) G.Game.update(g, STEP);
+  var n1 = g.fallen.length, w1 = g.fallen.map(function (f) { return Math.round(f.w); }).join('+');
+  var f0 = g.fallen[0].body.position;
+  drawLine(g, [{ x: f0.x - 60, y: f0.y }, { x: f0.x + 60, y: f0.y }], 'yellow');   // 땅에 떨어진 조각을 따라 칠함
+  console.log('13 노랑: 100px 칠하는 데 잉크 ' + Math.round(used) + ' (검정이면 100) · 떨어진 조각 ' + n1 + '개(' + w1 + ') → 다시 칠한 뒤 ' + g.fallen.length + '개(' + g.fallen.map(function (f) { return Math.round(f.w); }).join('+') + ')');
+})();

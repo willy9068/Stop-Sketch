@@ -546,7 +546,7 @@ G.UI = (function () {
     if (panel) ctx.drawImage(panel, x - 40, y - 30, w + 80, h + 60);
     else { ctx.fillStyle = C.paper; ctx.fillRect(x, y, w, h); ctx.strokeStyle = C.outline; ctx.lineWidth = 4; ctx.strokeRect(x, y, w, h); }
     var face = G.Assets.get(game.status === 'fail' ? 'char_erased' : 'char_goal');
-    if (face) ctx.drawImage(face, x + 28, y + 6, 136, 136);   // 사용자 요청 2026-10-20: 80 → 136
+    if (face && !clear) ctx.drawImage(face, x + 28, y + 6, 136, 136);
     ctx.textAlign = 'center'; ctx.fillStyle = game.status === 'clear' ? C.green : C.red;
     ctx.font = 'bold 40px sans-serif';
     ctx.fillText(game.status === 'clear' ? '정화!' : game.failReason, V.w / 2, y + 70);
@@ -559,7 +559,10 @@ G.UI = (function () {
       // 정화 막대
       var bw = 300, bx = V.w / 2 - bw / 2, by = y + 186;
       ctx.font = 'bold 17px sans-serif'; ctx.fillStyle = C.outline;
-      ctx.fillText('정화 ' + Math.round(r.purity * 100) + '%  (물방울 ' + r.inJar + ' / ' + r.all + ')', V.w / 2, by - 8);
+      // 캐릭터: 정화 막대 왼쪽 위 꼭지점 위에 앉음 (사용자 요청 2026-10-20: 136 → 170). 정화 글자는 캐릭터를 비켜 오른쪽으로
+      var fs = 170;
+      if (face) ctx.drawImage(face, bx - fs / 2 + 4, by - fs * 0.93, fs, fs);
+      ctx.fillText('정화 ' + Math.round(r.purity * 100) + '%  (물방울 ' + r.inJar + ' / ' + r.all + ')', bx + 80 + (bw - 80) / 2, by - 8);
       ctx.fillStyle = 'rgba(43,33,24,0.12)'; ctx.fillRect(bx, by, bw, 14);
       ctx.fillStyle = mix(C.jarDark, C.jarClear, r.purity); ctx.fillRect(bx, by, bw * r.purity, 14);
       ctx.lineWidth = 2; ctx.strokeStyle = C.outline; ctx.strokeRect(bx, by, bw, 14);
@@ -572,7 +575,7 @@ G.UI = (function () {
       ctx.fillText((game.timeMs / 1000).toFixed(1) + '초', V.w / 2, y + 158);
     }
     ctx.font = 'bold 20px sans-serif'; ctx.fillStyle = C.outline;
-    ctx.fillText('R 또는 클릭: 다시 하기' + (game.status === 'clear' && game.hasNext ? ' · N: 다음 스테이지' : ''), V.w / 2, y + h - (clear ? 42 : 30));
+    ctx.fillText('R 또는 클릭: 다시 하기' + (game.status === 'clear' && game.hasNext ? ' · N: 다음 스테이지' : ''), V.w / 2, y + h - (clear ? 74 : 30));   // 사용자 요청 2026-10-20: 조금 위로
     ctx.textAlign = 'left';
   }
 

@@ -112,6 +112,7 @@ G.DATA = {
     friction: 0.4,         // 떨어지는 선끼리·땅과의 마찰 (선이 미끄러져 내려가지 않게)
     density: 0.006,        // 선 밀도 (물방울보다 훨씬 무거움 → 걷는 물방울이 밀어도 거의 안 움직임)
     suckReach: 36,         // 우클릭한 곳에서 화면 기준 이 거리(px) 안의 선을 빨아들임. 줌 아웃하면 세계 거리로는 더 넓어짐 (사용자 요청 2026-10-20: 18 → 36)
+    yellowCost: 0.5,       // 노랑은 길이당 잉크를 이 비율만 씀 (돌려받을 수 없으니 절반, 사용자 요청 2026-10-20)
     yellowCut: 14,         // 노랑으로 칠한 폭의 절반: 이 안에 든 배치된 선 부분이 지워짐 (사용자 결정 2026-10-20: 자르기 → 칠한 부분 지우기)
     simplifyTol: 3         // 선 점 줄이기 허용 오차 (물리 조각을 길게 → 떨어질 때 안정)
   },
@@ -1046,12 +1047,14 @@ G.Draw = {
     if (game.status !== 'run' || game.ink <= 0) return false;
     game.stroke = G.Rules.newStroke(p);
     game.stroke.color = game.color;
+    game.stroke.cost = game.color === 'yellow' ? G.DATA.ink.yellowCost : 1;   // 길이당 잉크 비율
     return true;
   },
 
   move: function (game, p) {
     if (!game.stroke) return;
-    game.ink -= G.Rules.addSample(game.stroke, p, game.ink, G.DATA.ink);
+    var k = game.stroke.cost || 1;
+    game.ink -= G.Rules.addSample(game.stroke, p, game.ink / k, G.DATA.ink) * k;
     if (game.stroke.full) this.end(game);
   },
 
@@ -1060,7 +1063,7 @@ G.Draw = {
     if (!s) return;
     game.stroke = null;
     var r = G.Rules.finishStroke(s, G.DATA.ink);
-    if (!r.ok) { game.ink += r.refund; game.toast('선이 너무 짧아요 (잉크 반환)'); return; }
+    if (!r.ok) { game.ink += r.refund * (s.cost || 1); game.toast('선이 너무 짧아요 (잉크 반환)'); return; }
     var line = { pts: G.Rules.simplify(r.pts, G.DATA.ink.simplifyTol), color: s.color || 'black', len: s.len, active: false, body: null, local: null, rising: false };
     game.lines.push(line);
     if (!game.stopped) this.activate(game, line);
@@ -1141,6 +1144,22 @@ G.Draw = {
           M.Body.setAngularVelocity(body, (game.fallen.length % 2 ? 0.02 : -0.02));   // 세워진 채 떨어져 다시 서지 않게 살짝 기울임
           game.fallen.push({ w: q.w, h: q.h, body: P.add(game.engine, body) });
         }
+      });
+    }
+    // 이미 떨어진 조각도 칠하면 지워짐 (사용자 요청 2026-10-20). 남은 조각은 계속 떨어지는 조각으로 (속도·회전 이어받음)
+    for (var f = game.fallen.length - 1; f >= 0; f--) {
+      var fb = game.fallen[f], b = fb.body, deg = b.angle * 180 / Math.PI;
+      var rest = G.Rules.eraseCrystal({ x: b.position.x - fb.w / 2, y: b.position.y - fb.h / 2, w: fb.w, h: fb.h, angle: deg, pin: 'none' }, line.pts, r);
+      if (!rest) continue;
+      n++;
+      P.remove(game.engine, b);
+      game.fallen.splice(f, 1);
+      rest.forEach(function (q) {
+        var body = M.Bodies.rectangle(q.x + q.w / 2, q.y + q.h / 2, q.w, q.h, { friction: G.DATA.ink.friction, label: 'crystal', angle: b.angle });
+        M.Body.setDensity(body, G.DATA.ink.density);
+        M.Body.setVelocity(body, b.velocity);
+        M.Body.setAngularVelocity(body, b.angularVelocity);
+        game.fallen.push({ w: q.w, h: q.h, body: P.add(game.engine, body) });
       });
     }
     if (n) game.fx.push({ type: 'cut', pts: line.pts, t: game.timeMs });
@@ -2472,7 +2491,7 @@ G.UI = (function () {
     if (panel) ctx.drawImage(panel, x - 40, y - 30, w + 80, h + 60);
     else { ctx.fillStyle = C.paper; ctx.fillRect(x, y, w, h); ctx.strokeStyle = C.outline; ctx.lineWidth = 4; ctx.strokeRect(x, y, w, h); }
     var face = G.Assets.get(game.status === 'fail' ? 'char_erased' : 'char_goal');
-    if (face) ctx.drawImage(face, x + 28, y + 6, 136, 136);   // 사용자 요청 2026-10-20: 80 → 136
+    if (face && !clear) ctx.drawImage(face, x + 28, y + 6, 136, 136);
     ctx.textAlign = 'center'; ctx.fillStyle = game.status === 'clear' ? C.green : C.red;
     ctx.font = 'bold 40px sans-serif';
     ctx.fillText(game.status === 'clear' ? '정화!' : game.failReason, V.w / 2, y + 70);
@@ -2485,7 +2504,10 @@ G.UI = (function () {
       // 정화 막대
       var bw = 300, bx = V.w / 2 - bw / 2, by = y + 186;
       ctx.font = 'bold 17px sans-serif'; ctx.fillStyle = C.outline;
-      ctx.fillText('정화 ' + Math.round(r.purity * 100) + '%  (물방울 ' + r.inJar + ' / ' + r.all + ')', V.w / 2, by - 8);
+      // 캐릭터: 정화 막대 왼쪽 위 꼭지점 위에 앉음 (사용자 요청 2026-10-20: 136 → 170). 정화 글자는 캐릭터를 비켜 오른쪽으로
+      var fs = 170;
+      if (face) ctx.drawImage(face, bx - fs / 2 + 4, by - fs * 0.93, fs, fs);
+      ctx.fillText('정화 ' + Math.round(r.purity * 100) + '%  (물방울 ' + r.inJar + ' / ' + r.all + ')', bx + 80 + (bw - 80) / 2, by - 8);
       ctx.fillStyle = 'rgba(43,33,24,0.12)'; ctx.fillRect(bx, by, bw, 14);
       ctx.fillStyle = mix(C.jarDark, C.jarClear, r.purity); ctx.fillRect(bx, by, bw * r.purity, 14);
       ctx.lineWidth = 2; ctx.strokeStyle = C.outline; ctx.strokeRect(bx, by, bw, 14);
@@ -2498,7 +2520,7 @@ G.UI = (function () {
       ctx.fillText((game.timeMs / 1000).toFixed(1) + '초', V.w / 2, y + 158);
     }
     ctx.font = 'bold 20px sans-serif'; ctx.fillStyle = C.outline;
-    ctx.fillText('R 또는 클릭: 다시 하기' + (game.status === 'clear' && game.hasNext ? ' · N: 다음 스테이지' : ''), V.w / 2, y + h - (clear ? 42 : 30));
+    ctx.fillText('R 또는 클릭: 다시 하기' + (game.status === 'clear' && game.hasNext ? ' · N: 다음 스테이지' : ''), V.w / 2, y + h - (clear ? 74 : 30));   // 사용자 요청 2026-10-20: 조금 위로
     ctx.textAlign = 'left';
   }
 
