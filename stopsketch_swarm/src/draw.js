@@ -1,6 +1,6 @@
 // 선 그리기: 마우스 드래그 → 잉크 소모 → 평활화 → 한 덩어리 물리 몸체 (사용자 결정 2026-10-20)
 //   선은 사라지지 않고 중력으로 떨어짐(초록은 천천히 떠올라 닿으면 고정). 우클릭으로 빨아들이면 잉크를 전부 돌려받음
-//   노랑은 그은 자리의 배치된 선(crystal)을 끊고 바로 사라짐 (잉크 소모)
+//   노랑은 칠한 자리의 배치된 선(crystal) 부분을 지우고 바로 사라짐 (잉크 소모)
 //   정지 중에 그린 선은 점선으로 기다렸다가 재생할 때 한꺼번에 떨어짐. 달리는 중에 그린 선은 손을 떼면 바로
 var G = G || {};
 
@@ -83,29 +83,31 @@ G.Draw = {
     return true;
   },
 
-  // 노랑: 그은 자리의 배치된 선을 끊음. 원래 양 끝을 포함한 조각은 고정으로 남고, 가운데 조각은 떨어지는 검은 선이 됨
+  // 노랑: 칠한 자리(선에서 yellowCut 안)에 든 배치된 선 부분을 지움 (사용자 결정 2026-10-20). 못 박힌 끝이 있는 조각은 고정으로 남고,
+  //   나머지 조각은 떨어지는 "배치된 선" 조각이 됨 (빨아들일 수 없음)
   cut: function (game, line) {
-    var P = G.Physics, cutW = G.DATA.ink.yellowCut, list = game.level.crystals, n = 0;
+    var P = G.Physics, M = P.M, r = G.DATA.ink.yellowCut, list = game.level.crystals, n = 0;
     for (var i = list.length - 1; i >= 0; i--) {
-      var c = list[i], pieces = G.Rules.cutCrystal(c, line.pts, cutW);
+      var c = list[i], pieces = G.Rules.eraseCrystal(c, line.pts, r);
       if (!pieces) continue;
       n++;
       P.remove(game.engine, c.body);
       list.splice(i, 1);
       pieces.forEach(function (q) {
+        var rad = q.angle * Math.PI / 180;
         if (q.anchored) {
-          q.body = P.add(game.engine, P.staticRect(q.x + q.w / 2, q.y + q.h / 2, q.w, q.h, { label: 'crystal' }));
+          q.body = P.add(game.engine, P.staticRect(q.x + q.w / 2, q.y + q.h / 2, q.w, q.h, { label: 'crystal', angle: rad }));
           list.push(q);
-        } else {                                   // 떨어지는 조각: 잉크가 아닌 "배치된 선" 조각 (빨아들일 수 없음)
-          var M = P.M, body = M.Bodies.rectangle(q.x + q.w / 2, q.y + q.h / 2, q.w, q.h, { friction: G.DATA.ink.friction, label: 'crystal' });
+        } else {
+          var body = M.Bodies.rectangle(q.x + q.w / 2, q.y + q.h / 2, q.w, q.h, { friction: G.DATA.ink.friction, label: 'crystal', angle: rad });
           M.Body.setDensity(body, G.DATA.ink.density);
-          M.Body.setAngularVelocity(body, (q.w < q.h ? 1 : 0.2) * (game.fallen.length % 2 ? 0.03 : -0.03));   // 세워진 채 떨어져 다시 서지 않게 살짝 기울임
+          M.Body.setAngularVelocity(body, (game.fallen.length % 2 ? 0.02 : -0.02));   // 세워진 채 떨어져 다시 서지 않게 살짝 기울임
           game.fallen.push({ w: q.w, h: q.h, body: P.add(game.engine, body) });
         }
       });
     }
     if (n) game.fx.push({ type: 'cut', pts: line.pts, t: game.timeMs });
-    else game.toast('노랑: 자를 배치된 선이 없어요');
+    else game.toast('노랑: 칠한 자리에 배치된 선이 없어요');
   },
 
   // 초록이 닿으면 멈추는 것들: 벽·발판·땅, 배치된 선, 떨어진 조각, 다른 선

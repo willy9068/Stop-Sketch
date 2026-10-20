@@ -29,9 +29,7 @@ G.Game = {
     game.engine = G.Physics.create();
     game.level = G.Level.build(game.engine, game.levelData, game.account);
     var lv = game.level.data;
-    var top = G.Level.groundTopAt(lv, lv.start.x);
-    if (top == null) top = 600;
-    game.hero = G.Drop.create(game.engine, lv.start.x, top - D.drop.heroRadius - 1, true, 1, lv.drops);
+    game.hero = G.Drop.create(game.engine, lv.start.x, lv.start.y - D.drop.heroRadius - 1, true, 1, lv.drops);   // 시작 y = 발밑
     game.drops = [game.hero];                      // 깨어난 물방울 (주인공 포함)
     game.line = [];                                // 대열 (주인공 뒤 순서대로)
     var hp = game.hero.body.position;
@@ -145,7 +143,7 @@ G.Game = {
       self.collect(game, d);
       if (d.hero || !game.level.data.drops.follow) self.wake(game, d);
       if (d.mode === 'free' && game.level.data.drops.follow) self.rejoin(game, d);
-      if (p.x >= game.level.goalX) self.arrive(game, d);
+      if (self.inGoal(game, p)) self.arrive(game, d);
     });
     if (game.status !== 'run') return;
     this.updateGoal(game, realMs * s);
@@ -330,9 +328,15 @@ G.Game = {
     if (d.hero) { game.heroHome = true; game.toast('주인공 도착! Enter: 남은 물방울을 기다리지 않고 끝내기'); }
   },
 
+  // 잉크병에 닿았는가: 도착 x 오른쪽이면서 잉크병 높이 안 (사용자 결정 2026-10-20: 도착을 위아래로도 옮김)
+  inGoal: function (game, p) {
+    var J = G.DATA.art.goalJar, g = game.level.data.goal;
+    return p.x >= g.x && p.x <= g.x + J.w && p.y >= g.y - J.h - 60 && p.y <= g.y + 10;
+  },
+
   // 잉크병 입구 (그림 기준: 왼쪽 끝 ≈ 도착 x)
   goalMouth: function (game) {
-    var J = G.DATA.art.goalJar, gx = game.level.goalX, gy = G.Level.groundTopAt(game.level.data, gx) || 600;
+    var J = G.DATA.art.goalJar, gx = game.level.goalX, gy = game.level.data.goal.y;
     return { x: gx - 10 + J.w * J.mouth, y: gy - J.h * 0.95, gy: gy };
   },
 
@@ -341,8 +345,7 @@ G.Game = {
     var E = G.DATA.goalEnter, m = this.goalMouth(game), self = this;
     game.enterCdMs = Math.max(0, game.enterCdMs - ms);
     game.goalQueue.forEach(function (d, k) {
-      var tx = game.level.goalX - E.spacing * (k + 0.5), top = G.Level.groundTopAt(game.level.data, tx);
-      var ty = (top == null ? m.gy : top) - d.r;
+      var tx = game.level.goalX - E.spacing * (k + 0.5), ty = m.gy - d.r;   // 잉크병 바닥 높이에 줄 섬 (공중 잉크병이어도)
       d.qx += (tx - d.qx) * Math.min(1, E.slide * ms / 16.7);
       d.qy += (ty - d.qy) * Math.min(1, E.slide * ms / 16.7);
     });

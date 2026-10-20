@@ -85,8 +85,8 @@ var G = G || {};
     if (!sel) return null;
     if (sel.kind === 'prop') return P.rect(l.props[sel.i]);
     if (sel.kind === 'ground') { var g = l.ground[sel.i]; return { x: g.x0, y: g.top, w: g.x1 - g.x0, h: g.h || D.level.groundDepth }; }
-    if (sel.kind === 'start') { top = LC.groundTopAt(l, l.start.x); if (top == null) top = 600; return { x: l.start.x - 28, y: top - 72, w: 56, h: 72 }; }
-    if (sel.kind === 'goal') { top = LC.groundTopAt(l, l.goal.x); if (top == null) top = 600; return { x: l.goal.x - 12, y: top - 140, w: 84, h: 140 }; }
+    if (sel.kind === 'start') { top = l.start.y; return { x: l.start.x - 28, y: top - 72, w: 56, h: 72 }; }
+    if (sel.kind === 'goal') { top = l.goal.y; return { x: l.goal.x - 12, y: top - D.art.goalJar.h, w: D.art.goalJar.w, h: D.art.goalJar.h }; }
     if (sel.kind === 'seg') return (l.segments || [])[sel.i] ? segRect(sel.i) : null;
     return null;
   }
@@ -96,6 +96,10 @@ var G = G || {};
     var s = S.sel, o = selObj();
     if (!o || s.kind === 'start' || s.kind === 'goal' || s.kind === 'seg') return [];
     var r = selRect(s), mx = r.x + r.w / 2, my = r.y + r.h / 2, out = [];
+    if (o.type === 'crystal') {                      // 배치된 선: 양 끝(길이)·위(두께)·회전 (사용자 결정 2026-10-20)
+      var ce = crystalEnds(o), up = { x: Math.sin(ce.a), y: -Math.cos(ce.a) }, rr = o.h / 2 + 26 / S.view.zoom;
+      return [['cw', ce.s.x, ce.s.y], ['ce', ce.e.x, ce.e.y], ['ct', ce.c.x + up.x * o.h / 2, ce.c.y + up.y * o.h / 2], ['rot', ce.c.x + up.x * rr, ce.c.y + up.y * rr]];
+    }
     if (s.kind === 'ground') { var gh = o.h || D.level.groundDepth; return [['w', o.x0, o.top + gh / 2], ['e', o.x1, o.top + gh / 2], ['n', (o.x0 + o.x1) / 2, o.top], ['s', (o.x0 + o.x1) / 2, o.top + gh]]; }
     var d = P.def(o.type);
     if (d.box) {
@@ -128,7 +132,7 @@ var G = G || {};
   }
 
   function drawStart(l) {
-    var top = LC.groundTopAt(l, l.start.x), r = D.drop.heroRadius;
+    var top = l.start.y, r = D.drop.heroRadius;
     if (top == null) top = 600;
     G.UI.drawStart(ctx, l.start.x, top);           // 시작 구멍 (게임과 같은 그림)
     var img = G.Assets.get('char_idle'), s = r * D.art.charSize;
@@ -190,16 +194,16 @@ var G = G || {};
     l.props.forEach(function (p) { if (p.type === 'deco' || p.type === 'text') P.draw(ctx, p, { editor: true }); });
     P.drawGrounds(ctx, l.ground);
     l.props.forEach(function (p) { var d = P.def(p.type); if (d && d.solid) P.draw(ctx, p, { editor: true }); });
-    l.props.forEach(function (p) {                   // 배치된 선: 붙은 끝(빨간 점) 표시 — 노랑으로 자르면 붙은 끝이 있는 조각만 남음
+    l.props.forEach(function (p) {                   // 배치된 선: 못 박힌 끝(빨간 점) — 노랑으로 지워 나뉘면 박힌 끝이 있는 조각만 남음
       if (p.type !== 'crystal') return;
-      var pin = p.pin || 'both', horiz = p.w >= p.h, k = 3 / S.view.zoom;
+      var pin = p.pin || 'both', k = 3.5 / S.view.zoom, e = crystalEnds(p);
       ctx.fillStyle = '#E0312B';
-      if (pin === 'both' || pin === 'start') ctx.fillRect(p.x - k, p.y - k, k * 2, k * 2);
-      if (pin === 'both' || pin === 'end') ctx.fillRect((horiz ? p.x + p.w : p.x + p.w / 2) - k, (horiz ? p.y + p.h / 2 : p.y + p.h) - k, k * 2, k * 2);
+      if (pin === 'both' || pin === 'start') ctx.fillRect(e.s.x - k, e.s.y - k, k * 2, k * 2);
+      if (pin === 'both' || pin === 'end') ctx.fillRect(e.e.x - k, e.e.y - k, k * 2, k * 2);
     });
     drawSegments(l);
-    G.UI.drawGoal(ctx, l.goal.x, LC.groundTopAt(l, l.goal.x));
-    label('도착', l.goal.x + 4, (LC.groundTopAt(l, l.goal.x) || 600) - D.art.goalJar.h - 8, '#1FA655');
+    G.UI.drawGoal(ctx, l.goal.x, l.goal.y);
+    label('도착', l.goal.x + 4, l.goal.y - D.art.goalJar.h - 8, '#1FA655');
     l.props.forEach(function (p) { if (p.type === 'drop' || p.type === 'star' || p.type === 'stopup' || p.type === 'inkup') P.draw(ctx, p, { editor: true }); });
     drawStart(l);
 
@@ -211,11 +215,15 @@ var G = G || {};
     }
 
     // 선택 표시
-    var r = selRect(S.sel);
+    var r = selRect(S.sel), so = selObj();
     if (r) {
       ctx.save();
       ctx.lineWidth = 2 / z; ctx.strokeStyle = '#1F6FE0'; ctx.setLineDash([6 / z, 4 / z]);
-      ctx.strokeRect(r.x, r.y, r.w, r.h);
+      if (so && so.type === 'crystal') {               // 돌린 상자 + 회전 손잡이까지 선
+        ctx.translate(so.x + so.w / 2, so.y + so.h / 2); ctx.rotate((so.angle || 0) * Math.PI / 180);
+        ctx.strokeRect(-so.w / 2, -so.h / 2, so.w, so.h);
+        ctx.setLineDash([]); ctx.beginPath(); ctx.moveTo(0, -so.h / 2); ctx.lineTo(0, -so.h / 2 - 26 / z); ctx.stroke();
+      } else ctx.strokeRect(r.x, r.y, r.w, r.h);
       ctx.restore();
       ctx.fillStyle = '#fff'; ctx.strokeStyle = '#1F6FE0'; ctx.lineWidth = 2 / z;
       handles().forEach(function (h) {
@@ -267,6 +275,34 @@ var G = G || {};
   // ---------- 찾기 ----------
   function inRect(p, r) { return p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h; }
 
+  // 배치된 선: 가운데·양 끝(시작 = 돌리기 전 왼쪽)·각도(라디안)
+  function crystalEnds(p) {
+    var a = (p.angle || 0) * Math.PI / 180, c = { x: p.x + p.w / 2, y: p.y + p.h / 2 }, ux = Math.cos(a), uy = Math.sin(a);
+    return { c: c, a: a, ux: ux, uy: uy, s: { x: c.x - ux * p.w / 2, y: c.y - uy * p.w / 2 }, e: { x: c.x + ux * p.w / 2, y: c.y + uy * p.w / 2 } };
+  }
+  function hitProp(w, p) {
+    if (p.type !== 'crystal') return inRect(w, P.rect(p));
+    var ce = crystalEnds(p), dx = w.x - ce.c.x, dy = w.y - ce.c.y;
+    var lx = dx * ce.ux + dy * ce.uy, ly = -dx * ce.uy + dy * ce.ux;
+    return Math.abs(lx) <= p.w / 2 + 3 / S.view.zoom && Math.abs(ly) <= Math.max(p.h / 2, 6 / S.view.zoom);
+  }
+  // 배치된 선 손잡이: cw/ce = 시작·끝 (반대쪽 끝은 그대로, 길이만), ct = 두께(가운데 기준), rot = 회전 (격자 맞춤이면 15도 단위)
+  function resizeCrystal(o, q, h, dx, dy) {
+    var ce = crystalEnds(q), along = dx * ce.ux + dy * ce.uy, L = q.w, c = { x: ce.c.x, y: ce.c.y };
+    if (h === 'ce' || h === 'cw') {
+      var nl = Math.max(10, snap(L + (h === 'ce' ? along : -along))), sh = (nl - L) / 2 * (h === 'ce' ? 1 : -1);
+      c = { x: ce.c.x + ce.ux * sh, y: ce.c.y + ce.uy * sh }; o.w = nl;
+    } else if (h === 'ct') {
+      var upd = dx * Math.sin(ce.a) - dy * Math.cos(ce.a);
+      o.h = Math.max(4, Math.round(q.h + upd * 2));
+    } else if (h === 'rot') {
+      var m = S.mouse, deg = Math.atan2(m.y - ce.c.y, m.x - ce.c.x) * 180 / Math.PI + 90;
+      if ($('snap').checked && !S.altDown) deg = Math.round(deg / 15) * 15; else deg = Math.round(deg);
+      o.angle = ((deg % 360) + 360) % 360;
+    }
+    o.x = c.x - o.w / 2; o.y = c.y - o.h / 2;
+  }
+
   function hitTest(w) {
     var l = lv(), i, segs = l.segments || [];
     for (i = segs.length - 1; i >= 0; i--) if (inRect(w, segRect(i))) return { kind: 'seg', i: i };   // 구간 이름표가 가장 먼저
@@ -276,7 +312,7 @@ var G = G || {};
                  function (p) { return p.type === 'text' || p.type === 'deco'; }];
     for (var o = 0; o < order.length; o++) {
       for (i = l.props.length - 1; i >= 0; i--) {
-        if (order[o](l.props[i]) && inRect(w, P.rect(l.props[i]))) return { kind: 'prop', i: i };
+        if (order[o](l.props[i]) && hitProp(w, l.props[i])) return { kind: 'prop', i: i };
       }
     }
     for (i = l.ground.length - 1; i >= 0; i--) {
@@ -320,7 +356,7 @@ var G = G || {};
       var ts = LC.groundTopAt(l, w.x);
       p = { type: 'spike', x: snap(w.x - d.w / 2), y: ts != null ? ts - d.h : snap(w.y - d.h / 2), w: d.w, h: d.h };
     }
-    else if (tool === 'crystal') p = { type: 'crystal', x: snap(w.x - d.w / 2), y: snap(w.y - d.h / 2), w: d.w, h: d.h, pin: d.pin };
+    else if (tool === 'crystal') p = { type: 'crystal', x: snap(w.x - d.w / 2), y: snap(w.y - d.h / 2), w: d.w, h: d.h, angle: 0, pin: d.pin };
     else if (tool === 'stopup') p = { type: 'stopup', x: snap(w.x), y: snap(w.y), size: d.size };
     else if (tool === 'star') p = { type: 'star', x: snap(w.x), y: snap(w.y), size: d.size };
     else if (tool === 'segment') {                   // 구간 경계: 클릭한 x 에 새 경계, 이름은 오른쪽 "선택" 칸에서
@@ -397,7 +433,8 @@ var G = G || {};
     if (!o) return;
     if (dr.mode === 'move') {
       dr.moved = true;
-      if (S.sel.kind === 'start' || S.sel.kind === 'goal' || S.sel.kind === 'seg') o.x = snap(q.x + dx);
+      if (S.sel.kind === 'start' || S.sel.kind === 'goal') { o.x = snap(q.x + dx); o.y = snap(q.y + dy); }   // 위아래로도 (사용자 결정 2026-10-20)
+      else if (S.sel.kind === 'seg') o.x = snap(q.x + dx);
       else if (S.sel.kind === 'ground') { var w0 = q.x1 - q.x0; o.x0 = snap(q.x0 + dx); o.x1 = o.x0 + w0; o.top = snap(q.top + dy); }
       else { o.x = snap(q.x + dx); o.y = snap(q.y + dy); }
     } else if (dr.mode === 'resize') resize(o, q, dr.h, dx, dy);
@@ -413,6 +450,7 @@ var G = G || {};
       if (h === 's') o.h = Math.max(20, snap(q.top + qh + dy) - q.top);
       return;
     }
+    if (o.type === 'crystal') { resizeCrystal(o, q, h, dx, dy); return; }
     if (h === 'size') {
       var min = o.type === 'text' ? 10 : 16;
       o.size = Math.max(min, Math.round(q.size + (o.type === 'text' ? dx / 8 : (dx + dy) / 2) * 2));
@@ -447,7 +485,7 @@ var G = G || {};
   function updateCursor(m) {
     if (S.tool !== 'select') { cv.style.cursor = 'crosshair'; return; }
     var h = S.sel && hitHandle(m.sx, m.sy);
-    var map = { n: 'ns-resize', s: 'ns-resize', e: 'ew-resize', w: 'ew-resize', ne: 'nesw-resize', sw: 'nesw-resize', nw: 'nwse-resize', se: 'nwse-resize', size: 'nwse-resize' };
+    var map = { rot: 'grab', cw: 'ew-resize', ce: 'ew-resize', ct: 'ns-resize', n: 'ns-resize', s: 'ns-resize', e: 'ew-resize', w: 'ew-resize', ne: 'nesw-resize', sw: 'nesw-resize', nw: 'nwse-resize', se: 'nwse-resize', size: 'nwse-resize' };
     cv.style.cursor = h ? map[h] : hitTest(m) ? 'move' : 'default';
   }
 
@@ -508,7 +546,8 @@ var G = G || {};
     if (!o) return;
     pushUndo();
     if (S.sel.kind === 'ground') { o.x0 += dx; o.x1 += dx; o.top += dy; }
-    else if (S.sel.kind === 'start' || S.sel.kind === 'goal' || S.sel.kind === 'seg') o.x += dx;
+    else if (S.sel.kind === 'start' || S.sel.kind === 'goal') { o.x += dx; o.y += dy; }
+    else if (S.sel.kind === 'seg') o.x += dx;
     else { o.x += dx; o.y += dy; }
     changed();
   }
@@ -608,17 +647,20 @@ var G = G || {};
           '<div>이 x부터 다음 경계까지가 이 구간. 끌어서 옮기기 · 방향키 1px(Shift 10px) · 설계 표시만(게임 규칙에는 영향 없음)</div>' +
           '<div class="row"><button data-act="dup">복제 (Ctrl+D)</button></div>';
     } else if (s.kind === 'start' || s.kind === 'goal') {
-      h = '<b>' + (s.kind === 'start' ? '시작 위치' : '도착 위치') + '</b>' + num('f_x', 'x', o.x) + '<div>높이는 그 자리 땅 위로 자동</div>';
+      h = '<b>' + (s.kind === 'start' ? '시작 위치' : '도착 위치') + '</b>' + num('f_x', 'x', o.x) + num('f_y', s.kind === 'start' ? 'y (발밑)' : 'y (병 바닥)', o.y) +
+          '<div class="hint">끌어서 옮기기 (위아래도). 놓은 자리 그대로 — 공중이면 ' + (s.kind === 'start' ? '주인공이 떨어져요' : '잉크병이 떠 있어요') + '</div>';
     } else if (s.kind === 'ground') {
       h = '<b>땅</b>' + num('f_x0', '왼쪽 x', o.x0) + num('f_x1', '오른쪽 x', o.x1) + num('f_top', '윗면 y', o.top) + num('f_h', '높이', o.h || D.level.groundDepth) +
           '<div>폭 ' + (o.x1 - o.x0) + '</div>';
     } else {
       var d = P.def(o.type);
       h = '<b>' + d.name + '</b>';
-      if (o.type === 'crystal') {
-        h += num('f_x', 'x (왼쪽)', o.x) + num('f_y', 'y (위)', o.y) + num('f_w', '폭', o.w) + num('f_h', '높이', o.h);
-        h += '<div class="f"><label>붙은 끝</label><select id="f_pin">' + opts([['both', '양쪽'], ['start', '왼쪽·위'], ['end', '오른쪽·아래'], ['none', '없음']], o.pin || 'both') + '</select></div>';
-        h += '<div>노랑으로 자르면 붙은 끝(빨간 점)이 있는 조각만 남고 나머지는 떨어져요. 긴 쪽이 축</div>';
+      if (o.type === 'crystal') {                    // 사용자 결정 2026-10-20: 회전·길이·두께, "붙은 끝" → "못 박힌 끝"
+        h += num('f_cx', '가운데 x', Math.round(o.x + o.w / 2)) + num('f_cy', '가운데 y', Math.round(o.y + o.h / 2)) +
+             num('f_w', '길이', o.w) + num('f_h', '두께', o.h) + num('f_angle', '각도 (도)', o.angle || 0);
+        h += '<div class="hint">양 끝 손잡이 = 길이, 위 손잡이 = 두께, 동그란 위 손잡이 = 회전 (격자 맞춤이면 15도씩)</div>';
+        h += '<div class="f"><label>못 박힌 끝</label><select id="f_pin">' + opts([['both', '양쪽'], ['start', '시작 끝 (0도일 때 왼쪽)'], ['end', '끝 (0도일 때 오른쪽)'], ['none', '없음']], o.pin || 'both') + '</select></div>';
+        h += '<div class="hint">빨간 점 = 벽·땅에 박힌 끝. 노랑으로 칠해 지우면 선이 나뉘는데, 박힌 끝이 있는 조각은 제자리에 남고 나머지는 떨어져요</div>';
       } else if (d.box) {
         h += '<div class="f"><label>종류</label><select id="f_type">' + opts([['wall', '벽'], ['platform', '발판'], ['spike', '가시']], o.type) + '</select></div>';
         h += num('f_x', 'x (왼쪽)', o.x) + num('f_y', 'y (위)', o.y) + num('f_w', '폭', o.w) + num('f_h', '높이', o.h);
@@ -679,6 +721,13 @@ var G = G || {};
       if (f === 'type') { o.type = v; }
       else if (f === 'img' || f === 'text' || f === 'pin') o[f] = v;
       else if (f === 'h' && S.sel.kind === 'ground') o.h = Math.max(20, v);
+      else if (o.type === 'crystal' && (f === 'cx' || f === 'cy' || f === 'w' || f === 'h' || f === 'angle')) {   // 가운데를 유지하며
+        var ccx = o.x + o.w / 2, ccy = o.y + o.h / 2;
+        if (f === 'cx') ccx = v; else if (f === 'cy') ccy = v;
+        else if (f === 'w') o.w = Math.max(10, v); else if (f === 'h') o.h = Math.max(4, v);
+        else o.angle = ((v % 360) + 360) % 360;
+        o.x = ccx - o.w / 2; o.y = ccy - o.h / 2;
+      }
       else o[f] = v;
     }
     changed(!isChange || id === 'f_text' || id === 'l_name' || id === 'f_name');

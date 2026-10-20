@@ -157,34 +157,36 @@ G.Rules = (function () {
     return t >= 0 && t <= 1 && u >= 0 && u <= 1 ? t : null;
   }
 
-  // 배치된 선(막대 c = {x,y,w,h}, 긴 쪽이 축)을 노랑 선 pts 로 자른 조각들 (사용자 결정 2026-10-20)
-  //   노랑이 지나간 자리 앞뒤 cut 만큼 지움. c.pin = 어느 끝이 벽·땅에 붙어 있는가: 'both'(기본) / 'start'(왼쪽·위) / 'end'(오른쪽·아래) / 'none'
-  //   붙은 끝을 포함한 조각은 anchored(그대로 고정), 나머지 조각은 떨어짐. 조각의 pin 은 원래 붙은 끝만 이어받음
-  //   반환: [{x,y,w,h, anchored, pin}] (자르지 않았으면 null)
-  function cutCrystal(c, pts, cut) {
-    var horiz = c.w >= c.h, L = horiz ? c.w : c.h;
-    var a = horiz ? { x: c.x, y: c.y + c.h / 2 } : { x: c.x + c.w / 2, y: c.y };
-    var b = horiz ? { x: c.x + c.w, y: a.y } : { x: a.x, y: c.y + c.h };
-    var gaps = [];
-    for (var i = 1; i < pts.length; i++) {
-      var t = segHit(a, b, pts[i - 1], pts[i]);
-      if (t !== null) gaps.push([t * L - cut, t * L + cut]);
+  // ---- 배치된 선 지우기 (사용자 결정 2026-10-20): 노랑으로 칠한 자리(선에서 r 안)에 든 부분만 없어짐 ----
+  //   c = { x, y, w(길이), h(두께), angle(도), pin } — x,y 는 돌리기 전 왼쪽 위, 가운데 기준으로 회전
+  //   남은 조각마다 { x, y, w, h, angle, pin, anchored }. 못 박힌 끝(pin: both/start/end/none)이 있는 조각만 anchored(고정), 나머지는 떨어짐
+  function crystalAxis(c) {
+    var a = (c.angle || 0) * Math.PI / 180;
+    return { cx: c.x + c.w / 2, cy: c.y + c.h / 2, ux: Math.cos(a), uy: Math.sin(a), L: c.w };
+  }
+  function eraseCrystal(c, pts, r) {
+    var ax = crystalAxis(c), L = ax.L, step = 2, keep = [], cur = null, hit = false;
+    function painted(t) {
+      var p = { x: ax.cx + ax.ux * (t - L / 2), y: ax.cy + ax.uy * (t - L / 2) };
+      if (pts.length === 1) return dist(p, pts[0]) <= r;
+      for (var i = 1; i < pts.length; i++) if (pointSegDist(p, pts[i - 1], pts[i]) <= r) return true;
+      return false;
     }
-    if (!gaps.length) return null;
-    gaps.sort(function (p, q) { return p[0] - q[0]; });
-    var out = [], pos = 0;
-    gaps.forEach(function (g) {
-      if (g[0] - pos > 4) out.push([pos, g[0]]);
-      pos = Math.max(pos, g[1]);
-    });
-    if (L - pos > 4) out.push([pos, L]);
+    for (var t = 0; t <= L + 0.001; t += step) {
+      var tt = Math.min(t, L);
+      if (painted(tt)) { hit = true; if (cur) { keep.push(cur); cur = null; } }
+      else if (!cur) cur = [tt, tt]; else cur[1] = tt;
+    }
+    if (cur) keep.push(cur);
+    if (!hit) return null;
     var pin = c.pin || 'both', pinS = pin === 'both' || pin === 'start', pinE = pin === 'both' || pin === 'end';
-    return out.map(function (r) {
-      var o = horiz ? { x: c.x + r[0], y: c.y, w: r[1] - r[0], h: c.h } : { x: c.x, y: c.y + r[0], w: c.w, h: r[1] - r[0] };
-      var s = pinS && r[0] <= 0.01, e = pinE && r[1] >= L - 0.01;
-      o.anchored = s || e;
-      o.pin = s && e ? 'both' : s ? 'start' : e ? 'end' : 'none';
-      return o;
+    return keep.filter(function (k) { return k[1] - k[0] >= 4; }).map(function (k) {
+      if (k[0] <= step) k[0] = 0;
+      if (k[1] >= L - step) k[1] = L;
+      var len = k[1] - k[0], mid = (k[0] + k[1]) / 2 - L / 2, mx = ax.cx + ax.ux * mid, my = ax.cy + ax.uy * mid;
+      var s = pinS && k[0] === 0, e = pinE && k[1] === L;
+      return { x: mx - len / 2, y: my - c.h / 2, w: len, h: c.h, angle: c.angle || 0,
+               anchored: s || e, pin: s && e ? 'both' : s ? 'start' : e ? 'end' : 'none' };
     });
   }
 
@@ -206,7 +208,7 @@ G.Rules = (function () {
     newStroke: newStroke, addSample: addSample, smooth: smooth, finishStroke: finishStroke,
     lineAlpha: lineAlpha, lineExpired: lineExpired,
     refundInk: refundInk, drainInk: drainInk,
-    segHit: segHit, cutCrystal: cutCrystal, fitZoom: fitZoom, clearResult: clearResult, mergeRecord: mergeRecord,
+    segHit: segHit, crystalAxis: crystalAxis, eraseCrystal: eraseCrystal, fitZoom: fitZoom, clearResult: clearResult, mergeRecord: mergeRecord,
     nextColor: nextColor, bounceVelocity: bounceVelocity, pointSegDist: pointSegDist, simplify: simplify,
     newStops: newStops, canStop: canStop, useStop: useStop, rechargeStops: rechargeStops,
     timeScale: timeScale, shouldAutoResume: shouldAutoResume

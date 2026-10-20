@@ -77,44 +77,33 @@ G.Props = (function () {
   }
 
   // 배치된 선: 검은 다이아몬드처럼 광이 나는 막대 (사용자 결정 2026-10-20). 이미지(prop_crystal)가 있으면 9분할
+  //   r = { x, y, w(길이), h(두께), angle(도) } — 가운데 기준으로 돌려 그림. 양 끝은 그대로, 가운데는 반복하지 않고 늘림 (사용자 결정 2026-10-20: 하나로 보이게)
   function drawCrystal(ctx, r) {
-    var img = G.Assets.get('prop_crystal');
-    if (img) {                                     // 이미지(가로 막대, 양 끝 뾰족): 양 끝은 그대로, 가운데는 반복. 세로 막대는 90도 돌려 그림
-      var A = G.DATA.art.crystal, hz = r.w >= r.h, len = hz ? r.w : r.h, th = hz ? r.h : r.w;
-      var k = th / img.height, f = Math.min(1, len / ((A.left + A.right) * k));   // 아주 짧으면 끝을 줄임
+    var img = G.Assets.get('prop_crystal'), len = r.w, th = r.h;
+    ctx.save();
+    ctx.translate(r.x + r.w / 2, r.y + r.h / 2);
+    if (r.angle) ctx.rotate(r.angle * Math.PI / 180);
+    var x0 = -len / 2, y0 = -th / 2;
+    if (img) {
+      var A = G.DATA.art.crystal, k = th / img.height, f = Math.min(1, len / ((A.left + A.right) * k));   // 아주 짧으면 끝을 줄임
       var eL = A.left * k * f, eR = A.right * k * f, mid = img.width - A.left - A.right;
-      ctx.save();
-      ctx.translate(r.x + r.w / 2, r.y + r.h / 2);
-      if (!hz) ctx.rotate(Math.PI / 2);
-      var x0 = -len / 2, y0 = -th / 2;
       ctx.drawImage(img, 0, 0, A.left, img.height, x0, y0, eL, th);
       ctx.drawImage(img, img.width - A.right, 0, A.right, img.height, x0 + len - eR, y0, eR, th);
-      for (var xx = x0 + eL; xx < x0 + len - eR - 0.01; xx += mid * k) {
-        var ww = Math.min(mid * k, x0 + len - eR - xx);
-        ctx.drawImage(img, A.left, 0, ww / k, img.height, xx, y0, ww, th);
-      }
+      if (len - eL - eR > 0.5) ctx.drawImage(img, A.left, 0, mid, img.height, x0 + eL - 0.3, y0, len - eL - eR + 0.6, th);
       ctx.restore();
       return;
     }
-    var C = G.DATA.colors, horiz = r.w >= r.h, t = horiz ? r.h : r.w;
-    ctx.save();
+    var C = G.DATA.colors, t = th;
     ctx.beginPath();                               // 양 끝이 뾰족한 결정 모양
-    if (horiz) { ctx.moveTo(r.x, r.y + t / 2); ctx.lineTo(r.x + t * 0.6, r.y); ctx.lineTo(r.x + r.w - t * 0.6, r.y); ctx.lineTo(r.x + r.w, r.y + t / 2); ctx.lineTo(r.x + r.w - t * 0.6, r.y + t); ctx.lineTo(r.x + t * 0.6, r.y + t); }
-    else { ctx.moveTo(r.x + t / 2, r.y); ctx.lineTo(r.x + t, r.y + t * 0.6); ctx.lineTo(r.x + t, r.y + r.h - t * 0.6); ctx.lineTo(r.x + t / 2, r.y + r.h); ctx.lineTo(r.x, r.y + r.h - t * 0.6); ctx.lineTo(r.x, r.y + t * 0.6); }
+    ctx.moveTo(x0, 0); ctx.lineTo(x0 + t * 0.6, y0); ctx.lineTo(x0 + len - t * 0.6, y0); ctx.lineTo(x0 + len, 0); ctx.lineTo(x0 + len - t * 0.6, y0 + t); ctx.lineTo(x0 + t * 0.6, y0 + t);
     ctx.closePath();
-    var gr = horiz ? ctx.createLinearGradient(0, r.y, 0, r.y + r.h) : ctx.createLinearGradient(r.x, 0, r.x + r.w, 0);
+    var gr = ctx.createLinearGradient(0, y0, 0, y0 + t);
     gr.addColorStop(0, '#4A4560'); gr.addColorStop(0.45, C.crystal); gr.addColorStop(1, '#0B0A10');
     ctx.fillStyle = gr; ctx.fill();
     ctx.lineWidth = 2; ctx.strokeStyle = '#08070C'; ctx.stroke();
     ctx.clip();                                    // 비스듬한 광 줄무늬
     ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = Math.max(2, t * 0.18);
-    var len = horiz ? r.w : r.h;
-    for (var k = t; k < len; k += 46) {
-      ctx.beginPath();
-      if (horiz) { ctx.moveTo(r.x + k, r.y + t); ctx.lineTo(r.x + k + t * 0.8, r.y); }
-      else { ctx.moveTo(r.x, r.y + k + t * 0.8); ctx.lineTo(r.x + t, r.y + k); }
-      ctx.stroke();
-    }
+    for (var q = t; q < len; q += 46) { ctx.beginPath(); ctx.moveTo(x0 + q, y0 + t); ctx.lineTo(x0 + q + t * 0.8, y0); ctx.stroke(); }
     ctx.restore();
   }
 
@@ -156,6 +145,7 @@ G.Props = (function () {
       }
       return;
     }
+    if (p.type === 'crystal') { drawCrystal(ctx, p); return; }   // 돌린 막대 (사용자 결정 2026-10-20)
     if (drawFirst(ctx, d.imgs, r)) return;
     if (p.type === 'inkup') {                    // 그림이 없을 때: 먹색 잉크 병 + "+"
       var bw = r.w * 0.5, bh = r.h * 0.62, bx = p.x - bw / 2, by = p.y - bh / 2 + r.h * 0.08;
@@ -176,7 +166,6 @@ G.Props = (function () {
       ctx.fillRect(r.x + r.w * 0.15, r.y + 3, r.w * 0.2, 2);
       return;
     }
-    if (p.type === 'crystal') { drawCrystal(ctx, r); return; }
     if (p.type === 'spike') {                    // 그림이 없을 때: 회색 삼각형 가시 줄
       var n = Math.max(1, Math.round(r.w / 24)), sw = r.w / n;
       ctx.fillStyle = d.color; ctx.strokeStyle = C.outline; ctx.lineWidth = 2.5;

@@ -13,8 +13,8 @@ G.Level = {
     var nBottle = 0, nStar = 0;
     lv.props.forEach(function (p) {
       if (p.type === 'crystal') {                  // 자를 수 있게 복사본으로 (원본 데이터는 그대로)
-        var c = { x: p.x, y: p.y, w: p.w, h: p.h, pin: p.pin || 'both', body: null };
-        c.body = P.add(engine, P.staticRect(c.x + c.w / 2, c.y + c.h / 2, c.w, c.h, { label: 'crystal' }));
+        var c = { x: p.x, y: p.y, w: p.w, h: p.h, angle: p.angle || 0, pin: p.pin || 'both', body: null };
+        c.body = P.add(engine, P.staticRect(c.x + c.w / 2, c.y + c.h / 2, c.w, c.h, { label: 'crystal', angle: c.angle * Math.PI / 180 }));
         out.crystals.push(c);
         return;
       }

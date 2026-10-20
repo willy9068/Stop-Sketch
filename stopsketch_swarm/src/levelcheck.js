@@ -13,8 +13,16 @@ G.LevelCheck = (function () {
     o.start = o.start || { x: 200 };
     o.goal = o.goal || { x: 2000 };
     o.ground = o.ground || [];
-    o.ground.forEach(function (g) { if (g.h == null) g.h = D.level.groundDepth; });   // 땅 높이 (그림·충돌 같게, 사용자 결정 2026-10-20)
     o.props = o.props || [];
+    o.ground.forEach(function (g) { if (g.h == null) g.h = D.level.groundDepth; });
+    o.props.forEach(function (p) {                 // 배치된 선: w = 길이, h = 두께, angle(도). 예전 세로 막대(h > w)는 90도로 바꿈
+      if (p.type !== 'crystal' || p.angle != null) return;
+      p.angle = 0;
+      if (p.h > p.w) { var cx = p.x + p.w / 2, cy = p.y + p.h / 2, len = p.h; p.h = p.w; p.w = len; p.x = cx - len / 2; p.y = cy - p.h / 2; p.angle = 90; }
+    });
+    // 시작·도착 y = 주인공 발밑 / 잉크병 바닥. 놓은 자리 그대로(공중 가능), 없으면 그 x 의 땅 윗면 (사용자 결정 2026-10-20)
+    o.start = o.start || { x: 0 }; o.goal = o.goal || { x: 1000 };
+    [o.start, o.goal].forEach(function (p) { if (p.y == null) { var t = groundTopAt(o, p.x); p.y = t == null ? 600 : t; } });   // 땅 높이 (그림·충돌 같게, 사용자 결정 2026-10-20)
     delete o.rate;                                 // 시간·물방울%·시도 조건은 없앰 (사용자 결정 2026-10-20: 평가 = 별 n/3 + 정화 %)
     o.segments = o.segments || [];                 // 구간(설계 용어): [{x, name}] — 레벨 툴에 경계와 이름만 표시
     o.drops = o.drops || {};                       // 물방울 이동 속도·서로 충돌 (레벨 툴 "스테이지 설정 → 물방울")
@@ -39,6 +47,11 @@ G.LevelCheck = (function () {
       if (x >= g.x0 && x <= g.x1) return g.top;
     }
     return null;
+  }
+
+  // (x, y) 바로 아래(같은 높이 포함)에 땅이 있는가
+  function groundBelow(lv, x, y) {
+    return lv.ground.some(function (g) { return x >= g.x0 && x <= g.x1 && g.top >= y - 2; });
   }
 
   // 시작~도착 사이의 틈 목록 (땅 조각 사이 빈 곳). dy: 건너편이 높으면 음수
@@ -91,8 +104,7 @@ G.LevelCheck = (function () {
     var lv = normalize(raw), out = [], D = G.DATA;
     function add(k, m) { out.push({ lv: k, msg: m }); }
     if (!lv.ground.length) add('error', '땅이 하나도 없어요');
-    if (groundTopAt(lv, lv.start.x) == null) add('error', '시작 위치 아래에 땅이 없어요');
-    if (groundTopAt(lv, lv.goal.x) == null) add('error', '도착 위치 아래에 땅이 없어요');
+    if (!groundBelow(lv, lv.start.x, lv.start.y)) add('warn', '시작 위치 아래에 땅이 없어요 (주인공이 떨어져요)');
     if (lv.goal.x <= lv.start.x) add('error', '도착이 시작보다 왼쪽에 있어요 (주인공은 오른쪽으로 출발)');
 
     var segs = lv.ground.slice().sort(function (a, b) { return a.x0 - b.x0; });
@@ -132,5 +144,5 @@ G.LevelCheck = (function () {
     return out;
   }
 
-  return { normalize: normalize, groundTopAt: groundTopAt, gaps: gaps, blockingWalls: blockingWalls, estimateInk: estimateInk, dropCount: dropCount, check: check };
+  return { normalize: normalize, groundTopAt: groundTopAt, groundBelow: groundBelow, gaps: gaps, blockingWalls: blockingWalls, estimateInk: estimateInk, dropCount: dropCount, check: check };
 })();

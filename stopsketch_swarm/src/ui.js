@@ -18,7 +18,7 @@ G.UI = (function () {
   function focusBox(game) {
     var list = G.Game.walking(game), box = null;
     if (!list.length) {                            // 아무도 안 걸으면 잉크병 쪽
-      var gx = game.level.goalX, gy = G.Level.groundTopAt(game.level.data, gx) || 600;
+      var gx = game.level.goalX, gy = game.level.data.goal.y;
       return { x0: gx - 200, x1: gx + 300, y0: gy - 200, y1: gy, hx: gx, hy: gy - 30 };
     }
     list.forEach(function (d) {
@@ -164,7 +164,8 @@ G.UI = (function () {
   // 물감 선 + 색각 보조 무늬 (검정=없음, 빨강=점, 파랑=화살, 노랑=X, 초록=위 화살)
   function drawInkLine(ctx, pts, color, pending) {
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-    ctx.lineWidth = G.DATA.ink.thickness; ctx.strokeStyle = C[color] || C.ink;
+    ctx.lineWidth = color === 'yellow' ? G.DATA.ink.yellowCut * 2 : G.DATA.ink.thickness;   // 노랑은 지우는 폭 그대로 (칠한 부분이 지워짐)
+    ctx.strokeStyle = C[color] || C.ink;
     ctx.setLineDash(pending ? [14, 10] : []);
     path(ctx, pts); ctx.stroke();
     ctx.setLineDash([]);
@@ -283,8 +284,8 @@ G.UI = (function () {
       ctx.save(); ctx.translate(f.body.position.x, f.body.position.y); ctx.rotate(f.body.angle);
       G.Props.drawCrystal(ctx, { x: -f.w / 2, y: -f.h / 2, w: f.w, h: f.h }); ctx.restore();
     });
-    drawStart(ctx, lv.start.x, G.Level.groundTopAt(lv, lv.start.x));
-    drawGoal(ctx, lv.goal.x, G.Level.groundTopAt(lv, lv.goal.x), jarShown);
+    drawStart(ctx, lv.start.x, lv.start.y);
+    drawGoal(ctx, lv.goal.x, lv.goal.y, jarShown);
     game.level.items.forEach(function (it) {
       if (it.owned) { ctx.save(); ctx.globalAlpha = 0.2; G.Props.draw(ctx, it.prop); ctx.restore(); return; }
       if (!it.got) G.Props.draw(ctx, it.prop);
@@ -323,12 +324,12 @@ G.UI = (function () {
         t = (game.timeMs - f.t) / 350;
         if (t < 0 || t >= 1) return;
         ctx.save(); ctx.globalAlpha = 1 - t; ctx.setLineDash([4, 6]);
-        ctx.lineWidth = G.DATA.ink.thickness * (1 - t); ctx.strokeStyle = f.type === 'cut' ? C.yellow : (C[f.color] || C.ink);
+        ctx.lineWidth = (f.type === 'cut' ? G.DATA.ink.yellowCut * 2 : G.DATA.ink.thickness) * (1 - t); ctx.strokeStyle = f.type === 'cut' ? C.yellow : (C[f.color] || C.ink);
         path(ctx, f.pts); ctx.stroke(); ctx.restore();
         return;
       }
       if (f.type === 'absorb') {
-        var lv = game.level.data, gy = G.Level.groundTopAt(lv, lv.goal.x) || 600;
+        var lv = game.level.data, gy = lv.goal.y;
         t = (game.timeMs - f.t) / 500;
         img = G.Assets.get('fx_absorb');
         if (t < 0 || t >= 1) return;

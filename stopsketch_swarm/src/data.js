@@ -75,7 +75,7 @@ G.DATA = {
     friction: 0.4,         // 떨어지는 선끼리·땅과의 마찰 (선이 미끄러져 내려가지 않게)
     density: 0.006,        // 선 밀도 (물방울보다 훨씬 무거움 → 걷는 물방울이 밀어도 거의 안 움직임)
     suckReach: 36,         // 우클릭한 곳에서 화면 기준 이 거리(px) 안의 선을 빨아들임. 줌 아웃하면 세계 거리로는 더 넓어짐 (사용자 요청 2026-10-20: 18 → 36)
-    yellowCut: 14,         // 노랑이 지나간 자리에서 배치된 선을 끊는 폭의 절반
+    yellowCut: 14,         // 노랑으로 칠한 폭의 절반: 이 안에 든 배치된 선 부분이 지워짐 (사용자 결정 2026-10-20: 자르기 → 칠한 부분 지우기)
     simplifyTol: 3         // 선 점 줄이기 허용 오차 (물리 조각을 길게 → 떨어질 때 안정)
   },
 
@@ -123,7 +123,8 @@ G.DATA = {
     platform: { name: '발판', solid: true, box: true, w: 220, h: 28, color: '#B8A47C',
                 imgs: [['prop_platform', 'nine']] },
     // 배치된 선: 검은 다이아몬드처럼 광이 나는 막대. 고정. 노랑으로 자르면 양 끝이 붙은 조각은 남고 가운데 조각은 떨어짐
-    crystal:  { name: '배치된 선', solid: true, box: true, w: 200, h: 10, pin: 'both', color: '#1B1A24', imgs: [['prop_crystal', 'nine']] },
+    //   하나 = 길이(w) 100 × 두께(h) 10, 늘리면 양 끝 모양은 그대로 가운데가 늘어남. angle(도)로 가운데 기준 회전 (사용자 결정 2026-10-20)
+    crystal:  { name: '배치된 선', solid: true, box: true, w: 100, h: 10, pin: 'both', color: '#1B1A24', imgs: [['prop_crystal', 'nine']] },
     spike:    { name: '가시', solid: true, box: true, w: 120, h: 30, color: '#6B6470', imgs: [['obs_spike', 'tile']] },
     star:     { name: '별', collect: true, size: 56, imgs: [['star_full', 'fit']] },   // 수집 별: 스테이지당 3개, 주인공이 닿으면 획득 (사용자 결정 2026-10-20)
     drop:     { name: '잠든 물방울', size: 30 },                                  // 닿으면 합류

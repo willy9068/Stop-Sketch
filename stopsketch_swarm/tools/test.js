@@ -82,22 +82,35 @@ t('최고 기록: 판마다 다른 별을 먹어도 누적, 정화는 최고', f
 });
 t('예전 기록(별이 숫자)도 읽음', function () { eq(R.mergeRecord({ stars: 2, bestMs: 1 }, R.clearResult({ stars: [], starsTotal: 3, rescued: 0, total: 0, heroIn: true, timeMs: 5 })).stars, 0); });
 
-console.log('배치된 선 자르기 (사용자 결정 2026-10-20: 노랑은 그은 자리만, 붙은 끝 조각은 남고 나머지는 떨어짐)');
-var bar = { x: 0, y: 100, w: 200, h: 10 };
+console.log('배치된 선 지우기 (사용자 결정 2026-10-20: 노랑으로 칠한 부분만 지움, 못 박힌 끝 조각은 남고 나머지는 떨어짐)');
+var bar = { x: 0, y: 100, w: 200, h: 10, angle: 0 };
 var cross = function (x) { return [{ x: x, y: 50 }, { x: x, y: 150 }]; };
-t('가로 막대 가운데를 자르면 양쪽 조각 모두 붙어 있음(기본 pin both)', function () {
-  var p = R.cutCrystal(bar, cross(100), 14);
-  eq(p.length, 2); near(p[0].w, 86); near(p[1].x, 114); eq(p[0].anchored, true); eq(p[1].anchored, true);
+t('가로질러 칠하면 그 폭(±14)만 지워지고 양쪽 조각은 고정(기본 pin both)', function () {
+  var p = R.eraseCrystal(bar, cross(100), 14);
+  eq(p.length, 2); near(p[0].w, 86, 2.5); near(p[1].x, 114, 2.5); eq(p[0].anchored, true); eq(p[1].anchored, true);
 });
-t('두 번 자르면 가운데 조각은 떨어짐', function () {
-  var p = R.cutCrystal(bar, cross(50).concat(cross(150).reverse()), 14);
+t('선을 따라 칠하면 칠한 길이만큼 지워짐', function () {
+  var p = R.eraseCrystal(bar, [{ x: 60, y: 105 }, { x: 140, y: 105 }], 14);
+  eq(p.length, 2); near(p[0].w, 46, 2.5); near(p[1].x, 154, 2.5);
+});
+t('두 군데 칠하면 가운데 조각은 떨어짐', function () {
+  var p = R.eraseCrystal(bar, cross(50).concat(cross(150).reverse()), 14);
   eq(p.length, 3); eq(p[1].anchored, false); eq(p[1].pin, 'none');
 });
-t('안 닿으면 null', function () { eq(R.cutCrystal(bar, cross(300), 14), null); });
-t('세로 막대(pin end = 아래만 붙음)를 아래쪽에서 자르면 윗조각은 떨어지고 짧은 아랫조각은 없어짐', function () {
-  var wall = { x: 0, y: 470, w: 10, h: 130, pin: 'end' };
-  var p = R.cutCrystal(wall, [{ x: -30, y: 592 }, { x: 40, y: 592 }], 14);
-  eq(p.length, 1); eq(p[0].anchored, false); near(p[0].h, 108);
+t('안 닿으면 null', function () { eq(R.eraseCrystal(bar, cross(300), 14), null); });
+t('90도 막대(pin end = 아래 끝만 박힘)를 아래쪽에서 칠하면 윗조각은 떨어짐', function () {
+  var wall = { x: -60, y: 530, w: 130, h: 10, angle: 90, pin: 'end' };      // 가운데 (5, 535), 위 470 ~ 아래 600
+  var p = R.eraseCrystal(wall, [{ x: -30, y: 592 }, { x: 40, y: 592 }], 14);
+  eq(p.length, 1); eq(p[0].anchored, false); near(p[0].w, 108, 2.5); eq(p[0].angle, 90);
+});
+t('45도로 돌린 막대도 칠한 자리만 지움', function () {
+  var d = { x: -50, y: -5, w: 100, h: 10, angle: 45 };                     // 가운데 (0,0)
+  var p = R.eraseCrystal(d, [{ x: -20, y: 20 }, { x: 20, y: -20 }], 10);   // 가운데를 가로지름
+  eq(p.length, 2); near(p[0].w, 40, 2.5); near(p[1].w, 40, 2.5);
+});
+t('예전 세로 배치된 선은 90도로 바꿔 읽음', function () {
+  var n = G.LevelCheck.normalize({ props: [{ type: 'crystal', x: 900, y: 470, w: 10, h: 130, pin: 'end' }] }).props[0];
+  eq(n.angle, 90); eq(n.w, 130); eq(n.h, 10); near(n.x + n.w / 2, 905); near(n.y + n.h / 2, 535);
 });
 
 console.log('선 점 줄이기 (떨어지는 선 물리 안정)');
@@ -152,10 +165,13 @@ t('잉크 대략치 = 다리(양쪽 40씩 걸침) + 벽 높이×2 + 가시 폭+6
   var lv = mini({ props: [{ type: 'wall', x: 200, y: 450, w: 40, h: 150 }, { type: 'spike', x: 100, y: 570, w: 80, h: 30 }] });
   eq(LC.estimateInk(lv), Math.round(Math.sqrt(280 * 280 + 100 * 100) + 300 + 140));
 });
-t('검사: 시작·도착 아래 땅 없음은 오류', function () {
-  var w = LC.check(mini({ start: { x: 500 }, goal: { x: 1200 } }));
-  if (!hasMsg(w, 'error', '시작')) throw new Error('시작 오류 없음');
-  if (!hasMsg(w, 'error', '도착')) throw new Error('도착 오류 없음');
+t('검사: 시작 아래 땅이 없으면 경고 (공중 시작 허용, 사용자 결정 2026-10-20)', function () {
+  var w = LC.check(mini({ start: { x: 500, y: 300 }, goal: { x: 1200 } }));
+  if (!hasMsg(w, 'warn', '시작')) throw new Error('시작 경고 없음');
+});
+t('시작·도착 y 없으면 그 x 땅 윗면', function () {
+  var n = LC.normalize({ ground: [{ x0: 0, x1: 500, top: 450 }], start: { x: 100 }, goal: { x: 400, y: 200 } });
+  eq(n.start.y, 450); eq(n.goal.y, 200);
 });
 t('검사: 벽에 묻힌 물방울, 물방울 없음 경고', function () {
   var w = LC.check(mini({ props: [{ type: 'wall', x: 200, y: 450, w: 60, h: 150 }, { type: 'drop', x: 230, y: 587 }] }));

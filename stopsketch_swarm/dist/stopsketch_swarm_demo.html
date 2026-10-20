@@ -112,7 +112,7 @@ G.DATA = {
     friction: 0.4,         // 떨어지는 선끼리·땅과의 마찰 (선이 미끄러져 내려가지 않게)
     density: 0.006,        // 선 밀도 (물방울보다 훨씬 무거움 → 걷는 물방울이 밀어도 거의 안 움직임)
     suckReach: 36,         // 우클릭한 곳에서 화면 기준 이 거리(px) 안의 선을 빨아들임. 줌 아웃하면 세계 거리로는 더 넓어짐 (사용자 요청 2026-10-20: 18 → 36)
-    yellowCut: 14,         // 노랑이 지나간 자리에서 배치된 선을 끊는 폭의 절반
+    yellowCut: 14,         // 노랑으로 칠한 폭의 절반: 이 안에 든 배치된 선 부분이 지워짐 (사용자 결정 2026-10-20: 자르기 → 칠한 부분 지우기)
     simplifyTol: 3         // 선 점 줄이기 허용 오차 (물리 조각을 길게 → 떨어질 때 안정)
   },
 
@@ -160,7 +160,8 @@ G.DATA = {
     platform: { name: '발판', solid: true, box: true, w: 220, h: 28, color: '#B8A47C',
                 imgs: [['prop_platform', 'nine']] },
     // 배치된 선: 검은 다이아몬드처럼 광이 나는 막대. 고정. 노랑으로 자르면 양 끝이 붙은 조각은 남고 가운데 조각은 떨어짐
-    crystal:  { name: '배치된 선', solid: true, box: true, w: 200, h: 10, pin: 'both', color: '#1B1A24', imgs: [['prop_crystal', 'nine']] },
+    //   하나 = 길이(w) 100 × 두께(h) 10, 늘리면 양 끝 모양은 그대로 가운데가 늘어남. angle(도)로 가운데 기준 회전 (사용자 결정 2026-10-20)
+    crystal:  { name: '배치된 선', solid: true, box: true, w: 100, h: 10, pin: 'both', color: '#1B1A24', imgs: [['prop_crystal', 'nine']] },
     spike:    { name: '가시', solid: true, box: true, w: 120, h: 30, color: '#6B6470', imgs: [['obs_spike', 'tile']] },
     star:     { name: '별', collect: true, size: 56, imgs: [['star_full', 'fit']] },   // 수집 별: 스테이지당 3개, 주인공이 닿으면 획득 (사용자 결정 2026-10-20)
     drop:     { name: '잠든 물방울', size: 30 },                                  // 닿으면 합류
@@ -310,7 +311,7 @@ G.LEVELS = [
       {"type":"drop","x":3300,"y":737},
       {"type":"drop","x":4700,"y":737},
       {"type":"stopup","x":2800,"y":695,"size":56},
-      {"type":"text","x":-560,"y":300,"size":20,"text":"노랑(키 5): 그은 자리의 검은 다이아몬드 선을 끊어요"},
+      {"type":"text","x":-560,"y":300,"size":20,"text":"노랑(키 5): 칠한 부분의 검은 다이아몬드 선을 지워요"},
       {"type":"text","x":-560,"y":330,"size":20,"text":"초록(키 4): 떨어지지 않고 천천히 떠올라요"},
       {"type":"text","x":620,"y":400,"size":20,"text":"우리 양쪽 벽 아래를 노랑으로 한 번에 그어서"},
       {"type":"text","x":1650,"y":560,"size":20,"text":"우물 속 물방울은 초록으로 들어 올리고, 그 뒤 검정 다리"},
@@ -482,34 +483,36 @@ G.Rules = (function () {
     return t >= 0 && t <= 1 && u >= 0 && u <= 1 ? t : null;
   }
 
-  // 배치된 선(막대 c = {x,y,w,h}, 긴 쪽이 축)을 노랑 선 pts 로 자른 조각들 (사용자 결정 2026-10-20)
-  //   노랑이 지나간 자리 앞뒤 cut 만큼 지움. c.pin = 어느 끝이 벽·땅에 붙어 있는가: 'both'(기본) / 'start'(왼쪽·위) / 'end'(오른쪽·아래) / 'none'
-  //   붙은 끝을 포함한 조각은 anchored(그대로 고정), 나머지 조각은 떨어짐. 조각의 pin 은 원래 붙은 끝만 이어받음
-  //   반환: [{x,y,w,h, anchored, pin}] (자르지 않았으면 null)
-  function cutCrystal(c, pts, cut) {
-    var horiz = c.w >= c.h, L = horiz ? c.w : c.h;
-    var a = horiz ? { x: c.x, y: c.y + c.h / 2 } : { x: c.x + c.w / 2, y: c.y };
-    var b = horiz ? { x: c.x + c.w, y: a.y } : { x: a.x, y: c.y + c.h };
-    var gaps = [];
-    for (var i = 1; i < pts.length; i++) {
-      var t = segHit(a, b, pts[i - 1], pts[i]);
-      if (t !== null) gaps.push([t * L - cut, t * L + cut]);
+  // ---- 배치된 선 지우기 (사용자 결정 2026-10-20): 노랑으로 칠한 자리(선에서 r 안)에 든 부분만 없어짐 ----
+  //   c = { x, y, w(길이), h(두께), angle(도), pin } — x,y 는 돌리기 전 왼쪽 위, 가운데 기준으로 회전
+  //   남은 조각마다 { x, y, w, h, angle, pin, anchored }. 못 박힌 끝(pin: both/start/end/none)이 있는 조각만 anchored(고정), 나머지는 떨어짐
+  function crystalAxis(c) {
+    var a = (c.angle || 0) * Math.PI / 180;
+    return { cx: c.x + c.w / 2, cy: c.y + c.h / 2, ux: Math.cos(a), uy: Math.sin(a), L: c.w };
+  }
+  function eraseCrystal(c, pts, r) {
+    var ax = crystalAxis(c), L = ax.L, step = 2, keep = [], cur = null, hit = false;
+    function painted(t) {
+      var p = { x: ax.cx + ax.ux * (t - L / 2), y: ax.cy + ax.uy * (t - L / 2) };
+      if (pts.length === 1) return dist(p, pts[0]) <= r;
+      for (var i = 1; i < pts.length; i++) if (pointSegDist(p, pts[i - 1], pts[i]) <= r) return true;
+      return false;
     }
-    if (!gaps.length) return null;
-    gaps.sort(function (p, q) { return p[0] - q[0]; });
-    var out = [], pos = 0;
-    gaps.forEach(function (g) {
-      if (g[0] - pos > 4) out.push([pos, g[0]]);
-      pos = Math.max(pos, g[1]);
-    });
-    if (L - pos > 4) out.push([pos, L]);
+    for (var t = 0; t <= L + 0.001; t += step) {
+      var tt = Math.min(t, L);
+      if (painted(tt)) { hit = true; if (cur) { keep.push(cur); cur = null; } }
+      else if (!cur) cur = [tt, tt]; else cur[1] = tt;
+    }
+    if (cur) keep.push(cur);
+    if (!hit) return null;
     var pin = c.pin || 'both', pinS = pin === 'both' || pin === 'start', pinE = pin === 'both' || pin === 'end';
-    return out.map(function (r) {
-      var o = horiz ? { x: c.x + r[0], y: c.y, w: r[1] - r[0], h: c.h } : { x: c.x, y: c.y + r[0], w: c.w, h: r[1] - r[0] };
-      var s = pinS && r[0] <= 0.01, e = pinE && r[1] >= L - 0.01;
-      o.anchored = s || e;
-      o.pin = s && e ? 'both' : s ? 'start' : e ? 'end' : 'none';
-      return o;
+    return keep.filter(function (k) { return k[1] - k[0] >= 4; }).map(function (k) {
+      if (k[0] <= step) k[0] = 0;
+      if (k[1] >= L - step) k[1] = L;
+      var len = k[1] - k[0], mid = (k[0] + k[1]) / 2 - L / 2, mx = ax.cx + ax.ux * mid, my = ax.cy + ax.uy * mid;
+      var s = pinS && k[0] === 0, e = pinE && k[1] === L;
+      return { x: mx - len / 2, y: my - c.h / 2, w: len, h: c.h, angle: c.angle || 0,
+               anchored: s || e, pin: s && e ? 'both' : s ? 'start' : e ? 'end' : 'none' };
     });
   }
 
@@ -531,7 +534,7 @@ G.Rules = (function () {
     newStroke: newStroke, addSample: addSample, smooth: smooth, finishStroke: finishStroke,
     lineAlpha: lineAlpha, lineExpired: lineExpired,
     refundInk: refundInk, drainInk: drainInk,
-    segHit: segHit, cutCrystal: cutCrystal, fitZoom: fitZoom, clearResult: clearResult, mergeRecord: mergeRecord,
+    segHit: segHit, crystalAxis: crystalAxis, eraseCrystal: eraseCrystal, fitZoom: fitZoom, clearResult: clearResult, mergeRecord: mergeRecord,
     nextColor: nextColor, bounceVelocity: bounceVelocity, pointSegDist: pointSegDist, simplify: simplify,
     newStops: newStops, canStop: canStop, useStop: useStop, rechargeStops: rechargeStops,
     timeScale: timeScale, shouldAutoResume: shouldAutoResume
@@ -556,8 +559,16 @@ G.LevelCheck = (function () {
     o.start = o.start || { x: 200 };
     o.goal = o.goal || { x: 2000 };
     o.ground = o.ground || [];
-    o.ground.forEach(function (g) { if (g.h == null) g.h = D.level.groundDepth; });   // 땅 높이 (그림·충돌 같게, 사용자 결정 2026-10-20)
     o.props = o.props || [];
+    o.ground.forEach(function (g) { if (g.h == null) g.h = D.level.groundDepth; });
+    o.props.forEach(function (p) {                 // 배치된 선: w = 길이, h = 두께, angle(도). 예전 세로 막대(h > w)는 90도로 바꿈
+      if (p.type !== 'crystal' || p.angle != null) return;
+      p.angle = 0;
+      if (p.h > p.w) { var cx = p.x + p.w / 2, cy = p.y + p.h / 2, len = p.h; p.h = p.w; p.w = len; p.x = cx - len / 2; p.y = cy - p.h / 2; p.angle = 90; }
+    });
+    // 시작·도착 y = 주인공 발밑 / 잉크병 바닥. 놓은 자리 그대로(공중 가능), 없으면 그 x 의 땅 윗면 (사용자 결정 2026-10-20)
+    o.start = o.start || { x: 0 }; o.goal = o.goal || { x: 1000 };
+    [o.start, o.goal].forEach(function (p) { if (p.y == null) { var t = groundTopAt(o, p.x); p.y = t == null ? 600 : t; } });   // 땅 높이 (그림·충돌 같게, 사용자 결정 2026-10-20)
     delete o.rate;                                 // 시간·물방울%·시도 조건은 없앰 (사용자 결정 2026-10-20: 평가 = 별 n/3 + 정화 %)
     o.segments = o.segments || [];                 // 구간(설계 용어): [{x, name}] — 레벨 툴에 경계와 이름만 표시
     o.drops = o.drops || {};                       // 물방울 이동 속도·서로 충돌 (레벨 툴 "스테이지 설정 → 물방울")
@@ -582,6 +593,11 @@ G.LevelCheck = (function () {
       if (x >= g.x0 && x <= g.x1) return g.top;
     }
     return null;
+  }
+
+  // (x, y) 바로 아래(같은 높이 포함)에 땅이 있는가
+  function groundBelow(lv, x, y) {
+    return lv.ground.some(function (g) { return x >= g.x0 && x <= g.x1 && g.top >= y - 2; });
   }
 
   // 시작~도착 사이의 틈 목록 (땅 조각 사이 빈 곳). dy: 건너편이 높으면 음수
@@ -634,8 +650,7 @@ G.LevelCheck = (function () {
     var lv = normalize(raw), out = [], D = G.DATA;
     function add(k, m) { out.push({ lv: k, msg: m }); }
     if (!lv.ground.length) add('error', '땅이 하나도 없어요');
-    if (groundTopAt(lv, lv.start.x) == null) add('error', '시작 위치 아래에 땅이 없어요');
-    if (groundTopAt(lv, lv.goal.x) == null) add('error', '도착 위치 아래에 땅이 없어요');
+    if (!groundBelow(lv, lv.start.x, lv.start.y)) add('warn', '시작 위치 아래에 땅이 없어요 (주인공이 떨어져요)');
     if (lv.goal.x <= lv.start.x) add('error', '도착이 시작보다 왼쪽에 있어요 (주인공은 오른쪽으로 출발)');
 
     var segs = lv.ground.slice().sort(function (a, b) { return a.x0 - b.x0; });
@@ -675,7 +690,7 @@ G.LevelCheck = (function () {
     return out;
   }
 
-  return { normalize: normalize, groundTopAt: groundTopAt, gaps: gaps, blockingWalls: blockingWalls, estimateInk: estimateInk, dropCount: dropCount, check: check };
+  return { normalize: normalize, groundTopAt: groundTopAt, groundBelow: groundBelow, gaps: gaps, blockingWalls: blockingWalls, estimateInk: estimateInk, dropCount: dropCount, check: check };
 })();
 
 </script>
@@ -862,8 +877,8 @@ G.Level = {
     var nBottle = 0, nStar = 0;
     lv.props.forEach(function (p) {
       if (p.type === 'crystal') {                  // 자를 수 있게 복사본으로 (원본 데이터는 그대로)
-        var c = { x: p.x, y: p.y, w: p.w, h: p.h, pin: p.pin || 'both', body: null };
-        c.body = P.add(engine, P.staticRect(c.x + c.w / 2, c.y + c.h / 2, c.w, c.h, { label: 'crystal' }));
+        var c = { x: p.x, y: p.y, w: p.w, h: p.h, angle: p.angle || 0, pin: p.pin || 'both', body: null };
+        c.body = P.add(engine, P.staticRect(c.x + c.w / 2, c.y + c.h / 2, c.w, c.h, { label: 'crystal', angle: c.angle * Math.PI / 180 }));
         out.crystals.push(c);
         return;
       }
@@ -1022,7 +1037,7 @@ G.Drop = {
 // draw.js
 // 선 그리기: 마우스 드래그 → 잉크 소모 → 평활화 → 한 덩어리 물리 몸체 (사용자 결정 2026-10-20)
 //   선은 사라지지 않고 중력으로 떨어짐(초록은 천천히 떠올라 닿으면 고정). 우클릭으로 빨아들이면 잉크를 전부 돌려받음
-//   노랑은 그은 자리의 배치된 선(crystal)을 끊고 바로 사라짐 (잉크 소모)
+//   노랑은 칠한 자리의 배치된 선(crystal) 부분을 지우고 바로 사라짐 (잉크 소모)
 //   정지 중에 그린 선은 점선으로 기다렸다가 재생할 때 한꺼번에 떨어짐. 달리는 중에 그린 선은 손을 떼면 바로
 var G = G || {};
 
@@ -1105,29 +1120,31 @@ G.Draw = {
     return true;
   },
 
-  // 노랑: 그은 자리의 배치된 선을 끊음. 원래 양 끝을 포함한 조각은 고정으로 남고, 가운데 조각은 떨어지는 검은 선이 됨
+  // 노랑: 칠한 자리(선에서 yellowCut 안)에 든 배치된 선 부분을 지움 (사용자 결정 2026-10-20). 못 박힌 끝이 있는 조각은 고정으로 남고,
+  //   나머지 조각은 떨어지는 "배치된 선" 조각이 됨 (빨아들일 수 없음)
   cut: function (game, line) {
-    var P = G.Physics, cutW = G.DATA.ink.yellowCut, list = game.level.crystals, n = 0;
+    var P = G.Physics, M = P.M, r = G.DATA.ink.yellowCut, list = game.level.crystals, n = 0;
     for (var i = list.length - 1; i >= 0; i--) {
-      var c = list[i], pieces = G.Rules.cutCrystal(c, line.pts, cutW);
+      var c = list[i], pieces = G.Rules.eraseCrystal(c, line.pts, r);
       if (!pieces) continue;
       n++;
       P.remove(game.engine, c.body);
       list.splice(i, 1);
       pieces.forEach(function (q) {
+        var rad = q.angle * Math.PI / 180;
         if (q.anchored) {
-          q.body = P.add(game.engine, P.staticRect(q.x + q.w / 2, q.y + q.h / 2, q.w, q.h, { label: 'crystal' }));
+          q.body = P.add(game.engine, P.staticRect(q.x + q.w / 2, q.y + q.h / 2, q.w, q.h, { label: 'crystal', angle: rad }));
           list.push(q);
-        } else {                                   // 떨어지는 조각: 잉크가 아닌 "배치된 선" 조각 (빨아들일 수 없음)
-          var M = P.M, body = M.Bodies.rectangle(q.x + q.w / 2, q.y + q.h / 2, q.w, q.h, { friction: G.DATA.ink.friction, label: 'crystal' });
+        } else {
+          var body = M.Bodies.rectangle(q.x + q.w / 2, q.y + q.h / 2, q.w, q.h, { friction: G.DATA.ink.friction, label: 'crystal', angle: rad });
           M.Body.setDensity(body, G.DATA.ink.density);
-          M.Body.setAngularVelocity(body, (q.w < q.h ? 1 : 0.2) * (game.fallen.length % 2 ? 0.03 : -0.03));   // 세워진 채 떨어져 다시 서지 않게 살짝 기울임
+          M.Body.setAngularVelocity(body, (game.fallen.length % 2 ? 0.02 : -0.02));   // 세워진 채 떨어져 다시 서지 않게 살짝 기울임
           game.fallen.push({ w: q.w, h: q.h, body: P.add(game.engine, body) });
         }
       });
     }
     if (n) game.fx.push({ type: 'cut', pts: line.pts, t: game.timeMs });
-    else game.toast('노랑: 자를 배치된 선이 없어요');
+    else game.toast('노랑: 칠한 자리에 배치된 선이 없어요');
   },
 
   // 초록이 닿으면 멈추는 것들: 벽·발판·땅, 배치된 선, 떨어진 조각, 다른 선
@@ -1199,9 +1216,7 @@ G.Game = {
     game.engine = G.Physics.create();
     game.level = G.Level.build(game.engine, game.levelData, game.account);
     var lv = game.level.data;
-    var top = G.Level.groundTopAt(lv, lv.start.x);
-    if (top == null) top = 600;
-    game.hero = G.Drop.create(game.engine, lv.start.x, top - D.drop.heroRadius - 1, true, 1, lv.drops);
+    game.hero = G.Drop.create(game.engine, lv.start.x, lv.start.y - D.drop.heroRadius - 1, true, 1, lv.drops);   // 시작 y = 발밑
     game.drops = [game.hero];                      // 깨어난 물방울 (주인공 포함)
     game.line = [];                                // 대열 (주인공 뒤 순서대로)
     var hp = game.hero.body.position;
@@ -1315,7 +1330,7 @@ G.Game = {
       self.collect(game, d);
       if (d.hero || !game.level.data.drops.follow) self.wake(game, d);
       if (d.mode === 'free' && game.level.data.drops.follow) self.rejoin(game, d);
-      if (p.x >= game.level.goalX) self.arrive(game, d);
+      if (self.inGoal(game, p)) self.arrive(game, d);
     });
     if (game.status !== 'run') return;
     this.updateGoal(game, realMs * s);
@@ -1500,9 +1515,15 @@ G.Game = {
     if (d.hero) { game.heroHome = true; game.toast('주인공 도착! Enter: 남은 물방울을 기다리지 않고 끝내기'); }
   },
 
+  // 잉크병에 닿았는가: 도착 x 오른쪽이면서 잉크병 높이 안 (사용자 결정 2026-10-20: 도착을 위아래로도 옮김)
+  inGoal: function (game, p) {
+    var J = G.DATA.art.goalJar, g = game.level.data.goal;
+    return p.x >= g.x && p.x <= g.x + J.w && p.y >= g.y - J.h - 60 && p.y <= g.y + 10;
+  },
+
   // 잉크병 입구 (그림 기준: 왼쪽 끝 ≈ 도착 x)
   goalMouth: function (game) {
-    var J = G.DATA.art.goalJar, gx = game.level.goalX, gy = G.Level.groundTopAt(game.level.data, gx) || 600;
+    var J = G.DATA.art.goalJar, gx = game.level.goalX, gy = game.level.data.goal.y;
     return { x: gx - 10 + J.w * J.mouth, y: gy - J.h * 0.95, gy: gy };
   },
 
@@ -1511,8 +1532,7 @@ G.Game = {
     var E = G.DATA.goalEnter, m = this.goalMouth(game), self = this;
     game.enterCdMs = Math.max(0, game.enterCdMs - ms);
     game.goalQueue.forEach(function (d, k) {
-      var tx = game.level.goalX - E.spacing * (k + 0.5), top = G.Level.groundTopAt(game.level.data, tx);
-      var ty = (top == null ? m.gy : top) - d.r;
+      var tx = game.level.goalX - E.spacing * (k + 0.5), ty = m.gy - d.r;   // 잉크병 바닥 높이에 줄 섬 (공중 잉크병이어도)
       d.qx += (tx - d.qx) * Math.min(1, E.slide * ms / 16.7);
       d.qy += (ty - d.qy) * Math.min(1, E.slide * ms / 16.7);
     });
@@ -1697,44 +1717,33 @@ G.Props = (function () {
   }
 
   // 배치된 선: 검은 다이아몬드처럼 광이 나는 막대 (사용자 결정 2026-10-20). 이미지(prop_crystal)가 있으면 9분할
+  //   r = { x, y, w(길이), h(두께), angle(도) } — 가운데 기준으로 돌려 그림. 양 끝은 그대로, 가운데는 반복하지 않고 늘림 (사용자 결정 2026-10-20: 하나로 보이게)
   function drawCrystal(ctx, r) {
-    var img = G.Assets.get('prop_crystal');
-    if (img) {                                     // 이미지(가로 막대, 양 끝 뾰족): 양 끝은 그대로, 가운데는 반복. 세로 막대는 90도 돌려 그림
-      var A = G.DATA.art.crystal, hz = r.w >= r.h, len = hz ? r.w : r.h, th = hz ? r.h : r.w;
-      var k = th / img.height, f = Math.min(1, len / ((A.left + A.right) * k));   // 아주 짧으면 끝을 줄임
+    var img = G.Assets.get('prop_crystal'), len = r.w, th = r.h;
+    ctx.save();
+    ctx.translate(r.x + r.w / 2, r.y + r.h / 2);
+    if (r.angle) ctx.rotate(r.angle * Math.PI / 180);
+    var x0 = -len / 2, y0 = -th / 2;
+    if (img) {
+      var A = G.DATA.art.crystal, k = th / img.height, f = Math.min(1, len / ((A.left + A.right) * k));   // 아주 짧으면 끝을 줄임
       var eL = A.left * k * f, eR = A.right * k * f, mid = img.width - A.left - A.right;
-      ctx.save();
-      ctx.translate(r.x + r.w / 2, r.y + r.h / 2);
-      if (!hz) ctx.rotate(Math.PI / 2);
-      var x0 = -len / 2, y0 = -th / 2;
       ctx.drawImage(img, 0, 0, A.left, img.height, x0, y0, eL, th);
       ctx.drawImage(img, img.width - A.right, 0, A.right, img.height, x0 + len - eR, y0, eR, th);
-      for (var xx = x0 + eL; xx < x0 + len - eR - 0.01; xx += mid * k) {
-        var ww = Math.min(mid * k, x0 + len - eR - xx);
-        ctx.drawImage(img, A.left, 0, ww / k, img.height, xx, y0, ww, th);
-      }
+      if (len - eL - eR > 0.5) ctx.drawImage(img, A.left, 0, mid, img.height, x0 + eL - 0.3, y0, len - eL - eR + 0.6, th);
       ctx.restore();
       return;
     }
-    var C = G.DATA.colors, horiz = r.w >= r.h, t = horiz ? r.h : r.w;
-    ctx.save();
+    var C = G.DATA.colors, t = th;
     ctx.beginPath();                               // 양 끝이 뾰족한 결정 모양
-    if (horiz) { ctx.moveTo(r.x, r.y + t / 2); ctx.lineTo(r.x + t * 0.6, r.y); ctx.lineTo(r.x + r.w - t * 0.6, r.y); ctx.lineTo(r.x + r.w, r.y + t / 2); ctx.lineTo(r.x + r.w - t * 0.6, r.y + t); ctx.lineTo(r.x + t * 0.6, r.y + t); }
-    else { ctx.moveTo(r.x + t / 2, r.y); ctx.lineTo(r.x + t, r.y + t * 0.6); ctx.lineTo(r.x + t, r.y + r.h - t * 0.6); ctx.lineTo(r.x + t / 2, r.y + r.h); ctx.lineTo(r.x, r.y + r.h - t * 0.6); ctx.lineTo(r.x, r.y + t * 0.6); }
+    ctx.moveTo(x0, 0); ctx.lineTo(x0 + t * 0.6, y0); ctx.lineTo(x0 + len - t * 0.6, y0); ctx.lineTo(x0 + len, 0); ctx.lineTo(x0 + len - t * 0.6, y0 + t); ctx.lineTo(x0 + t * 0.6, y0 + t);
     ctx.closePath();
-    var gr = horiz ? ctx.createLinearGradient(0, r.y, 0, r.y + r.h) : ctx.createLinearGradient(r.x, 0, r.x + r.w, 0);
+    var gr = ctx.createLinearGradient(0, y0, 0, y0 + t);
     gr.addColorStop(0, '#4A4560'); gr.addColorStop(0.45, C.crystal); gr.addColorStop(1, '#0B0A10');
     ctx.fillStyle = gr; ctx.fill();
     ctx.lineWidth = 2; ctx.strokeStyle = '#08070C'; ctx.stroke();
     ctx.clip();                                    // 비스듬한 광 줄무늬
     ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = Math.max(2, t * 0.18);
-    var len = horiz ? r.w : r.h;
-    for (var k = t; k < len; k += 46) {
-      ctx.beginPath();
-      if (horiz) { ctx.moveTo(r.x + k, r.y + t); ctx.lineTo(r.x + k + t * 0.8, r.y); }
-      else { ctx.moveTo(r.x, r.y + k + t * 0.8); ctx.lineTo(r.x + t, r.y + k); }
-      ctx.stroke();
-    }
+    for (var q = t; q < len; q += 46) { ctx.beginPath(); ctx.moveTo(x0 + q, y0 + t); ctx.lineTo(x0 + q + t * 0.8, y0); ctx.stroke(); }
     ctx.restore();
   }
 
@@ -1776,6 +1785,7 @@ G.Props = (function () {
       }
       return;
     }
+    if (p.type === 'crystal') { drawCrystal(ctx, p); return; }   // 돌린 막대 (사용자 결정 2026-10-20)
     if (drawFirst(ctx, d.imgs, r)) return;
     if (p.type === 'inkup') {                    // 그림이 없을 때: 먹색 잉크 병 + "+"
       var bw = r.w * 0.5, bh = r.h * 0.62, bx = p.x - bw / 2, by = p.y - bh / 2 + r.h * 0.08;
@@ -1796,7 +1806,6 @@ G.Props = (function () {
       ctx.fillRect(r.x + r.w * 0.15, r.y + 3, r.w * 0.2, 2);
       return;
     }
-    if (p.type === 'crystal') { drawCrystal(ctx, r); return; }
     if (p.type === 'spike') {                    // 그림이 없을 때: 회색 삼각형 가시 줄
       var n = Math.max(1, Math.round(r.w / 24)), sw = r.w / n;
       ctx.fillStyle = d.color; ctx.strokeStyle = C.outline; ctx.lineWidth = 2.5;
@@ -1935,7 +1944,7 @@ G.UI = (function () {
   function focusBox(game) {
     var list = G.Game.walking(game), box = null;
     if (!list.length) {                            // 아무도 안 걸으면 잉크병 쪽
-      var gx = game.level.goalX, gy = G.Level.groundTopAt(game.level.data, gx) || 600;
+      var gx = game.level.goalX, gy = game.level.data.goal.y;
       return { x0: gx - 200, x1: gx + 300, y0: gy - 200, y1: gy, hx: gx, hy: gy - 30 };
     }
     list.forEach(function (d) {
@@ -2081,7 +2090,8 @@ G.UI = (function () {
   // 물감 선 + 색각 보조 무늬 (검정=없음, 빨강=점, 파랑=화살, 노랑=X, 초록=위 화살)
   function drawInkLine(ctx, pts, color, pending) {
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-    ctx.lineWidth = G.DATA.ink.thickness; ctx.strokeStyle = C[color] || C.ink;
+    ctx.lineWidth = color === 'yellow' ? G.DATA.ink.yellowCut * 2 : G.DATA.ink.thickness;   // 노랑은 지우는 폭 그대로 (칠한 부분이 지워짐)
+    ctx.strokeStyle = C[color] || C.ink;
     ctx.setLineDash(pending ? [14, 10] : []);
     path(ctx, pts); ctx.stroke();
     ctx.setLineDash([]);
@@ -2200,8 +2210,8 @@ G.UI = (function () {
       ctx.save(); ctx.translate(f.body.position.x, f.body.position.y); ctx.rotate(f.body.angle);
       G.Props.drawCrystal(ctx, { x: -f.w / 2, y: -f.h / 2, w: f.w, h: f.h }); ctx.restore();
     });
-    drawStart(ctx, lv.start.x, G.Level.groundTopAt(lv, lv.start.x));
-    drawGoal(ctx, lv.goal.x, G.Level.groundTopAt(lv, lv.goal.x), jarShown);
+    drawStart(ctx, lv.start.x, lv.start.y);
+    drawGoal(ctx, lv.goal.x, lv.goal.y, jarShown);
     game.level.items.forEach(function (it) {
       if (it.owned) { ctx.save(); ctx.globalAlpha = 0.2; G.Props.draw(ctx, it.prop); ctx.restore(); return; }
       if (!it.got) G.Props.draw(ctx, it.prop);
@@ -2240,12 +2250,12 @@ G.UI = (function () {
         t = (game.timeMs - f.t) / 350;
         if (t < 0 || t >= 1) return;
         ctx.save(); ctx.globalAlpha = 1 - t; ctx.setLineDash([4, 6]);
-        ctx.lineWidth = G.DATA.ink.thickness * (1 - t); ctx.strokeStyle = f.type === 'cut' ? C.yellow : (C[f.color] || C.ink);
+        ctx.lineWidth = (f.type === 'cut' ? G.DATA.ink.yellowCut * 2 : G.DATA.ink.thickness) * (1 - t); ctx.strokeStyle = f.type === 'cut' ? C.yellow : (C[f.color] || C.ink);
         path(ctx, f.pts); ctx.stroke(); ctx.restore();
         return;
       }
       if (f.type === 'absorb') {
-        var lv = game.level.data, gy = G.Level.groundTopAt(lv, lv.goal.x) || 600;
+        var lv = game.level.data, gy = lv.goal.y;
         t = (game.timeMs - f.t) / 500;
         img = G.Assets.get('fx_absorb');
         if (t < 0 || t >= 1) return;
