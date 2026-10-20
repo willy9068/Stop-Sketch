@@ -6,6 +6,12 @@
       "runtimeExecutable": "python",
       "runtimeArgs": ["-m", "http.server", "8765", "--directory", "stopsketch"],
       "port": 8765
+    },
+    {
+      "name": "stopsketch-swarm",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "8767", "--directory", "."],
+      "port": 8767
     }
   ]
 }

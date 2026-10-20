@@ -614,3 +614,61 @@ spikes around the border, thick dark brown line, empty inside, plain white backg
 - `obs_shooter`: 게임에서 70×70px 상자 안에 비율 유지로 그림. **포구가 왼쪽**을 보게 (각도를 바꿔도 그림은 회전하지 않음 — 회전이 필요하면 Claude에게 요청)
 - `ui_shelf`: 화면 왼쪽 아래 병 3개 아래에 깔리는 나무 선반 (게임에서 약 240×30px로 줄여 씀). 1280×160으로 뽑아도 가로로 늘려 씀
 - 3장 전체 표에 #45~47 (start_hole, goal_jar_empty, goal_jar_full) 추가
+
+---
+
+## 13. 5차 이미지 요청 — 물방울 무리 시험판 (2026-10-20)
+
+> 새 폴더 `stopsketch_swarm/`(물방울 무리 시험판)에 필요한 이미지입니다. 기존 데모와 **같은 이미지 폴더**(`stopsketch/assets/`)를 씁니다.
+> 지금은 모두 **코드로 그린 임시 모양**으로 동작하고, 파일을 넣으면 바로 바뀝니다. 모든 프롬프트 앞에 2장 스타일 블록을 붙입니다.
+> 작은 물방울은 주인공 그림(char_*)을 작게 줄여 씁니다. 따로 그리지 않아도 됩니다.
+
+| 우선 | 파일 | 크기 | 쓰이는 곳 | 만들 때 주의 |
+|---|---|---|---|---|
+| ★ | `prop_crystal.png` | 256×32, 투명 | **배치된 선**: 검은 다이아몬드처럼 광이 나는 막대 (사용자 결정). 길이·방향 자유 → 9분할 가로형, 테두리 약 12px | 가로로 긴 결정 막대, 양 끝이 살짝 뾰족, 짙은 남색·검정 면에 **비스듬한 흰 광택 줄**. 가운데 무늬는 고르게 (반복됨). 세로 막대는 코드가 돌려 씀 |
+| ★ | `drop_sleep.png` | 256×256, 투명 | **잠든 물방울** (닿으면 깨어남) | char_idle과 같은 캐릭터, **눈을 감고 쿨쿨**, 몸이 살짝 납작, 머리 위 작은 "z" 없이(코드가 그림). 발끝 위치·크기는 char_idle과 같게 |
+| ★ | `obs_spike.png` | 128×64, 투명 | **가시 함정** (닿으면 죽음). 가로로 반복 | 회색·검보라 삼각 가시 2~3개가 바닥에 붙은 모양, **좌우 이음매 없음**, 아래 끝이 이미지 맨 아래 |
+| ★ | `ink_black.png` / `ink_yellow.png` | 192×256, 투명 | 아래 병 선반의 **검정·노랑 물감 병** (키 1, 4) | 기존 ink_red/blue/green과 **같은 병 모양·같은 시드**, 라벨 기호: 검정 = 빈 동그라미(기본), 노랑 = **X(지우기)** |
+| ☆ | `item_stop.png` | 256×256, 투명 | **정지 +1 아이템** (그 스테이지에서만) | 노란 탁상시계·스톱워치에 작은 **"+"** 반짝임. 별·잉크 병과 확실히 다르게 |
+| ☆ | `fx_absorb.png` | 256×256, 투명 | 물방울이 **검은 잉크병에 흡수**될 때 병 입구 위 효과 | 하늘색 물방울 튀김 + 작은 반짝임이 아래(병 안)로 빨려 드는 모양 |
+| ○ | `ui_arrow.png` | 64×64, 투명 | **화면 밖 물방울** 위치를 가리키는 가장자리 화살표 (오른쪽을 가리키게, 코드가 돌림) | 하늘색 둥근 삼각 화살표, 굵은 외곽선. 주인공용은 코드가 노랗게 바꾸지 않으니 한 장만 |
+| ○ | `goal_jar_dark.png` (선택) | 384×448, 투명 | 검은 잉크병 — 지금은 `goal_jar_empty` 뒤에 코드로 검정→하늘색 잉크를 칠함. 따로 그리고 싶을 때만 | goal_jar_empty와 같은 통에 **검은 잉크가 가득** |
+
+```
+(prop_crystal)  a long horizontal crystal bar like a polished black diamond, faceted dark
+                navy-black surface with a few diagonal white glossy highlight stripes, slightly
+                pointed ends, thick dark outline of uniform weight, flat 2D side view, no
+                perspective, even repeating pattern in the middle, plain white background
+(drop_sleep)    [char_idle 참조] the same round mochi doodle creature as reference, sleeping
+                peacefully with closed curved eyes, body slightly squashed and relaxed, small
+                drool-free smile, same size and position as reference, plain white background
+(obs_spike)     a row of three simple doodle floor spikes, gray-purple triangles with thick dark
+                outline, attached to the bottom edge, seamless tileable left to right, flat 2D
+                side view, plain white background
+(ink_black / ink_yellow)
+                [ink_red 참조, 같은 시드] the same small glass ink bottle with a cork, filled with
+                saturated [BLACK / YELLOW] ink, the label shows a simple doodle symbol
+                [BLACK: empty circle / YELLOW: X mark], flat colors, front view, plain white background
+(item_stop)     a small yellow doodle stopwatch with a tiny "+" sparkle next to it, thick dark
+                outline, flat colors, front view, plain white background, isolated
+(fx_absorb)     a small splash of light sky blue water droplets and tiny sparkles being sucked
+                downward into a point, thick lines, plain white background
+(ui_arrow)      a rounded sky blue doodle triangle arrow pointing right, thick dark outline,
+                flat, plain white background
+(goal_jar_dark) [goal_jar_full 참조] the same big round glass jar, same shape and position,
+                filled to the top with thick dark black ink, a few dark drips on the rim,
+                plain white background
+```
+- 네거티브에 `text, letters, numbers` 추가 (item_stop 의 "+" 는 기호라 괜찮지만 숫자는 넣지 않음 — "+1" 글자는 코드가 씀)
+- prop_crystal 은 9분할로 늘리므로 **가운데 무늬가 반복돼도 어색하지 않게**. 넣은 뒤 테두리 폭이 안 맞으면 `stopsketch_swarm/src/data.js` 의 `art.slices.prop_crystal` 조정 (Claude에게 요청)
+- 3장 전체 표에 #48~55 추가 (아래)
+
+| # | 구분 | 파일명 | 크기 | 배경 | 우선 |
+|---|---|---|---|---|---|
+| 48 | 배치된 선 (검은 다이아몬드) | prop_crystal.png | 256×32 | 투명 | ★ 무리 시험판 |
+| 49 | 잠든 물방울 | drop_sleep.png | 256×256 | 투명 | ★ 무리 시험판 |
+| 50 | 가시 함정 | obs_spike.png | 128×64 | 투명 | ★ 무리 시험판 |
+| 51~52 | 검정·노랑 물감 병 | ink_black / ink_yellow.png | 192×256 | 투명 | ★ 무리 시험판 |
+| 53 | 정지 +1 아이템 | item_stop.png | 256×256 | 투명 | ☆ 무리 시험판 |
+| 54 | 흡수 효과 | fx_absorb.png | 256×256 | 투명 | ☆ 무리 시험판 |
+| 55 | 화면 밖 화살표 | ui_arrow.png | 64×64 | 투명 | ○ 무리 시험판 |
