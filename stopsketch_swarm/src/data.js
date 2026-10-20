@@ -43,13 +43,18 @@ G.DATA = {
       nudgeDist: 3,        //   이만큼 밀린 상태가
       nudgeSteps: 6,       //   이 스텝 동안 이어지면 이탈 (떨어지는 선에 천천히 밀릴 때)
       unsupportedSteps: 12,// 주인공은 바닥에 있었는데 대열 물방울 발밑에 바닥이 이 스텝 동안 없으면 이탈 (다리가 떨어짐)
-      supportTol: 8,       //   발밑 바닥 찾는 거리 (반지름 + 이 값)
+      supportTol: 16,       //   발밑 바닥 찾는 거리 (반지름 + 이 값)
       wakeMs: 500,         // 깨어나는 모션 (기지개·흔들기)
       hopMs: 400,          // 대열 끝자리로 통 튀어 붙는 시간
       hopHeight: 70,
-      rejoinReach: 1.15    // 혼자 걷는 물방울과 주인공 중심 거리가 (두 반지름 합 × 이 값) 안이면 다시 합류
+      rejoinReach: 1.15,   // 혼자 걷는 물방울과 주인공 중심 거리가 (두 반지름 합 × 이 값) 안이면 다시 합류
+      rejoinCdMs: 600      //   단, 바닥에 선 채로, 이탈하고 이만큼 지난 뒤에만 (사용자 요청 2026-10-20: 다리를 지우면 공중에서 다시 붙어 따라가던 문제)
     }
   },
+
+  // 잉크병에 들어가기 (사용자 요청 2026-10-20): 닿은 순서대로 병 앞에 줄 서고, 맨 앞부터 gapMs 마다 하나씩 enterMs 동안 입구로 뛰어듦.
+  //   병은 들어간 만큼 jarFadePerSec 속도로 서서히 밝아짐
+  goalEnter: { gapMs: 420, enterMs: 650, hopHeight: 70, endScale: 0.35, spacing: 26, slide: 0.15, jarFadePerSec: 0.35 },
 
   stop: { perSection: 3 }, // 스테이지당 정지 횟수 (levels.js stops 로 바꿈)
   stopUp: 1,               // 정지 +1 아이템 하나당 (그 스테이지에서만)
@@ -144,6 +149,8 @@ G.DATA = {
     backgrounds: { bg_a: '종이 + 구름', bg_b: '줄 노트', bg_plain: '빈 종이', none: '단색 종이' },
     decos: ['deco_cloud_1', 'deco_cloud_2', 'deco_cloud_3'],
     charSize: 3.2,
+    charFace: { char_run: -1 },  // 그림이 바라보는 방향 (-1 = 왼쪽). 진행 방향에 맞춰 뒤집음 (사용자 요청 2026-10-20)
+    walk: { stride: 1.6, bob: 0.16, sway: 0.09, lean: 0.06, squash: 0.08 },  // 코드 걷기: 걸음 길이(반지름 배)·튀는 높이(반지름 배)·기울기(rad)·앞으로 숙임·눌림
     airVy: 1.5,
     bgParallax: 0.5,
     groundTop: { h: 48, up: 14 },

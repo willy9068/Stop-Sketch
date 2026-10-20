@@ -222,3 +222,37 @@ G.LEVELS.forEach(function (lv) {
   alone = G.Game.walking(w).filter(function (d) { return d.mode === 'free'; }).length;
   console.log('    → 30초 뒤 (주인공이 두 벽 사이를 오가며 다시 만남): 대열 ' + w.line.length + ' · 혼자 ' + alone + ' · 잃음 ' + w.lost + ' (대열 4 이어야 정상)');
 })();
+
+// 9. 다리를 지우면 그 위 대열은 떨어짐 (사용자 요청 2026-10-20: 이탈 직후 공중에서 다시 붙어 따라가던 문제)
+(function () {
+  var lv = { id: 't', name: '시험', ink: 3000, stops: 9, start: { x: 0 }, goal: { x: 2600 }, inks: ['black'],
+    drops: { heroSpeed: 3, smallSpeed: 4 }, eraser: { pct: 50, delayMs: 600000 },
+    ground: [{ x0: -400, x1: 600, top: 600 }, { x0: 900, x1: 3000, top: 600 }],
+    props: [120, 150, 180, 210, 240, 270, 300, 330].map(function (x) { return { type: 'drop', x: x, y: 587 }; }) };
+  var g = G.Game.create('A', lv); G.Game.start(g);
+  drawLine(g, [{ x: 560, y: 596 }, { x: 940, y: 596 }], 'black');
+  var sucked = false, onBridge = 0;
+  for (var i = 0; i < 60 * 40 && g.status === 'run'; i++) {
+    if (!sucked && g.hero.body.position.x > 960) {
+      onBridge = g.line.filter(function (d) { return d.mode === 'line' && d.body.position.x > 610 && d.body.position.x < 890; }).length;
+      G.Game.toggleStop(g); G.Draw.suck(g, { x: 750, y: 596 }); G.Game.toggleStop(g); sucked = true;
+    }
+    G.Game.update(g, STEP);
+  }
+  console.log('9 다리 지우기 (주인공 3 · 작은 4): 틈 위 근처 대열 ' + onBridge + ' → 잃음 ' + g.lost + ' · 도착 ' + g.rescued + '/' + g.total, g.status, '(틈 위는 떨어지고, 땅 끝에 걸친 물방울만 남아야 정상)');
+})();
+
+// 10. 잉크병: 닿은 순서대로 하나씩 들어감 (사용자 요청 2026-10-20)
+(function () {
+  var lv = { id: 't', name: '시험', ink: 3000, stops: 9, start: { x: 0 }, goal: { x: 700 }, inks: ['black'],
+    drops: { heroSpeed: 3 }, eraser: { pct: 50, delayMs: 600000 }, ground: [{ x0: -400, x1: 1200, top: 600 }],
+    props: [100, 130, 160, 190, 220].map(function (x) { return { type: 'drop', x: x, y: 587 }; }) };
+  var g = G.Game.create('A', lv); G.Game.start(g);
+  var times = [], last = 0;
+  for (var i = 0; i < 60 * 30 && g.status === 'run'; i++) {
+    G.Game.update(g, STEP);
+    var n = g.rescued + (g.heroIn ? 1 : 0);
+    if (n > last) { times.push((g.timeMs / 1000).toFixed(2)); last = n; }
+  }
+  console.log('10 잉크병 들어가기: 들어간 시각 ' + times.join(' ') + ' · 마지막 닿음 ' + (g.lastReachMs / 1000).toFixed(2) + 's · 끝 ' + (g.timeMs / 1000).toFixed(2) + 's', g.status, '정화 ' + Math.round(G.Game.purity(g) * 100) + '%');
+})();

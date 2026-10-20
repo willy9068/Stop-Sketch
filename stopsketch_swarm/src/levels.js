@@ -12,9 +12,9 @@ G.LEVELS = [
     "rate": {"timeSec":60,"rescuePct":100,"maxTries":3},
     "inks": ["black","red"],
     "fx": {"bounce":15,"boostPct":190,"boostMs":1200,"riseSpeed":1.2},
-    "drops": {"heroSpeed":1.5,"smallSpeed":1,"collide":false},
+    "drops": {"heroSpeed":3,"smallSpeed":4,"collide":false},
     "eraser": {"pct":10,"delayMs":5},
-    "segments": [{"x":-600,"name":"이동 구간"},{"x":1200,"name":"퍼즐 구간 1 · 틈"},{"x":2050,"name":"퍼즐 구간 2 · 가시 구덩이"},{"x":2800,"name":"퍼즐 구간 3 · 절벽"},{"x":3900,"name":"도착"}],
+    "segments": [{"x":-200,"name":"이동 구간"},{"x":3900,"name":"도착"}],
     "start": {"x":-900},
     "goal": {"x":3760},
     "ground": [

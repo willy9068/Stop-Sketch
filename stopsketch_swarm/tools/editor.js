@@ -582,6 +582,8 @@ var G = G || {};
       '<div>스텝당 px (5.2 ≈ 초당 312px). 소수 첫째 자리까지</div>' +
       '<div class="f"><label>서로 충돌</label><label><input type="checkbox" id="d_collide"' + (l.drops.collide ? ' checked' : '') + '> 물방울끼리 부딪힘</label></div>' +
       '<div>끄면 서로 통과(기본). 켜면 부딪혀 뒤로 돌거나 위에 올라탐</div>' +
+      '<div class="f"><label>대열</label><label><input type="checkbox" id="d_follow"' + (l.drops.follow ? ' checked' : '') + '> 주인공 발자국을 따라옴</label></div>' +
+      num('d_gap', '대열 간격', l.drops.gap) + '<div>발자국 길이 px. 켜면 작은 물방울 속도는 이탈해 혼자 걸을 때만 씀</div>' +
       '<div class="row"><b>지우개</b></div>' +
       num('e_pct', '속도 % (주인공)', l.eraser.pct) + num('e_delayMs', '출발 ms', l.eraser.delayMs) +
       '<div class="row"><b>구간 경계</b>&nbsp;(설계 표시만, "x:이름" 한 줄에 하나)</div>' +
@@ -655,6 +657,8 @@ var G = G || {};
     else if (id === 'e_pct') l.eraser.pct = v; else if (id === 'e_delayMs') l.eraser.delayMs = v;
     else if (id === 'd_heroSpeed' || id === 'd_smallSpeed') l.drops[id.slice(2)] = Math.max(0.1, Math.round(+t.value * 10) / 10);
     else if (id === 'd_collide') l.drops.collide = t.checked;
+    else if (id === 'd_follow') l.drops.follow = t.checked;
+    else if (id === 'd_gap') l.drops.gap = Math.max(10, v);
     else if (id === 'l_segments') {
       l.segments = String(v).split('\n').map(function (line) {
         var m = /^\s*(-?\d+)\s*:\s*(.*)$/.exec(line); return m ? { x: +m[1], name: m[2].trim() } : null;

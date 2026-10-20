@@ -187,25 +187,66 @@ G.UI = (function () {
 
   // 물방울 그림: 주인공·작은 물방울 같은 그림, 크기만 다름. 대열·붙는 중인 물방울은 위치를 직접 옮기므로 옮긴 거리로 속도를 봄
   function dropVel(d) { return (d.mode === 'line' || d.mode === 'join') && d.vel ? d.vel : d.body.velocity; }
-  function dropImage(d) {
-    var v = dropVel(d), A = G.DATA.art, get = G.Assets.get.bind(G.Assets);
-    if (!d.grounded && v.y < -A.airVy) return get('char_jump') || get('char_idle');
-    if (!d.grounded && v.y > A.airVy) return get('char_fall') || get('char_idle');
-    return (Math.abs(v.x) > 1 && get('char_run')) || get('char_idle');
+  // 그림 이름을 고름 (없으면 char_idle). 그림마다 바라보는 방향이 달라 art.charFace 로 진행 방향에 맞춰 뒤집음 (사용자 요청 2026-10-20)
+  function dropImageName(d) {
+    var v = dropVel(d), A = G.DATA.art, get = G.Assets.get.bind(G.Assets), n;
+    if (!d.grounded && v.y < -A.airVy) n = 'char_jump';
+    else if (!d.grounded && v.y > A.airVy) n = 'char_fall';
+    else n = Math.abs(v.x) > 0.5 ? 'char_run' : 'char_idle';
+    return get(n) ? n : 'char_idle';
   }
+  // 걷기 (사용자 요청 2026-10-20: 코드로 걷는 모습): 움직인 거리만큼 걸음 위상이 돌고, 걸음마다 통통 튀고(bob)·좌우로 기울고(sway)·
+  //   발이 닿을 때 눌림(squash). 빠르면 걸음이 빨라짐. 수치는 data.js art.walk
+  function walkPose(d) {
+    var W = G.DATA.art.walk, p = d.body.position, moved = d.lastDraw ? Math.abs(p.x - d.lastDraw.x) : 0;
+    d.lastDraw = { x: p.x, y: p.y };
+    var walking = d.grounded && moved > 0.2;
+    if (walking) d.walkPhase = ((d.walkPhase || 0) + moved / (d.r * W.stride) * Math.PI) % (Math.PI * 2);
+    d.walkAmt = Math.max(0, Math.min(1, (d.walkAmt || 0) + (walking ? 0.15 : -0.1)));   // 멈추면 부드럽게 가라앉음
+    var ph = d.walkPhase || 0, a = d.walkAmt;
+    return {
+      bob: -Math.abs(Math.sin(ph)) * d.r * W.bob * a,
+      sway: Math.sin(ph) * W.sway * a + W.lean * a * d.dir,
+      squash: (1 - Math.abs(Math.sin(ph))) * W.squash * a
+    };
+  }
+
+  // 잉크병 앞에 줄 선 물방울(제자리에서 통통) + 입구로 뛰어드는 물방울(작아지며 회전)
+  function drawGoalDrops(ctx, game) {
+    var get = G.Assets.get.bind(G.Assets), A = G.DATA.art;
+    function one(d, x, y, sc, rot, name) {
+      var img = get(name) || get('char_idle'), r = d.r * sc, face = (A.charFace && A.charFace[name]) || 1;
+      ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.scale(face, 1);
+      if (img) { var s = r * A.charSize; ctx.drawImage(img, -s / 2, r - s, s, s); }
+      else { ctx.beginPath(); ctx.arc(0, 0, r, 0, 6.283); ctx.fillStyle = C.player; ctx.fill(); ctx.lineWidth = 2.5; ctx.strokeStyle = C.outline; ctx.stroke(); }
+      ctx.restore();
+    }
+    game.goalQueue.forEach(function (d, k) {
+      var hop = Math.abs(Math.sin(game.timeMs / 180 + k)) * d.r * 0.15;
+      one(d, d.qx, d.qy - hop, 1, 0, 'char_idle');
+    });
+    game.entering.forEach(function (d) {
+      var p = G.Game.enterPose(game, d);
+      one(d, p.x, p.y, p.scale, p.u * 0.8, p.u < 0.5 ? 'char_jump' : 'char_fall');
+    });
+  }
+
   // lineLen: 주인공이면 머리 위에 대열 길이 "×N" (사용자 결정 2026-10-20)
   function drawDrop(ctx, d, lineLen) {
-    var b = d.body, r = d.r, v = dropVel(d);
+    var b = d.body, r = d.r, v = dropVel(d), A = G.DATA.art;
     var stretch = Math.max(-0.25, Math.min(0.25, -v.y * 0.03));
+    var pose = walkPose(d), name = dropImageName(d), img = G.Assets.get(name);
     ctx.save();
-    ctx.translate(b.position.x, b.position.y);
+    ctx.translate(b.position.x, b.position.y + pose.bob);
+    ctx.translate(0, r); ctx.rotate(pose.sway); ctx.translate(0, -r);   // 발밑을 축으로 기움
     if (d.join && d.join.t < d.join.wake) {        // 깨어나는 모션: 기지개(위로 늘었다 줄기) + 좌우 흔들기
       var k = d.join.t / d.join.wake;
       ctx.translate(0, r); ctx.rotate(Math.sin(k * Math.PI * 4) * 0.22 * (1 - k)); ctx.translate(0, -r);
       stretch = Math.sin(k * Math.PI) * 0.25;
     }
-    ctx.scale((1 - stretch * 0.6) * d.dir, 1 + stretch);
-    var img = dropImage(d);
+    stretch -= pose.squash;
+    var face = (A.charFace && A.charFace[name]) || 1;   // 그림이 왼쪽을 보면 -1
+    ctx.translate(0, r); ctx.scale((1 - stretch * 0.6) * d.dir * face, 1 + stretch); ctx.translate(0, -r);
     if (img) { var s = r * G.DATA.art.charSize; ctx.drawImage(img, -s / 2, r - s, s, s); }
     else {
       ctx.beginPath(); ctx.arc(0, 0, r, 0, 6.283); ctx.fillStyle = C.player; ctx.fill();
@@ -240,7 +281,7 @@ G.UI = (function () {
       G.Props.drawCrystal(ctx, { x: -f.w / 2, y: -f.h / 2, w: f.w, h: f.h }); ctx.restore();
     });
     drawStart(ctx, lv.start.x, G.Level.groundTopAt(lv, lv.start.x));
-    drawGoal(ctx, lv.goal.x, G.Level.groundTopAt(lv, lv.goal.x), G.Game.purity(game));
+    drawGoal(ctx, lv.goal.x, G.Level.groundTopAt(lv, lv.goal.x), jarShown);
     game.level.items.forEach(function (it) {
       if (it.owned) { ctx.save(); ctx.globalAlpha = 0.2; G.Props.draw(ctx, it.prop); ctx.restore(); return; }
       if (!it.got) G.Props.draw(ctx, it.prop);
@@ -257,6 +298,7 @@ G.UI = (function () {
     }
     G.Game.walking(game).forEach(function (d) { if (!d.hero) drawDrop(ctx, d); });
     if (game.hero.state === 'walk') drawDrop(ctx, game.hero, game.level.data.drops.follow ? game.line.length : 0);
+    drawGoalDrops(ctx, game);
     drawFx(ctx, game);
     drawEraser(ctx, game);
 
@@ -383,7 +425,8 @@ G.UI = (function () {
   var skipRect = { x: V.w / 2 - 230, y: 66, w: 460, h: 44 };
   function drawSkip(ctx, game) {
     if (!G.Game.canSkip(game)) return;
-    var r = skipRect, purity = game.rescued + 1, all = game.total + 1;
+    var r = skipRect, all = game.total + 1;          // 끝내면: 들어간 + 줄 선(곧 들어갈) 물방울
+    var purity = game.rescued + (game.heroIn ? 1 : 0) + game.goalQueue.length + game.entering.length;
     ctx.fillStyle = 'rgba(255,253,246,0.95)'; ctx.strokeStyle = C.outline; ctx.lineWidth = 3;
     ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(r.x, r.y, r.w, r.h, 10); else ctx.rect(r.x, r.y, r.w, r.h);
     ctx.fill(); ctx.stroke();
@@ -509,11 +552,20 @@ G.UI = (function () {
     ctx.textAlign = 'left';
   }
 
+  // 잉크병 밝기: 들어간 물방울 수(정화)를 향해 서서히 (사용자 요청 2026-10-20: 갑자기 밝아지지 않게). 새 시도면 바로 어둡게
+  var jarShown = 0;
+  function updateJar(game, dt) {
+    var target = G.Game.purity(game), step = G.DATA.goalEnter.jarFadePerSec * dt / 1000;
+    if (target < jarShown) jarShown = target;
+    else jarShown = Math.min(target, jarShown + step);
+  }
+
   var lastT = 0;
   function render(ctx, game, debug) {
     var now = Date.now(), dt = lastT ? Math.min(100, now - lastT) : 16;
     lastT = now;
     updateCamera(game, dt);
+    updateJar(game, dt);
     drawBackground(ctx, game.level.data.bg, cam.x);
     drawWorld(ctx, game, debug);
     drawArrows(ctx, game);

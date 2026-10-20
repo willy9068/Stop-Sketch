@@ -40,7 +40,12 @@ G.Game = {
     game.total = game.level.sleepers.length;       // 배치된 작은 물방울 수 (평가 기준)
     game.rescued = 0;                              // 도착한 작은 물방울
     game.lost = 0;                                 // 죽은 작은 물방울
-    game.heroHome = false;
+    game.heroHome = false;                         // 주인공이 잉크병에 닿음 (스킵 가능)
+    game.heroIn = false;                           // 주인공이 잉크병 안에 들어감 (정화에 셈)
+    game.goalQueue = [];                           // 잉크병 앞에 줄 선 물방울 (닿은 순서)
+    game.entering = [];                            // 잉크병 입구로 뛰어드는 중
+    game.enterCdMs = 0;
+    game.lastReachMs = 0;                          // 마지막으로 잉크병에 닿은 시각 (별 평가 시간 — 들어가는 연출 시간은 빼고)
     var lowest = lv.ground.reduce(function (m, g) { return Math.max(m, g.top); }, 600);
     game.failY = lowest + D.physics.failY - 600;
     game.inkMax = lv.ink + (game.account.inkBonus || 0);
@@ -141,7 +146,8 @@ G.Game = {
       if (p.x >= game.level.goalX) self.arrive(game, d);
     });
     if (game.status !== 'run') return;
-    if (game.heroHome && !this.walking(game).length) this.clear(game);
+    this.updateGoal(game, realMs * s);
+    if (game.heroHome && !this.walking(game).length && !game.goalQueue.length && !game.entering.length) this.clear(game);
   },
 
   // 지우개: 출발 delay 뒤 주인공 속도의 pct% 로 오른쪽으로 (게임 시간 기준이라 정지 중엔 멈춤)
@@ -227,6 +233,7 @@ G.Game = {
     G.Physics.M.Body.setVelocity(d.body, d.vel || { x: 0, y: 0 });
     d.nudge = d.unsup = 0; d.s = null; d.turnCdMs = 0;
     d.detaches = (d.detaches || 0) + 1;
+    d.detachAt = game.runMs;
   },
 
   unline: function (game, d) { var i = game.line.indexOf(d); if (i >= 0) game.line.splice(i, 1); },
@@ -262,7 +269,8 @@ G.Game = {
   // 혼자 걷는 물방울이 주인공에 닿으면 다시 대열 끝으로
   rejoin: function (game, d) {
     var h = game.hero;
-    if (h.state !== 'walk' || !h.body) return;
+    if (h.state !== 'walk' || !h.body || !d.grounded) return;              // 떨어지는 중엔 안 붙음
+    if (d.detachAt != null && game.runMs - d.detachAt < G.DATA.drop.follow.rejoinCdMs) return;
     var reach = (d.r + h.r) * G.DATA.drop.follow.rejoinReach, dx = d.body.position.x - h.body.position.x, dy = d.body.position.y - h.body.position.y;
     if (dx * dx + dy * dy > reach * reach) return;
     this.startJoin(game, d, 0);
@@ -307,13 +315,61 @@ G.Game = {
     });
   },
 
+  // 잉크병에 닿음: 몸체를 빼고 잉크병 앞 줄에 섬 → 닿은 순서대로 하나씩 입구로 뛰어듦 (사용자 요청 2026-10-20: 한꺼번에 빨리 들어가지 않게)
   arrive: function (game, d) {
-    d.state = 'home';
+    d.state = 'queue';
     this.unline(game, d);
+    d.qx = d.body.position.x; d.qy = d.body.position.y;
     G.Drop.remove(game.engine, d);
-    game.fx.push({ type: 'absorb', x: game.level.goalX + 60, y: 0, t: game.timeMs });
+    game.goalQueue.push(d);
+    game.lastReachMs = game.timeMs;
     if (d.hero) { game.heroHome = true; game.toast('주인공 도착! Enter: 남은 물방울을 기다리지 않고 끝내기'); }
-    else game.rescued += 1;
+  },
+
+  // 잉크병 입구 (그림 기준: 왼쪽 끝 ≈ 도착 x)
+  goalMouth: function (game) {
+    var J = G.DATA.art.goalJar, gx = game.level.goalX, gy = G.Level.groundTopAt(game.level.data, gx) || 600;
+    return { x: gx - 10 + J.w * J.mouth, y: gy - J.h * 0.95, gy: gy };
+  },
+
+  // 줄: 잉크병 왼쪽 앞으로 간격대로 섬 (미끄러져 자리로). 맨 앞부터 gapMs 마다 하나씩 enterMs 동안 포물선으로 뛰어들며 작아짐
+  updateGoal: function (game, ms) {
+    var E = G.DATA.goalEnter, m = this.goalMouth(game), self = this;
+    game.enterCdMs = Math.max(0, game.enterCdMs - ms);
+    game.goalQueue.forEach(function (d, k) {
+      var tx = game.level.goalX - E.spacing * (k + 0.5), top = G.Level.groundTopAt(game.level.data, tx);
+      var ty = (top == null ? m.gy : top) - d.r;
+      d.qx += (tx - d.qx) * Math.min(1, E.slide * ms / 16.7);
+      d.qy += (ty - d.qy) * Math.min(1, E.slide * ms / 16.7);
+    });
+    if (game.goalQueue.length && game.enterCdMs <= 0) {
+      var d = game.goalQueue.shift();
+      d.state = 'enter';
+      d.enter = { t: 0, x0: d.qx, y0: d.qy };
+      game.entering.push(d);
+      game.enterCdMs = E.gapMs;
+    }
+    game.entering = game.entering.filter(function (d) {
+      d.enter.t += ms;
+      if (d.enter.t < E.enterMs) return true;
+      self.absorb(game, d, m);
+      return false;
+    });
+  },
+
+  // 입구로 뛰어드는 중인 물방울 위치·크기 (그리기용)
+  enterPose: function (game, d) {
+    var E = G.DATA.goalEnter, m = this.goalMouth(game), u = Math.min(1, d.enter.t / E.enterMs), e = d.enter;
+    var top = Math.min(e.y0, m.y) - E.hopHeight;
+    var x = e.x0 + (m.x - e.x0) * u;
+    var y = (1 - u) * (1 - u) * e.y0 + 2 * u * (1 - u) * top + u * u * m.y;   // 2차 베지어 포물선
+    return { x: x, y: y, scale: 1 - u * (1 - E.endScale), u: u };
+  },
+
+  absorb: function (game, d, m) {
+    d.state = 'home';
+    game.fx.push({ type: 'absorb', x: m.x, y: 0, t: game.timeMs });
+    if (d.hero) game.heroIn = true; else game.rescued += 1;
   },
 
   kill: function (game, d, reason) {
@@ -325,13 +381,16 @@ G.Game = {
   },
 
   // 정화 정도 0~1: 도착한 물방울(주인공 포함) / 전체(주인공 + 배치된 작은 물방울)
-  purity: function (game) { return (game.rescued + (game.heroHome ? 1 : 0)) / (game.total + 1); },
+  purity: function (game) { return (game.rescued + (game.heroIn ? 1 : 0)) / (game.total + 1); },
 
   canSkip: function (game) { return game.status === 'run' && game.heroHome; },
   skip: function (game) {
     if (!this.canSkip(game)) return;
     var self = this;
     this.walking(game).forEach(function (d) { self.kill(game, d, ''); });   // 기다리지 않은 물방울은 죽은 것 (사용자 결정 2026-10-20)
+    var m = this.goalMouth(game);                  // 이미 잉크병에 닿아 줄 선 물방울은 바로 들어간 것으로
+    game.goalQueue.concat(game.entering).forEach(function (d) { self.absorb(game, d, m); });
+    game.goalQueue = []; game.entering = [];
     this.clear(game);
   },
 
@@ -346,7 +405,7 @@ G.Game = {
     game.result = null;
     if (status === 'clear') {
       game.result = G.Rules.rateClear(game.level.data.rate, {
-        timeMs: game.timeMs, rescued: game.rescued, total: game.total, tries: game.attempt
+        timeMs: game.lastReachMs || game.timeMs, rescued: game.rescued, total: game.total, tries: game.attempt
       });
     }
     if (game.onFinish) game.onFinish(game);

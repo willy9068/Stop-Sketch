@@ -172,6 +172,10 @@ t('물방울 속도·충돌 기본값, 있는 값은 유지', function () {
   var n = LC.normalize({}); eq(n.drops.heroSpeed, D.drop.runSpeed); eq(n.drops.smallSpeed, D.drop.runSpeed); eq(n.drops.collide, false);
   var m = LC.normalize({ drops: { smallSpeed: 3, collide: true } }); eq(m.drops.heroSpeed, D.drop.runSpeed); eq(m.drops.smallSpeed, 3); eq(m.drops.collide, true);
 });
+t('대열 기본값 (켬, 간격), 있는 값은 유지', function () {
+  var n = LC.normalize({}); eq(n.drops.follow, D.drop.follow.on); eq(n.drops.gap, D.drop.follow.gap);
+  var m = LC.normalize({ drops: { follow: false, gap: 50 } }); eq(m.drops.follow, false); eq(m.drops.gap, 50);
+});
 t('검사: 작은 물방울이 지우개보다 느리면 경고', function () {
   if (!hasMsg(LC.check(mini({ drops: { heroSpeed: 5, smallSpeed: 0.5 } })), 'warn', '지우개보다 느려요')) throw new Error('경고 없음');
 });
