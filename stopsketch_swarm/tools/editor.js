@@ -25,7 +25,7 @@ var G = G || {};
   };
   var TOOLS = [
     ['select', '선택', 'V'], ['ground', '땅', 'G'], ['wall', '벽', 'W'], ['platform', '발판', 'P'],
-    ['drop', '물방울', 'B'], ['spike', '가시', 'K'], ['crystal', '배치된 선', 'L'], ['stopup', '정지 +1', 'Z'], ['inkup', '잉크 병', 'I'],
+    ['drop', '물방울', 'B'], ['spike', '가시', 'K'], ['crystal', '배치된 선', 'L'], ['stopup', '정지 +1', 'Z'], ['inkup', '잉크 병', 'I'], ['segment', '구간 경계', 'J'],
     ['deco', '장식', 'C'], ['text', '글자', 'T']
   ];
   var GRID = 10, HANDLE = 7;
@@ -68,7 +68,15 @@ var G = G || {};
     if (S.sel.kind === 'ground') return l.ground[S.sel.i];
     if (S.sel.kind === 'start') return l.start;
     if (S.sel.kind === 'goal') return l.goal;
+    if (S.sel.kind === 'seg') return (l.segments || [])[S.sel.i] || null;
     return null;
+  }
+
+  // 구간 경계 이름표 사각형 (화면 위쪽에 보이는 보라색 글자 자리, 월드 좌표). 사용자 요청 2026-10-20: 툴에서 위치·글자 바꾸기
+  function segRect(i) {
+    var sg = lv().segments[i], z = S.view.zoom, a = toWorld(0, 0);
+    ctx.save(); ctx.font = 'bold 13px sans-serif'; var tw = ctx.measureText('▶ ' + sg.name).width; ctx.restore();
+    return { x: sg.x - 4 / z, y: a.y + 20 / z, w: (tw + 14) / z, h: 20 / z };
   }
 
   // 선택 대상의 사각형 (월드 좌표)
@@ -79,13 +87,14 @@ var G = G || {};
     if (sel.kind === 'ground') { var g = l.ground[sel.i]; return { x: g.x0, y: g.top, w: g.x1 - g.x0, h: 60 }; }
     if (sel.kind === 'start') { top = LC.groundTopAt(l, l.start.x); if (top == null) top = 600; return { x: l.start.x - 28, y: top - 72, w: 56, h: 72 }; }
     if (sel.kind === 'goal') { top = LC.groundTopAt(l, l.goal.x); if (top == null) top = 600; return { x: l.goal.x - 12, y: top - 140, w: 84, h: 140 }; }
+    if (sel.kind === 'seg') return (l.segments || [])[sel.i] ? segRect(sel.i) : null;
     return null;
   }
 
   // 손잡이 목록: 이름과 월드 좌표
   function handles() {
     var s = S.sel, o = selObj();
-    if (!o || s.kind === 'start' || s.kind === 'goal') return [];
+    if (!o || s.kind === 'start' || s.kind === 'goal' || s.kind === 'seg') return [];
     var r = selRect(s), mx = r.x + r.w / 2, my = r.y + r.h / 2, out = [];
     if (s.kind === 'ground') return [['w', o.x0, o.top + 30], ['e', o.x1, o.top + 30], ['n', (o.x0 + o.x1) / 2, o.top]];
     var d = P.def(o.type);
@@ -166,7 +175,7 @@ var G = G || {};
       ctx.setLineDash([10 / S.view.zoom, 6 / S.view.zoom]); ctx.lineWidth = 2 / S.view.zoom; ctx.strokeStyle = 'rgba(122,61,170,0.6)';
       ctx.beginPath(); ctx.moveTo(sg.x, a.y); ctx.lineTo(sg.x, b.y); ctx.stroke();
       ctx.restore();
-      label('▶ ' + sg.name, sg.x + 6 / S.view.zoom, a.y + 34 / S.view.zoom, '#7A3DAA');
+      label('▶ ' + sg.name, sg.x + 2 / S.view.zoom, a.y + 34 / S.view.zoom, '#7A3DAA');
     });
   }
 
@@ -259,7 +268,8 @@ var G = G || {};
   function inRect(p, r) { return p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h; }
 
   function hitTest(w) {
-    var l = lv(), i;
+    var l = lv(), i, segs = l.segments || [];
+    for (i = segs.length - 1; i >= 0; i--) if (inRect(w, segRect(i))) return { kind: 'seg', i: i };   // 구간 이름표가 가장 먼저
     if (inRect(w, selRect({ kind: 'start' }))) return { kind: 'start' };
     if (inRect(w, selRect({ kind: 'goal' }))) return { kind: 'goal' };
     var order = [function (p) { return p.type === 'drop' || p.type === 'stopup' || p.type === 'inkup'; }, function (p) { var d = P.def(p.type); return d && d.solid; },
@@ -273,6 +283,7 @@ var G = G || {};
       var g = l.ground[i];
       if (w.x >= g.x0 && w.x <= g.x1 && w.y >= g.top - 6 && w.y <= g.top + D.level.groundDepth) return { kind: 'ground', i: i };
     }
+    for (i = segs.length - 1; i >= 0; i--) if (Math.abs(w.x - segs[i].x) <= 5 / S.view.zoom) return { kind: 'seg', i: i };   // 빈 곳의 보라 점선
     return null;
   }
 
@@ -311,6 +322,14 @@ var G = G || {};
     }
     else if (tool === 'crystal') p = { type: 'crystal', x: snap(w.x - d.w / 2), y: snap(w.y - d.h / 2), w: d.w, h: d.h, pin: d.pin };
     else if (tool === 'stopup') p = { type: 'stopup', x: snap(w.x), y: snap(w.y), size: d.size };
+    else if (tool === 'segment') {                   // 구간 경계: 클릭한 x 에 새 경계, 이름은 오른쪽 "선택" 칸에서
+      l.segments = l.segments || [];
+      l.segments.push({ x: snap(w.x), name: '새 구간' });
+      S.sel = { kind: 'seg', i: l.segments.length - 1 };
+      changed();
+      setTimeout(function () { var t = $('f_name'); if (t) { t.focus(); t.select(); } }, 0);
+      return;
+    }
     else if (tool === 'inkup') p = { type: 'inkup', id: newBottleId(), x: snap(w.x), y: snap(w.y), size: d.size };
     else if (tool === 'deco') p = { type: 'deco', x: snap(w.x), y: snap(w.y), size: d.size, img: S.decoImg };
     else if (tool === 'text') p = { type: 'text', x: snap(w.x), y: snap(w.y), size: d.size, text: d.text };
@@ -377,7 +396,7 @@ var G = G || {};
     if (!o) return;
     if (dr.mode === 'move') {
       dr.moved = true;
-      if (S.sel.kind === 'start' || S.sel.kind === 'goal') o.x = snap(q.x + dx);
+      if (S.sel.kind === 'start' || S.sel.kind === 'goal' || S.sel.kind === 'seg') o.x = snap(q.x + dx);
       else if (S.sel.kind === 'ground') { var w0 = q.x1 - q.x0; o.x0 = snap(q.x0 + dx); o.x1 = o.x0 + w0; o.top = snap(q.top + dy); }
       else { o.x = snap(q.x + dx); o.y = snap(q.y + dy); }
     } else if (dr.mode === 'resize') resize(o, q, dr.h, dx, dy);
@@ -485,7 +504,7 @@ var G = G || {};
     if (!o) return;
     pushUndo();
     if (S.sel.kind === 'ground') { o.x0 += dx; o.x1 += dx; o.top += dy; }
-    else if (S.sel.kind === 'start' || S.sel.kind === 'goal') o.x += dx;
+    else if (S.sel.kind === 'start' || S.sel.kind === 'goal' || S.sel.kind === 'seg') o.x += dx;
     else { o.x += dx; o.y += dy; }
     changed();
   }
@@ -495,6 +514,7 @@ var G = G || {};
     if (!o || S.sel.kind === 'start' || S.sel.kind === 'goal') return;
     pushUndo();
     var c = JSON.parse(JSON.stringify(o));
+    if (S.sel.kind === 'seg') { c.x += 400; lv().segments.push(c); S.sel = { kind: 'seg', i: lv().segments.length - 1 }; changed(); return; }
     if (S.sel.kind === 'ground') { var w = c.x1 - c.x0; c.x0 = o.x1 + 200; c.x1 = c.x0 + w; lv().ground.push(c); S.sel = { kind: 'ground', i: lv().ground.length - 1 }; }
     else { c.x += 40; c.y -= 40; lv().props.push(c); S.sel = { kind: 'prop', i: lv().props.length - 1 }; }
     changed();
@@ -503,7 +523,7 @@ var G = G || {};
   function removeSel() {
     if (!S.sel || S.sel.kind === 'start' || S.sel.kind === 'goal') return;
     pushUndo();
-    (S.sel.kind === 'ground' ? lv().ground : lv().props).splice(S.sel.i, 1);
+    (S.sel.kind === 'ground' ? lv().ground : S.sel.kind === 'seg' ? lv().segments : lv().props).splice(S.sel.i, 1);
     S.sel = null;
     changed();
   }
@@ -573,7 +593,12 @@ var G = G || {};
   function buildSelForm() {
     var o = selObj(), s = S.sel, h = '';
     if (!o) { $('selForm').innerHTML = '없음 (클릭해서 선택)'; return; }
-    if (s.kind === 'start' || s.kind === 'goal') {
+    if (s.kind === 'seg') {
+      h = '<b>구간 경계</b>' + num('f_x', 'x', o.x) +
+          '<div class="f"><label>이름</label><input id="f_name" value="' + esc(o.name) + '"></div>' +
+          '<div>이 x부터 다음 경계까지가 이 구간. 끌어서 옮기기 · 방향키 1px(Shift 10px) · 설계 표시만(게임 규칙에는 영향 없음)</div>' +
+          '<div class="row"><button data-act="dup">복제 (Ctrl+D)</button></div>';
+    } else if (s.kind === 'start' || s.kind === 'goal') {
       h = '<b>' + (s.kind === 'start' ? '시작 위치' : '도착 위치') + '</b>' + num('f_x', 'x', o.x) + '<div>높이는 그 자리 땅 위로 자동</div>';
     } else if (s.kind === 'ground') {
       h = '<b>땅</b>' + num('f_x0', '왼쪽 x', o.x0) + num('f_x1', '오른쪽 x', o.x1) + num('f_top', '윗면 y', o.top) +
@@ -611,7 +636,7 @@ var G = G || {};
 
   // 입력칸 → 데이터
   document.addEventListener('change', function (e) { applyInput(e.target, true); });
-  document.addEventListener('input', function (e) { if (e.target.id === 'f_text' || e.target.id === 'l_name') applyInput(e.target, false); });
+  document.addEventListener('input', function (e) { if (e.target.id === 'f_text' || e.target.id === 'l_name' || e.target.id === 'f_name') applyInput(e.target, false); });
 
   var inputUndoArmed = true;
   function applyInput(t, isChange) {
@@ -646,7 +671,7 @@ var G = G || {};
       else if (f === 'img' || f === 'text' || f === 'pin') o[f] = v;
       else o[f] = v;
     }
-    changed(!isChange || id === 'f_text' || id === 'l_name');
+    changed(!isChange || id === 'f_text' || id === 'l_name' || id === 'f_name');
   }
 
   // ---------- 상단 버튼 ----------
@@ -697,7 +722,10 @@ var G = G || {};
   function levelsText() {
     var body = S.levels.map(function (l) {
       var lines = ['  {'];
-      ['id', 'name', 'bg', 'ink', 'stops', 'rate', 'inks', 'fx', 'drops', 'eraser', 'segments', 'start', 'goal'].forEach(function (k) { lines.push('    ' + JSON.stringify(k) + ': ' + JSON.stringify(l[k]) + ','); });
+      ['id', 'name', 'bg', 'ink', 'stops', 'rate', 'inks', 'fx', 'drops', 'eraser', 'segments', 'start', 'goal'].forEach(function (k) {
+        var v = k === 'segments' ? (l.segments || []).slice().sort(function (a, b) { return a.x - b.x; }) : l[k];   // 구간 경계는 x 순서로 저장
+        lines.push('    ' + JSON.stringify(k) + ': ' + JSON.stringify(v) + ',');
+      });
       lines.push('    "ground": [\n' + l.ground.map(function (g) { return '      ' + JSON.stringify(g); }).join(',\n') + '\n    ],');
       lines.push('    "props": [\n' + l.props.map(function (p) { return '      ' + JSON.stringify(p); }).join(',\n') + '\n    ]');
       lines.push('  }');
