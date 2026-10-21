@@ -79,7 +79,7 @@ G.LEVELS = [
     "drops": {"heroSpeed":2.5,"smallSpeed":2.5,"collide":false,"follow":true,"gap":32},
     "eraser": {"pct":20,"delayMs":3000},
     "camera": {"zoom":0.9,"bottom":1020,"top":-130},
-    "segments": [{"x":-700,"name":"이동 구간"},{"x":750,"name":"다이아몬드 우리 (노랑)"},{"x":1500,"name":"우물 (초록)"},{"x":2300,"name":"떠오르는 별"},{"x":3700,"name":"도착"}],
+    "segments": [],
     "start": {"x":-390,"y":470},
     "goal": {"x":4000,"y":800},
     "ground": [

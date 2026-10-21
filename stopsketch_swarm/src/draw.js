@@ -45,7 +45,12 @@ G.Draw = {
     line.body = G.Physics.add(game.engine, body);
     line.rising = green;
     // 초록을 벽·발판·땅에 겹쳐 그렸으면 그 몸체는 빠져나갈 때까지 무시 (사용자 요청 2026-10-20: 겹쳐 그려도 떠오르게)
-    if (green) line.ignore = G.Physics.overlapping(body, this.riseBlockers(game, line).concat(this.carryables(game, line)));
+    //   겹친 선·조각은 가운데가 초록보다 아래일 때만 무시 (위에 얹힌 것은 같이 올림, 사용자 결정 2026-10-21)
+    if (green) {
+      this.trailOnto(game, line);
+      line.ignore = G.Physics.overlapping(body, this.riseBlockers(game, line))
+        .concat(G.Physics.overlapping(body, this.carryables(game, line)).filter(function (o) { return o.position.y >= body.position.y; }));
+    }
   },
 
   activateAll: function (game) {
@@ -149,11 +154,12 @@ G.Draw = {
       var ln = game.lines[i];
       if (!ln.rising || !ln.body) continue;
       var b = ln.body, dy = fx.riseSpeed * scale, ign = ln.ignore || [], movers = this.carryables(game, ln), walls = this.riseBlockers(game, ln);
-      var moved = [b];
+      var moved = [b], before = [ign];             // before: 올리기 전부터 닿아 있던 벽·땅 (무시, 사용자 결정 2026-10-21)
       M.Body.setPosition(b, { x: b.position.x, y: b.position.y - dy });
       for (var q = 0; q < moved.length; q++) {     // 올린 것과 새로 겹친 것 = 위에 얹힌 것 → 같이 올림
         G.Physics.overlapping(moved[q], movers).forEach(function (o) {
           if (moved.indexOf(o) >= 0 || ign.indexOf(o) >= 0) return;
+          before.push(G.Physics.overlapping(o, walls));
           M.Body.setPosition(o, { x: o.position.x, y: o.position.y - dy });
           M.Body.setVelocity(o, { x: o.velocity.x, y: Math.min(o.velocity.y, 0) });
           moved.push(o);
@@ -161,15 +167,58 @@ G.Draw = {
       }
       var hit = G.Physics.overlapping(b, walls.concat(movers));
       ln.ignore = ign.filter(function (o) { return hit.indexOf(o) >= 0; });   // 빠져나간 몸체는 다시 막음
-      var blocked = moved.some(function (m) {
-        return G.Physics.overlapping(m, walls).some(function (o) { return m !== b || ign.indexOf(o) < 0; });
+      var blocked = moved.some(function (m, k) {    // 올라가다 새로 부딪힌 벽·땅만 막힘
+        return G.Physics.overlapping(m, walls).some(function (o) { return before[k].indexOf(o) < 0; });
       });
       var high = moved.some(function (m) { return m.bounds.min.y <= top; });
       if (blocked || high) {
         moved.forEach(function (m) { M.Body.setPosition(m, { x: m.position.x, y: m.position.y + dy }); });
         ln.rising = false;
+      } else this.liftTrail(game, moved, dy, ln);
+    }
+  },
+
+  // 초록이 생길 때: 그 선과 겹치거나 바로 위에 있는 최근 발자국을 선 윗면 위로 올림 → 그 위 대열 물방울이 튕겨 이탈하지 않음 (사용자 결정 2026-10-21)
+  trailOnto: function (game, line) {
+    var tr = game.trail, R = G.DATA.drop.heroRadius, half = G.DATA.ink.thickness / 2;
+    var minS = game.trailS - game.level.data.drops.gap * (game.line.length + 2) - 60;
+    for (var i = tr.length - 1; i >= 0 && tr[i].s >= minS; i--) {
+      var p = tr[i], sy = this.surfaceAt(line.pts, p.x);
+      if (sy != null && p.y + R > sy - 2 && p.y + R < sy + half * 2 + R) p.y = sy - R;   // 발이 선 윗면 근처~선 속에 있으면 윗면 위로
+    }
+  },
+
+  // 초록이 올린 것 위의 주인공 발자국도 같이 올림 → 그 위에 선 대열 물방울이 밀려 이탈하지 않음 (사용자 결정 2026-10-21: 대열 그대로 엘리베이터처럼)
+  //   대열이 아직 쓰는 발자국(최근 길이)만, 발이 올린 몸체 윗면(올리기 전 높이)에 닿아 있거나 몸체 속에 묻힌 것만
+  liftTrail: function (game, bodies, dy, green) {
+    var tr = game.trail, R = G.DATA.drop.heroRadius, minS = game.trailS - game.level.data.drops.gap * (game.line.length + 2) - 60, self = this;
+    var tops = bodies.map(function (b) {           // 몸체마다 x 에서 윗면 y 를 주는 함수 (선이면 선 모양, 조각이면 상자 위)
+      var ln = b === green.body ? green : null;
+      game.lines.forEach(function (o) { if (o.body === b) ln = o; });
+      if (!ln) return function (x) { return x >= b.bounds.min.x && x <= b.bounds.max.x ? b.bounds.min.y : null; };
+      var pts = self.worldPts(ln);
+      return function (x) { return self.surfaceAt(pts, x); };
+    });
+    for (var i = tr.length - 1; i >= 0 && tr[i].s >= minS; i--) {
+      var p = tr[i];
+      for (var k = 0; k < tops.length; k++) {
+        var sy = tops[k](p.x);
+        var foot = p.y + R - (sy + dy);            // 올리기 전 윗면 기준 발 높이 (+ 면 선 속)
+        if (sy != null && foot >= -6 && foot <= G.DATA.ink.thickness + R) { p.y = sy - R; break; }   // 윗면 위·선 속이면 새 윗면 위로
       }
     }
+  },
+
+  // 선(점 목록) 윗면의 x 위치 높이 (선 두께 반만큼 위). 선 밖이면 null
+  surfaceAt: function (pts, x) {
+    var half = G.DATA.ink.thickness / 2, best = null;
+    for (var k = 1; k < pts.length; k++) {
+      var a = pts[k - 1], b = pts[k], x0 = Math.min(a.x, b.x), x1 = Math.max(a.x, b.x);
+      if (x < x0 - half || x > x1 + half) continue;
+      var y = x1 === x0 ? Math.min(a.y, b.y) : a.y + (b.y - a.y) * (Math.max(x0, Math.min(x1, x)) - a.x) / (b.x - a.x);
+      if (best === null || y - half < best) best = y - half;
+    }
+    return best;
   },
 
   // 화면 아래로 떨어져 나간 선은 정리 (잉크는 돌려받음)

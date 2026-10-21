@@ -414,3 +414,29 @@ G.LEVELS.forEach(function (lv) {
   }
   console.log('19 초록 위에 쌓은 선: 막힘 없음 ' + run(false) + ' · 위에 발판(y 300~328) ' + run(true) + ' (셋 다 함께 올라가야 정상, 발판이면 그 밑에서 멈춤)');
 })();
+
+// 20. 초록 엘리베이터에 탄 대열 (사용자 결정 2026-10-21): 우물 바닥에서 초록을 그려 올라와도 대열 그대로(이탈 0).
+//     벽 모서리에 걸쳐 그린 아치를 얹어도 초록이 멈추지 않음(원래 닿아 있던 벽·땅은 무시)
+(function () {
+  function well(gy, arch) {
+    var lv = { id: 't', name: '시험', ink: 5000, stops: 9, start: { x: 800, y: 600 }, goal: { x: 3000, y: 760 }, inks: ['black', 'green'],
+      drops: { heroSpeed: 2.5, smallSpeed: 2.5, follow: true, gap: 32 }, eraser: { pct: 1, delayMs: 600000 },
+      ground: [{ x0: -700, x1: 1150, top: 600, h: 400 }, { x0: 1150, x1: 1310, top: 900, h: 400 }, { x0: 1310, x1: 3910, top: 760, h: 440 }],
+      props: [{ type: 'drop', x: 900, y: 587 }, { type: 'drop', x: 940, y: 587 }, { type: 'drop', x: 980, y: 587 }] };
+    var g = G.Game.create('A', lv); G.Game.start(g);
+    for (var i = 0; i < 60 * 6; i++) G.Game.update(g, STEP);
+    var d0 = g.drops.reduce(function (n, d) { return n + (d.detaches || 0); }, 0);
+    G.Game.toggleStop(g);
+    function line(pts, c) { g.color = c; G.Draw.begin(g, pts[0]); pts.slice(1).forEach(function (p) { G.Draw.move(g, p); }); G.Draw.end(g); }
+    var gp = []; for (var x = 1110; x <= 1350; x += 4) gp.push({ x: x, y: gy });
+    line(gp, 'green');
+    if (arch) line([{ x: 1280, y: gy - 4 }, { x: 1285, y: 850 }, { x: 1290, y: 800 }, { x: 1300, y: 760 }, { x: 1310, y: 740 }, { x: 1320, y: 760 }, { x: 1330, y: 800 }, { x: 1340, y: gy - 4 }], 'black');
+    G.Game.toggleStop(g);
+    var gl = g.lines[0], y0 = gl.body.position.y;
+    for (i = 0; i < 60 * 4; i++) G.Game.update(g, STEP);
+    var det = g.drops.reduce(function (n, d) { return n + (d.detaches || 0); }, 0) - d0;
+    return '오른 높이 ' + Math.round(y0 - gl.body.position.y) + ' · 대열 ' + g.line.length + ' · 이탈 ' + det;
+  }
+  console.log('20 초록 엘리베이터: 바닥 높이 ' + well(897) + ' / 바닥 밑 ' + well(930) + ' / 아치 얹음 ' + well(930, true) +
+    ' (오른 높이 약 288, 앞 둘은 이탈 0 · 대열 3. 아치는 우물 안에 다리가 서서 처음에 밀려 이탈할 수 있음)');
+})();
