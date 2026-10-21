@@ -455,3 +455,23 @@ G.LEVELS.forEach(function (lv) {
   }
   console.log('21 계곡 (왼쪽 60도·오른쪽 50도): 되돌기 ' + g.hero.turns + '번 · 오간 범위 x ' + Math.round(minX) + '~' + Math.round(maxX) + ' (양쪽 비탈 아래에서 되돌아 오가야 정상, 되돌기 여러 번)');
 })();
+
+// 22. 정지 중에 노랑을 여러 번 그으면 재생할 때 모두 지움 (사용자 요청 2026-10-21: 2개 그으면 하나만 지워지던 문제)
+//     원인: 재생할 때 기다리던 선을 차례로 켜는데, 노랑은 켜자마자 목록에서 빠져 바로 다음 선을 건너뛰었음
+(function () {
+  var lv = { id: 't', name: '시험', ink: 3000, stops: 9, start: { x: 0 }, goal: { x: 2600 }, inks: ['black', 'yellow'], eraser: { pct: 1, delayMs: 600000 },
+    ground: [{ x0: -400, x1: 3000, top: 600 }],
+    props: [{ type: 'crystal', x: 300, y: 400, w: 100, h: 10, angle: 0, pin: 'both' }, { type: 'crystal', x: 600, y: 400, w: 100, h: 10, angle: 0, pin: 'both' },
+      { type: 'crystal', x: 900, y: 400, w: 100, h: 10, angle: 0, pin: 'both' }] };
+  var g = G.Game.create('A', lv); G.Game.start(g);
+  G.Game.toggleStop(g);
+  [350, 650, 950].forEach(function (x) {         // 배치된 선 셋의 가운데를 노랑으로 하나씩
+    g.color = 'yellow'; G.Draw.begin(g, { x: x, y: 380 });
+    for (var y = 384; y <= 420; y += 4) G.Draw.move(g, { x: x, y: y });
+    G.Draw.end(g);
+  });
+  var before = g.level.crystals.length, pending = g.lines.length;
+  G.Game.toggleStop(g);
+  var pieces = g.level.crystals.length;           // 가운데를 지우면 배치된 선 하나가 양 끝 두 조각으로 (양쪽 못 박힘)
+  console.log('22 노랑 여러 번: 기다리던 노랑 ' + pending + '개 → 재생 뒤 남은 노랑 ' + g.lines.length + ' · 배치된 선 ' + before + '개 → 조각 ' + pieces + '개 (노랑 0 · 조각 6 이어야 정상)');
+})();

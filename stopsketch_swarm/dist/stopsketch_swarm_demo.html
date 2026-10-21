@@ -1572,8 +1572,10 @@ G.Draw = {
     }
   },
 
+  // 기다리던 선을 그린 순서대로 켬. 노랑은 켜자마자 목록에서 빠지므로 복사본으로 돎 (사용자 요청 2026-10-21: 노랑 2개 중 하나만 지워지던 문제)
   activateAll: function (game) {
-    for (var i = 0; i < game.lines.length; i++) if (!game.lines[i].active) this.activate(game, game.lines[i]);
+    var self = this;
+    game.lines.slice().forEach(function (ln) { if (!ln.active) self.activate(game, ln); });
   },
 
   // 몸체 위치·각도를 반영한 지금 점들 (그리기·빨아들이기 판정용)
