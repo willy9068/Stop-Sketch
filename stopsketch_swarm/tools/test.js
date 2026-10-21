@@ -2,7 +2,7 @@
 // 사용: node tools/test.js
 var fs = require('fs'), path = require('path'), vm = require('vm');
 var SRC = path.join(__dirname, '..', 'src');
-['data.js', 'levels.js', 'rules.js', 'levelcheck.js', 'util.js'].forEach(function (f) {
+['data.js', 'uitext.js', 'levels.js', 'rules.js', 'levelcheck.js', 'util.js'].forEach(function (f) {
   vm.runInThisContext(fs.readFileSync(path.join(SRC, f), 'utf8'), { filename: f });
 });
 var R = G.Rules, D = G.DATA;

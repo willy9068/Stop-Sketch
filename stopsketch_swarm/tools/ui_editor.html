@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>스톱 앤 스케치 UI·글자 툴 — 물방울 무리판</title>
+<style>
+  :root { --ink: #2B2118; --paper: #F3E9D2; --blue: #1F6FE0; --line: #cdbf9f; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; font-family: sans-serif; font-size: 13px; color: var(--ink); background: #e9e2d0; }
+  body { display: grid; grid-template-rows: auto 1fr; height: 100vh; }
+  header { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px 8px; background: var(--paper); border-bottom: 2px solid var(--ink); }
+  header b { font-size: 15px; margin-right: 6px; }
+  header .sep { width: 1px; height: 22px; background: var(--line); margin: 0 4px; }
+  main { display: grid; grid-template-columns: 460px 1fr; min-height: 0; }
+  #side { overflow-y: auto; padding: 8px; background: var(--paper); border-right: 1px solid var(--line); }
+  #center { padding: 10px; overflow: auto; }
+  #view { width: 100%; max-width: 1280px; aspect-ratio: 16 / 9; display: block; background: #F3E9D2; border: 2px solid var(--ink); }
+  .sec { margin: 14px 0 6px; padding: 3px 0 2px; border-bottom: 1px solid var(--line); font-weight: bold; }
+  .sec:first-child { margin-top: 0; }
+  .sec small { font-weight: normal; color: #8a7b62; margin-left: 4px; }
+  .f { display: grid; grid-template-columns: 150px 1fr 22px; column-gap: 6px; align-items: start; margin: 3px 0; }
+  .f > label { text-align: right; color: #4d4232; padding-top: 3px; line-height: 1.25; }
+  .f > label small { display: block; color: #8a7b62; font-size: 10px; }
+  .f input, .f textarea { width: 100%; font: inherit; padding: 2px 4px; }
+  .f textarea { resize: vertical; }
+  .f.changed input, .f.changed textarea { background: #fff7d6; }
+  .f button { padding: 0 4px; font-size: 11px; height: 22px; }
+  .f .sw { display: inline-block; width: 14px; height: 14px; border: 1px solid #999; vertical-align: middle; margin-left: 4px; }
+  button { font: inherit; padding: 3px 8px; cursor: pointer; background: #fff; border: 1px solid #b9a98a; border-radius: 3px; }
+  button:hover { background: #fff8e6; }
+  button.main { background: var(--ink); color: #fff; border-color: var(--ink); }
+  button.on { background: var(--blue); color: #fff; border-color: var(--blue); }
+  #scenes button { margin: 0 2px 4px 0; }
+  #help { color: #6f624c; line-height: 1.6; margin-top: 10px; max-width: 1280px; }
+  #status { color: #6f624c; }
+  #status.dirty { color: #c0392b; font-weight: bold; }
+  #lastSave { margin-left: auto; color: #6f624c; font-size: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <b>UI·글자 툴 — 물방울 무리판</b>
+  <button data-act="save" class="main" title="Ctrl+S">uitext.js 저장</button>
+  <button data-act="saveAs" title="저장 창을 띄워 다른 파일·폴더에 저장">다른 곳에 저장</button>
+  <button data-act="load">불러오기</button>
+  <input type="file" id="file" accept=".js" hidden>
+  <span class="sep"></span>
+  <button data-act="resetAll" title="이 화면을 열 때(uitext.js) 내용으로">모두 처음대로</button>
+  <span id="lastSave"></span>
+  <span id="status"></span>
+</header>
+<main>
+  <div id="side"></div>
+  <div id="center">
+    <div id="scenes"></div>
+    <canvas id="view" width="1280" height="720"></canvas>
+    <div id="help">
+      왼쪽 칸을 고치면 오른쪽 미리보기에 바로 보입니다. 칸을 누르면 그 글자가 나오는 장면으로 바뀝니다.<br>
+      <b>{이름}</b> 자리에는 게임이 숫자·이름을 넣습니다 (지우면 그 값이 안 나옴). 노란 칸 = 처음과 달라진 칸, ↺ = 그 칸만 처음대로.<br>
+      저장한 <b>uitext.js</b> 는 <code>stopsketch_swarm/src/uitext.js</code> 를 덮어쓰고, 제출본은 <code>python tools/build_single.py</code> 로 다시 만듭니다.<br>
+      물감 이름은 레벨 툴에도 같이 쓰입니다. 위치·크기는 게임 화면 1280×720 기준 px.
+    </div>
+  </div>
+</main>
+
+<script src="../src/vendor/matter.min.js"></script>
+<script src="../src/data.js"></script>
+<script src="../src/uitext.js"></script>
+<script src="../src/levels.js"></script>
+<script src="../src/rules.js"></script>
+<script src="../src/levelcheck.js"></script>
+<script src="../src/util.js"></script>
+<script src="../src/physics.js"></script>
+<script src="../src/level.js"></script>
+<script src="../src/drop.js"></script>
+<script src="../src/draw.js"></script>
+<script src="../src/game.js"></script>
+<script src="../src/assets.js"></script>
+<script src="../src/props.js"></script>
+<script src="../src/ui.js"></script>
+<script src="ui_editor.js"></script>
+</body>
+</html>

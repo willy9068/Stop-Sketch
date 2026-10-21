@@ -214,13 +214,104 @@ G.DATA = {
     crystal: { left: 90, right: 16 },  // prop_crystal.png 왼쪽·오른쪽 뾰족한 끝 폭(원본 px, 그림이 비대칭). 가운데는 반복
     goalJar: { w: 170, h: 198, mouth: 0.5 },   // 검은 잉크병: 왼쪽 끝 ≈ 도착 x. 물방울이 이 통 안(가로)에 들어오면 흡수
     shelf: { h: 84, slot: 66, x: 12, bottle: 58 },
-    // 카메라 (사용자 결정 2026-10-20): 무리가 다 보이게 자동 줌(최소 minZoom). 휠이 우선, manualMs 동안 휠을 안 쓰면 자동으로
-    camera: { minZoom: 0.5, maxZoom: 1.3, margin: 160, manualMs: 3000, ease: 0.06, zoomOutEase: 0.08, zoomInEase: 0.012 }   // zoomInEase: 다시 모일 때 천천히 줌 인 (약 3초, 사용자 요청 2026-10-20)
+    // 카메라 (사용자 결정 2026-10-21): 주인공과 대열만 따라감. 이탈한 물방울 때문에 줌 아웃하지 않음 → 화면 밖이면 가장자리 화살표, 보고 싶으면 휠로 직접 줌 아웃
+    //   (2026-10-20 "무리가 다 보이게 자동 줌 아웃" 을 바꿈). 휠이 우선, manualMs 동안 휠을 안 쓰면 기본 줌으로
+    //   baseZoom: 기본 줌 · topY: 화면 위 끝 기본값(월드 y) · bottomPad: 화면 아래 끝 기본값 = 가장 낮은 땅 윗면 + 이 값
+    //   셋 다 스테이지마다 levels.js camera {zoom, top, bottom} 로 바꿈 (레벨 툴, 사용자 요청 2026-10-21)
+    camera: { baseZoom: 1, topY: -400, bottomPad: 120, minZoom: 0.5, maxZoom: 1.3, margin: 160, manualMs: 3000, ease: 0.06, zoomOutEase: 0.08, zoomInEase: 0.012 }   // zoomInEase: 천천히 줌 인 (약 3초, 사용자 요청 2026-10-20)
   },
 
   save: {
     key: 'stopsketch.swarm.save.v1', oldKeys: [],
     editorDraftKey: 'stopsketch.swarm.editor.draft.v1', oldEditorDraftKeys: []
+  }
+};
+
+</script>
+<script>
+// uitext.js
+// 게임 화면 글자·UI 모양 (사용자 요청 2026-10-21: 게임에 나오는 UI와 텍스트를 직접 고칠 수 있게).
+// tools/ui_editor.html 로 고쳐서 이 파일로 저장한다 (직접 고쳐도 됨). data.js 다음에 불러온다. 쓰는 함수(G.T 등)는 util.js
+//   text: 화면에 나오는 글자. {이름} 자리에 숫자·이름이 들어감 (지우면 그 값이 안 나옴)
+//   style: 글자 크기(px)·색·위치(게임 화면 1280×720 기준 px)
+var G = G || {};
+
+G.UITEXT = {
+  text: {
+    "hud.ink": "잉크",
+    "hud.inkInf": "무제한",
+    "hud.stop": "정지",
+    "hud.stopInf": "∞",
+    "hud.home": "물방울 {rescued}/{total} 도착",
+    "hud.lineInfo": "대열 {line} · 이탈 {alone} · 잠듦 {sleep} · 잃음 {lost}",
+    "hud.walkInfo": "걷는 중 {walk} · 잠듦 {sleep} · 잃음 {lost}",
+    "hud.stage": "{name}  ·  {attempt}번째  ·  {time}초  ·  정화 {purity}%",
+    "hud.lineLen": "×{n}",
+    "skip.button": "남은 물방울 기다리지 않고 끝내기 (Enter)  ·  정화 {n}/{all}",
+    "shelf.locked": "잠김",
+    "shelf.help": "병 클릭 · 1~5 · 우클릭: 선 빨아들이기 · 휠: 줌",
+    "stop.banner": "정지 중 — 드래그로 그리기 · 스페이스로 재생하면 선이 떨어져요",
+    "ready.title": "클릭 또는 스페이스: 출발",
+    "ready.help": "드래그: 그리기 · 스페이스: 시간 정지 · 우클릭: 선 빨아들이기 · 1~5·병 클릭: 색 · 휠: 줌 · R: 처음부터",
+    "result.clear": "정화!",
+    "result.stars": "별 {stars} / {total}",
+    "result.purity": "정화 {purity}%  (물방울 {inJar} / {all})",
+    "result.time": "{time}초",
+    "result.best": "  ·  최고 기록: 별 {stars}/{total} · 정화 {purity}%",
+    "result.failInfo": "물방울 {rescued}/{total} 도착 · {attempt}번째 시도",
+    "result.retry": "R 또는 클릭: 다시 하기",
+    "result.next": " · N: 다음 스테이지",
+    "fail.fall": "떨어졌어요",
+    "fail.erased": "지우개에 지워졌어요",
+    "fail.spike": "가시에 찔렸어요",
+    "toast.noStops": "정지 횟수가 없어요",
+    "toast.inkLocked": "{ink}: 이 스테이지에서는 아직 못 써요",
+    "toast.stopUp": "정지 +{n} (이 스테이지에서만)",
+    "toast.inkUp": "잉크 최대량 +{n} (영구)",
+    "toast.heroHome": "주인공 도착! Enter: 남은 물방울을 기다리지 않고 끝내기",
+    "toast.short": "선이 너무 짧아요 (잉크 반환)",
+    "toast.noCrystal": "노랑: 칠한 자리에 배치된 선이 없어요",
+    "toast.noSuck": "빨아들일 선이 없어요",
+    "toast.noInk": "잉크가 없어요 — 우클릭으로 선을 빨아들이면 돌려받아요",
+    "toast.test": "레벨 툴 테스트 플레이: {name} (계정에 저장 안 됨)",
+    "ink.black": "검정 · 기본",
+    "ink.red": "빨강 · 튕김",
+    "ink.blue": "파랑 · 가속",
+    "ink.green": "초록 · 떠오름",
+    "ink.yellow": "노랑 · 지우기"
+  },
+  style: {
+    "font": "sans-serif",
+    "textColor": "#2B2118",
+    "hudH": 56,
+    "hudBg": "rgba(243,233,210,0.92)",
+    "hudLabelSize": 18,
+    "hudValueSize": 15,
+    "hudHomeSize": 17,
+    "hudSmallSize": 13,
+    "inkX": 20,
+    "inkGaugeW": 260,
+    "stopX": 440,
+    "lineLenSize": 18,
+    "skipY": 66,
+    "skipW": 460,
+    "skipSize": 17,
+    "shelfNameSize": 15,
+    "shelfHelpSize": 13,
+    "stopBannerY": 140,
+    "stopBannerSize": 22,
+    "stopColor": "#1F6FE0",
+    "msgY": 180,
+    "msgSize": 22,
+    "msgColor": "#E0312B",
+    "readyY": 250,
+    "readyTitleSize": 28,
+    "readyHelpSize": 17,
+    "resultTitleSize": 40,
+    "clearColor": "#1FA655",
+    "failColor": "#E0312B",
+    "resultSize": 17,
+    "resultRetrySize": 20
   }
 };
 
@@ -240,40 +331,46 @@ G.LEVELS = [
     "stops": 3,
     "inks": ["black","red","blue"],
     "fx": {"bounce":15,"boostPct":190,"boostMs":1200,"riseSpeed":1.2},
-    "drops": {"heroSpeed":3,"smallSpeed":3.5,"collide":false,"follow":true,"gap":32},
-    "eraser": {"pct":20,"delayMs":3000},
-    "segments": [{"x":-700,"name":"이동 구간"},{"x":650,"name":"검정 다리"},{"x":1000,"name":"빨강 튕김"},{"x":1750,"name":"턱 오르기"},{"x":2350,"name":"파랑 멀리 뛰기"},{"x":3300,"name":"도착"}],
-    "start": {"x":-300,"y":600},
-    "goal": {"x":3500,"y":700},
+    "drops": {"heroSpeed":2.5,"smallSpeed":3.5,"collide":false,"follow":true,"gap":32},
+    "eraser": {"pct":10,"delayMs":3000},
+    "segments": [{"x":-700,"name":"이동 구간"}],
+    "start": {"x":-420,"y":420},
+    "goal": {"x":5760,"y":440},
     "ground": [
-      {"x0":-700,"x1":700,"top":600,"h":400},
-      {"x0":950,"x1":1800,"top":600,"h":400},
-      {"x0":1800,"x1":2500,"top":480,"h":400},
-      {"x0":2700,"x1":3900,"top":700,"h":400}
+      {"x0":-700,"x1":-150,"top":500,"h":500},
+      {"x0":750,"x1":1400,"top":550,"h":450},
+      {"x0":2390,"x1":2790,"top":670,"h":330},
+      {"x0":3700,"x1":6090,"top":430,"h":570},
+      {"x0":1600,"x1":2390,"top":600,"h":400},
+      {"x0":-150,"x1":600,"top":550,"h":450},
+      {"x0":2790,"x1":3480,"top":600,"h":400}
     ],
     "props": [
-      {"type":"wall","x":-660,"y":300,"w":40,"h":300},
-      {"type":"wall","x":3860,"y":400,"w":40,"h":300},
-      {"type":"drop","x":-100,"y":587},
-      {"type":"drop","x":150,"y":587},
-      {"type":"drop","x":400,"y":587},
-      {"type":"drop","x":1150,"y":587},
-      {"type":"drop","x":1450,"y":587},
-      {"type":"drop","x":2000,"y":467},
-      {"type":"drop","x":2250,"y":467},
-      {"type":"drop","x":2950,"y":687},
-      {"type":"drop","x":3200,"y":687},
-      {"type":"star","x":1300,"y":330,"size":56},
-      {"type":"star","x":2120,"y":260,"size":56},
-      {"type":"star","x":2600,"y":480,"size":56},
-      {"type":"text","x":-620,"y":430,"size":20,"text":"스페이스: 시간 정지 · 드래그: 선 그리기 · 우클릭: 잉크 돌려받기"},
+      {"type":"wall","x":-670,"y":200,"w":40,"h":300},
+      {"type":"wall","x":4690,"y":240,"w":40,"h":190},
+      {"type":"drop","x":0,"y":530},
+      {"type":"drop","x":200,"y":530},
+      {"type":"drop","x":400,"y":530},
+      {"type":"drop","x":950,"y":530},
+      {"type":"drop","x":1150,"y":530},
+      {"type":"drop","x":1840,"y":580},
+      {"type":"drop","x":2150,"y":580},
+      {"type":"drop","x":4000,"y":410},
+      {"type":"drop","x":3280,"y":580},
+      {"type":"star","x":1520,"y":520,"size":56},
+      {"type":"star","x":2600,"y":260,"size":56},
+      {"type":"star","x":4710,"y":160,"size":56},
+      {"type":"text","x":-690,"y":190,"size":20,"text":"스페이스: 시간 정지 · 드래그: 선 그리기 · 우클릭: 잉크 돌려받기"},
       {"type":"text","x":600,"y":470,"size":20,"text":"1 검정 — 틈에 걸쳐 다리"},
-      {"type":"text","x":1050,"y":260,"size":20,"text":"2 빨강 — 밟으면 튕겨요 (높은 별)"},
-      {"type":"text","x":1600,"y":400,"size":20,"text":"턱은 빨강으로 튕기거나 검정 비탈로"},
-      {"type":"text","x":2200,"y":380,"size":20,"text":"3 파랑 — 밟으면 빨라져 멀리 뛰어요"},
+      {"type":"text","x":1370,"y":230,"size":20,"text":"2 빨강 — 밟으면 튕겨요 "},
+      {"type":"text","x":3020,"y":300,"size":20,"text":"턱은 빨강으로 튕기거나 검정 비탈로"},
+      {"type":"text","x":3300,"y":210,"size":20,"text":"3 파랑 — 밟으면 빨라져 멀리 뛰어요"},
       {"type":"deco","x":300,"y":150,"size":180,"img":"deco_cloud_1"},
       {"type":"deco","x":1500,"y":120,"size":180,"img":"deco_cloud_2"},
-      {"type":"deco","x":2800,"y":160,"size":180,"img":"deco_cloud_3"}
+      {"type":"deco","x":2800,"y":160,"size":180,"img":"deco_cloud_3"},
+      {"type":"wall","x":6020,"y":130,"w":40,"h":300},
+      {"type":"drop","x":3000,"y":580},
+      {"type":"drop","x":4300,"y":410,"size":null}
     ]
   },
   {
@@ -672,10 +769,10 @@ G.Rules = (function () {
     });
   }
 
-  // 이번 프레임 카메라 배율: 무리 상자(box)가 화면 안에 들어오게, minZoom~maxZoom 사이
-  function fitZoom(box, view, cam) {
+  // 이번 프레임 카메라 배율: 상자(box)가 화면 안에 들어오게, minZoom~maxZoom 사이. base: 기본 줌 (이보다 크게는 안 함, 없으면 1)
+  function fitZoom(box, view, cam, base) {
     var w = box.x1 - box.x0 + cam.margin * 2, h = box.y1 - box.y0 + cam.margin * 2;
-    var z = Math.min(view.w / w, view.h / h, 1);
+    var z = Math.min(view.w / w, view.h / h, base != null ? base : 1);
     return Math.max(cam.minZoom, Math.min(cam.maxZoom, z));
   }
 
@@ -737,6 +834,14 @@ G.LevelCheck = (function () {
     if (o.eraser.pct == null) o.eraser.pct = D.eraser.pct;
     if (o.eraser.delayMs == null) o.eraser.delayMs = D.eraser.delayMs;
     // 쓸 수 있는 색 (없으면 3색 모두), 색 효과 세기 (빠진 칸만 기본값)
+    // 정지 횟수·잉크 무제한 (레벨 툴, 사용자 요청 2026-10-21). 켤 때만 저장
+    if (!o.infStops) delete o.infStops;
+    if (!o.infInk) delete o.infInk;
+    // 카메라: 기본 줌, 화면 위 끝·아래 끝(월드 y) — 카메라가 이 밖은 보여 주지 않음 (사용자 요청 2026-10-21)
+    o.camera = o.camera || {};
+    if (o.camera.zoom == null) o.camera.zoom = D.art.camera.baseZoom;
+    if (o.camera.bottom == null) o.camera.bottom = o.ground.reduce(function (m, g) { return Math.max(m, g.top); }, 600) + D.art.camera.bottomPad;
+    if (o.camera.top == null) o.camera.top = Math.min(D.art.camera.topY, o.camera.bottom - D.view.h / o.camera.zoom);
     o.inks = (o.inks || D.inks.order).filter(function (c) { return D.inks[c]; });
     o.fx = o.fx || {};
     Object.keys(D.inkFx).forEach(function (k) { if (o.fx[k] == null) o.fx[k] = D.inkFx[k]; });
@@ -831,7 +936,13 @@ G.LevelCheck = (function () {
     var est = estimateInk(lv);
     add('info', '틈 ' + gaps(lv).length + '개 · 막는 벽 ' + blockingWalls(lv).length + '개 · 모범 풀이 잉크 합계 약 ' + est + ' / 기본 잉크 ' + lv.ink + ' (우클릭으로 빨아들이면 다시 씀)');
     if (est > lv.ink * 1.5) add('warn', '잉크가 많이 모자라요 — 선을 여러 번 빨아들여 다시 써야 해요');
-    if (lv.stops < 1) add('info', '정지 횟수 0: 달리면서만 그려야 해요');
+    if (lv.infStops) add('info', '정지 횟수 무제한 (켬)');
+    else if (lv.stops < 1) add('info', '정지 횟수 0: 달리면서만 그려야 해요');
+    if (lv.infInk) add('info', '잉크 무제한 (켬)');
+    var cam = lv.camera, band = cam.bottom - cam.top, vh = D.view.h / cam.zoom;
+    add('info', '카메라: 기본 줌 ' + cam.zoom + ' (화면 높이 ' + Math.round(vh) + ') · 위 끝 y ' + cam.top + ' · 아래 끝 y ' + cam.bottom);
+    if (cam.zoom < D.art.camera.minZoom || cam.zoom > D.art.camera.maxZoom) add('warn', '기본 줌은 ' + D.art.camera.minZoom + ' ~ ' + D.art.camera.maxZoom + ' 사이로 맞춰져요');
+    if (band < vh) add('warn', '화면 위 끝~아래 끝 간격(' + band + ')이 기본 줌의 화면 높이(' + Math.round(vh) + ')보다 좁아요 — 아래 끝에 맞추고 위 끝 위도 보여요');
     if (!lv.inks.length) add('error', '쓸 수 있는 색이 없어요 (스테이지 설정 → 쓸 수 있는 색)');
     else add('info', '쓸 수 있는 색: ' + lv.inks.map(function (c) { return D.inks[c].name; }).join(', ') +
       ' · 튕김 ' + lv.fx.bounce + ' · 가속 ' + lv.fx.boostPct + '% ' + (lv.fx.boostMs / 1000) + '초 · 떠오름 ' + lv.fx.riseSpeed);
@@ -852,7 +963,7 @@ G.LevelCheck = (function () {
 </script>
 <script>
 // util.js
-// 공용 도구: 시드 난수, 버전 있는 저장
+// 공용 도구: 시드 난수, 버전 있는 저장, 화면 글자(uitext.js) 가져오기
 var G = G || {};
 
 // mulberry32 — 같은 시드면 같은 수열
@@ -898,6 +1009,23 @@ G.Save = {
     try { localStorage.setItem(G.DATA.save.key, JSON.stringify(s)); } catch (e) { /* 무시 */ }
   }
 };
+
+// ---- 화면 글자·UI 모양 (uitext.js, 사용자 요청 2026-10-21) ----
+// 글자 가져오기: G.T('hud.home', { rescued: 3, total: 5 }). 없는 이름이면 이름 그대로
+G.T = function (key, vars) {
+  var t = G.UITEXT.text[key];
+  if (t == null) return key;
+  return String(t).replace(/\{(\w+)\}/g, function (m, k) { return vars && vars[k] != null ? vars[k] : ''; });
+};
+G.TS = function (key) { return G.UITEXT.style[key]; };
+G.TF = function (size, bold) { return (bold ? 'bold ' : '') + G.UITEXT.style[size] + 'px ' + G.UITEXT.style.font; };
+
+// 물감 이름은 data.js inks 에도 넣어 둠 (레벨 툴·검사가 같이 씀)
+G.applyUiText = function () {
+  if (!G.DATA || !G.DATA.inks) return;
+  G.DATA.inks.order.forEach(function (c) { var t = G.UITEXT.text['ink.' + c]; if (t != null && G.DATA.inks[c]) G.DATA.inks[c].name = t; });
+};
+G.applyUiText();
 
 </script>
 <script>
@@ -1111,7 +1239,7 @@ G.Drop = {
     d.events.length = 0;
     for (var t = 0; t < touch.length; t++) {
       var pts = touch[t].pts, other = touch[t].other, root = touch[t].root, color = other.inkColor || root.inkColor;
-      if (root.label === 'spike' || other.label === 'spike') { d.dead = '가시에 찔렸어요'; return; }
+      if (root.label === 'spike' || other.label === 'spike') { d.dead = 'spike'; return; }
       for (var i = 0; i < pts.length; i++) {
         var dy = pts[i].y - b.position.y, dx = pts[i].x - b.position.x;
         if (dy > r * D.groundCheck) {
@@ -1127,7 +1255,7 @@ G.Drop = {
       }
     }
     d.grounded = ground;
-    d.under = under;
+    d.under = red ? 'red' : under;                 // 빨강을 같이 밟았으면 빨강 (닿자마자 튕겨 나가므로 놓치지 않게)
     if (front) {                                   // 바닥 면 방향 = 앞선 접점에서 중심으로 (턱 모서리면 그 기울기로 타고 오름)
       var len = Math.sqrt(front.dx * front.dx + front.dy * front.dy) || 1;
       d.groundN = { x: -front.dx / len, y: -front.dy / len };
@@ -1220,7 +1348,7 @@ var G = G || {};
 
 G.Draw = {
   begin: function (game, p) {
-    if (game.status !== 'run' || game.ink <= 0) return false;
+    if (game.status !== 'run' || (game.ink <= 0 && !game.level.data.infInk)) return false;
     game.stroke = G.Rules.newStroke(p);
     game.stroke.color = game.color;
     game.stroke.cost = game.color === 'yellow' ? G.DATA.ink.yellowCost : 1;   // 길이당 잉크 비율
@@ -1230,7 +1358,8 @@ G.Draw = {
   move: function (game, p) {
     if (!game.stroke) return;
     var k = game.stroke.cost || 1;
-    game.ink -= G.Rules.addSample(game.stroke, p, game.ink / k, G.DATA.ink) * k;
+    if (game.level.data.infInk) { G.Rules.addSample(game.stroke, p, Infinity, G.DATA.ink); }   // 잉크 무제한 (레벨 툴, 사용자 요청 2026-10-21)
+    else game.ink -= G.Rules.addSample(game.stroke, p, game.ink / k, G.DATA.ink) * k;
     if (game.stroke.full) this.end(game);
   },
 
@@ -1239,7 +1368,7 @@ G.Draw = {
     if (!s) return;
     game.stroke = null;
     var r = G.Rules.finishStroke(s, G.DATA.ink);
-    if (!r.ok) { game.ink += r.refund * (s.cost || 1); game.toast('선이 너무 짧아요 (잉크 반환)'); return; }
+    if (!r.ok) { if (!game.level.data.infInk) game.ink += r.refund * (s.cost || 1); game.toast(G.T('toast.short')); return; }
     var line = { pts: G.Rules.simplify(r.pts, G.DATA.ink.simplifyTol), color: s.color || 'black', len: s.len, active: false, body: null, local: null, rising: false };
     game.lines.push(line);
     if (!game.stopped) this.activate(game, line);
@@ -1339,7 +1468,7 @@ G.Draw = {
       });
     }
     if (n) game.fx.push({ type: 'cut', pts: line.pts, t: game.timeMs });
-    else game.toast('노랑: 칠한 자리에 배치된 선이 없어요');
+    else game.toast(G.T('toast.noCrystal'));
   },
 
   // 초록이 닿으면 멈추는 것들: 벽·발판·땅, 배치된 선, 떨어진 조각, 다른 선
@@ -1457,7 +1586,7 @@ G.Game = {
 
   setColor: function (game, c) {
     if (!G.DATA.inks[c]) return false;
-    if (game.level.data.inks.indexOf(c) < 0) { game.toast(G.DATA.inks[c].name + ': 이 스테이지에서는 아직 못 써요'); return false; }
+    if (game.level.data.inks.indexOf(c) < 0) { game.toast(G.T('toast.inkLocked', { ink: G.DATA.inks[c].name })); return false; }
     game.color = c;
     return true;
   },
@@ -1465,7 +1594,7 @@ G.Game = {
   toggleStop: function (game) {
     if (game.status !== 'run') return;
     if (game.stopped) { this.resume(game); return; }
-    if (!G.Rules.useStop(game.stops)) { game.toast('정지 횟수가 없어요'); return; }
+    if (!game.level.data.infStops && !G.Rules.useStop(game.stops)) { game.toast(G.T('toast.noStops')); return; }   // 정지 무제한이면 안 줄어듦 (레벨 툴, 사용자 요청 2026-10-21)
     game.stopped = true;
     game.stoppedMs = 0;
     game.stopsUsedThisRun += 1;
@@ -1522,8 +1651,8 @@ G.Game = {
       if (d.state !== 'walk' || game.status !== 'run') return;
       var p = d.body.position;
       if (d.dead) return self.kill(game, d, d.dead);
-      if (p.y > game.failY) return self.kill(game, d, '떨어졌어요');
-      if (p.x - d.r < game.eraserX) return self.kill(game, d, '지우개에 지워졌어요');
+      if (p.y > game.failY) return self.kill(game, d, 'fall');
+      if (p.x - d.r < game.eraserX) return self.kill(game, d, 'erased');
       self.collect(game, d);
       if (d.hero || !game.level.data.drops.follow) self.wake(game, d);
       if (d.mode === 'free' && game.level.data.drops.follow) self.rejoin(game, d);
@@ -1559,7 +1688,7 @@ G.Game = {
     if (len < 1) return;
     var n = h.groundN || { x: 0, y: -1 };
     game.trailS += len;
-    tr.push({ x: p.x, y: p.y, s: game.trailS, nx: n.x, ny: n.y, g: !!h.grounded });
+    tr.push({ x: p.x, y: p.y, s: game.trailS, nx: n.x, ny: n.y, g: !!h.grounded, c: h.under || null });   // c: 주인공이 밟은 색 (대열 물들기)
     if (tr.length > 3000) {
       var minS = game.trailS - game.level.data.drops.gap * (game.line.length + 2);
       game.line.forEach(function (d) { if (d.s != null) minS = Math.min(minS, d.s); });
@@ -1581,6 +1710,21 @@ G.Game = {
     return { x: a.x + (b.x - a.x) * u - a.nx * off, y: a.y + (b.y - a.y) * u - a.ny * off, g: a.g && b.g };
   },
 
+  // 발자국 s0 ~ s1 사이에서 주인공이 밟은 색. 닿자마자 튕기는 색(빨강)이 있으면 그 색 먼저
+  //   (사용자 요청 2026-10-21: 주인공은 빨강에 1~2스텝만 닿고 튕겨서, 발자국을 따라 옮겨지는 대열 물방울은 빨강에 직접 닿지 못해 안 물들던 문제)
+  trailColor: function (game, s0, s1) {
+    var tr = game.trail, lo = 0, hi = tr.length - 1, out = null, touch = G.DATA.tint.touchColors;
+    if (s0 == null || !(s1 > s0)) return null;
+    while (hi - lo > 1) { var mid = (lo + hi) >> 1; if (tr[mid].s <= s0) lo = mid; else hi = mid; }
+    for (var i = lo; i < tr.length && tr[i].s <= s1; i++) {
+      var c = tr[i].c;
+      if (!c || tr[i].s < s0) continue;
+      if (touch.indexOf(c) >= 0) return c;
+      out = out || c;
+    }
+    return out;
+  },
+
   // 대열에서 내 자리: 주인공 뒤 (순서 + 1) × 간격. 주인공이 도착했으면 모두 발자국 끝(잉크병)으로
   slotS: function (game, d) {
     if (game.heroHome) return game.trailS;
@@ -1589,10 +1733,11 @@ G.Game = {
 
   // 물리 스텝 전: 대열 물방울을 제자리(발자국 위)로 옮김
   placeLine: function (game, d) {
-    var F = G.DATA.drop.follow, M = G.Physics.M, want = this.slotS(game, d);
+    var F = G.DATA.drop.follow, M = G.Physics.M, want = this.slotS(game, d), s0 = d.s;
     if (game.heroHome) d.s = Math.min(want, d.s + Math.max(game.level.data.drops.heroSpeed, (want - d.s) * F.catchUp));
     else if (want > d.s) d.s += (want - d.s) * F.catchUp;
     var t = this.trailAt(game, d.s, d.r);
+    d.trailC = this.trailColor(game, s0, d.s);
     d.prev = { x: d.body.position.x, y: d.body.position.y };
     d.expect = t;
     M.Body.setPosition(d.body, { x: t.x, y: t.y });
@@ -1604,9 +1749,9 @@ G.Game = {
     var F = G.DATA.drop.follow, M = G.Physics.M, b = d.body, e = d.expect;
     var dx = b.position.x - e.x, dy = b.position.y - e.y, disp = Math.sqrt(dx * dx + dy * dy);
     var sup = G.Drop.support(d, game.engine);
-    if (sup.spike) { d.dead = '가시에 찔렸어요'; return; }
+    if (sup.spike) { d.dead = 'spike'; return; }
     d.vel = { x: e.x - d.prev.x, y: e.y - d.prev.y };
-    d.under = sup.color;
+    d.under = d.trailC || sup.color;               // 주인공이 그 자리에서 밟은 색이 먼저 (직접 닿은 색은 그다음)
     if (Math.abs(d.vel.x) > 0.05) d.dir = d.vel.x > 0 ? 1 : -1;
     d.nudge = disp > F.nudgeDist ? (d.nudge || 0) + 1 : 0;
     d.unsup = e.g && !sup.ground ? (d.unsup || 0) + 1 : 0;
@@ -1695,12 +1840,12 @@ G.Game = {
       if (it.kind === 'star') game.starKeys.push(it.key);
       else if (it.kind === 'stopup') {
         game.stops.left += D.stopUp; game.stops.max += D.stopUp;
-        game.toast('정지 +' + D.stopUp + ' (이 스테이지에서만)');
+        game.toast(G.T('toast.stopUp', { n: D.stopUp }));
       } else if (it.kind === 'inkup') {
         acc.bottles[it.key] = true;
         acc.inkBonus = (acc.inkBonus || 0) + D.ink.upAmount;
         game.inkMax += D.ink.upAmount; game.ink += D.ink.upAmount;
-        game.toast('잉크 최대량 +' + D.ink.upAmount + ' (영구)');
+        game.toast(G.T('toast.inkUp', { n: D.ink.upAmount }));
         if (game.onAccountChange) game.onAccountChange(game);
       }
     });
@@ -1714,7 +1859,7 @@ G.Game = {
     G.Drop.remove(game.engine, d);
     game.goalQueue.push(d);
     game.lastReachMs = game.timeMs;
-    if (d.hero) { game.heroHome = true; game.toast('주인공 도착! Enter: 남은 물방울을 기다리지 않고 끝내기'); }
+    if (d.hero) { game.heroHome = true; game.toast(G.T('toast.heroHome')); }
   },
 
   // 잉크병에 닿았는가: 도착 x 오른쪽이면서 잉크병 높이 안 (사용자 결정 2026-10-20: 도착을 위아래로도 옮김)
@@ -1770,14 +1915,15 @@ G.Game = {
     if (d.hero) game.heroIn = true; else game.rescued += 1;
   },
 
+  // reason: 실패 이유 이름 fall / erased / spike (글자는 uitext.js fail.*). 스킵으로 지울 때는 ''
   kill: function (game, d, reason) {
-    if (reason === '지우개에 지워졌어요' && d.body) {   // 지워지는 순간: 가루 효과 + 지워진 얼굴 (화면 시간으로, 실패 뒤에도 재생)
+    if (reason === 'erased' && d.body) {   // 지워지는 순간: 가루 효과 + 지워진 얼굴 (화면 시간으로, 실패 뒤에도 재생)
       game.fx.push({ type: 'erasePuff', x: d.body.position.x, y: d.body.position.y, r: d.r, real: Date.now(), t: game.timeMs });
     }
     d.state = 'dead';
     this.unline(game, d);
     G.Drop.remove(game.engine, d);
-    if (d.hero) { this.finish(game, 'fail', reason); return; }
+    if (d.hero) { this.finish(game, 'fail', reason ? G.T('fail.' + reason) : ''); return; }
     game.lost += 1;
   },
 
@@ -2141,8 +2287,9 @@ G.Props = (function () {
 <script>
 // ui.js
 // 화면 그리기 — 물방울 무리 시험판 (사용자 결정 2026-10-20). 이미지가 없으면 코드로 그린 임시 모양.
-//   카메라: 걷는 물방울이 다 보이게 자동 줌(최소 minZoom), 마우스 휠이 우선이고 잠시 뒤 자동으로 돌아옴.
-//   화면 밖 물방울은 가장자리 화살표. 지우개(왼쪽 흰 영역), 검은 잉크병 정화, 아래 5색 병 선반, 스킵 버튼
+//   카메라 (사용자 결정 2026-10-21): 주인공과 대열만 따라감(기본 줌, 스테이지 camera.zoom). 이탈한 물방울 때문에 줌 아웃하지 않음.
+//   마우스 휠이 우선이고 잠시 뒤 기본 줌으로 돌아옴. 화면 위 끝·아래 끝(camera.top/bottom) 밖은 안 보여 줌.
+//   화면 밖 물방울은 가장자리 화살표. 글자·UI 크기는 uitext.js (G.T / G.TS). 지우개(왼쪽 흰 영역), 검은 잉크병 정화, 아래 5색 병 선반, 스킵 버튼
 var G = G || {};
 
 G.UI = (function () {
@@ -2157,8 +2304,9 @@ G.UI = (function () {
   }
 
   // ---- 카메라 ----
+  // 따라갈 물방울: 주인공 + 대열(붙는 중 포함). 혼자 걷는(이탈한) 물방울은 빼고 화살표로만 (사용자 결정 2026-10-21)
   function focusBox(game) {
-    var list = G.Game.walking(game), box = null;
+    var list = G.Game.walking(game).filter(function (d) { return d.mode !== 'free'; }), box = null;
     if (!list.length) {                            // 아무도 안 걸으면 잉크병 쪽
       var gx = game.level.goalX, gy = game.level.data.goal.y;
       return { x0: gx - 200, x1: gx + 300, y0: gy - 200, y1: gy, hx: gx, hy: gy - 30 };
@@ -2177,11 +2325,12 @@ G.UI = (function () {
 
   function updateCamera(game, realMs) {
     if (game.status === 'fail' && cam.inited) return;   // 실패하면 그 자리에서 멈춤
-    var A = G.DATA.art.camera, box = focusBox(game);
+    var A = G.DATA.art.camera, box = focusBox(game), LC = game.level.data.camera;
     if (cam.manualMs > 0 && G.Game.scale(game) > 0) cam.manualMs -= realMs || 16;
     if (cam.manualMs <= 0) cam.manualZ = null;
-    var tz = cam.manualZ != null ? cam.manualZ : G.Rules.fitZoom(box, V, A);
-    // 줌 아웃은 빠르게(물방울을 놓치지 않게), 줌 인은 천천히 (사용자 요청 2026-10-20: 다시 모일 때 화면이 확 바뀌지 않게). 휠 줌은 바로
+    var base = Math.max(A.minZoom, Math.min(A.maxZoom, LC.zoom));      // 기본 줌 (스테이지마다, 레벨 툴)
+    var tz = cam.manualZ != null ? cam.manualZ : G.Rules.fitZoom(box, V, A, base);   // 대열이 길 때만 조금 줄어듦
+    // 줌 아웃은 빠르게, 줌 인은 천천히 (사용자 요청 2026-10-20: 화면이 확 바뀌지 않게). 휠 줌은 바로
     var k = cam.manualZ != null ? A.zoomOutEase : (tz > cam.z ? A.zoomInEase : A.zoomOutEase);
     cam.z += (tz - cam.z) * (cam.inited ? Math.min(1, k * (realMs || 16) / 16.7) : 1);
     var vw = V.w / cam.z, vh = V.h / cam.z;
@@ -2189,8 +2338,9 @@ G.UI = (function () {
     var room = Math.max(0, vw / 2 - A.margin);
     var cx = Math.max(box.hx - room, Math.min(box.hx + room, (box.x0 + box.x1) / 2));
     var cy = (box.y0 + box.y1) / 2;
-    var lowest = game.failY - G.DATA.physics.failY + 600;            // 이 스테이지의 가장 낮은 땅 (우물 바닥 등)
-    var tx = cx - vw / 2, ty = Math.min(cy - vh * 0.72, lowest + 120 - vh);   // 땅이 화면 아래쪽에 오게, 가장 낮은 땅 아래로는 안 내려감
+    // 땅이 화면 아래쪽에 오게. 화면 아래 끝 밑·위 끝 위는 안 보여 줌 (사이가 화면보다 좁으면 아래 끝에 맞춤)
+    var tx = cx - vw / 2, ty = Math.min(cy - vh * 0.72, LC.bottom - vh);
+    ty = LC.bottom - LC.top >= vh ? Math.max(ty, LC.top) : LC.bottom - vh;
     if (!cam.inited) { cam.x = tx; cam.y = ty; cam.inited = true; }
     cam.x += (tx - cam.x) * A.ease * 2;
     cam.y += (ty - cam.y) * A.ease;
@@ -2465,9 +2615,10 @@ G.UI = (function () {
       ctx.fillStyle = C.star; ctx.strokeStyle = C.outline; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.arc(b.position.x, b.position.y - r * 2.2, 5, 0, 6.283); ctx.fill(); ctx.stroke();
       if (lineLen) {
-        ctx.font = 'bold 18px sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(255,253,246,0.95)';
-        ctx.strokeText('×' + lineLen, b.position.x, b.position.y - r * 2.2 - 12);
-        ctx.fillStyle = C.outline; ctx.fillText('×' + lineLen, b.position.x, b.position.y - r * 2.2 - 12);
+        var lt = G.T('hud.lineLen', { n: lineLen });
+        ctx.font = G.TF('lineLenSize', true); ctx.textAlign = 'center'; ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(255,253,246,0.95)';
+        ctx.strokeText(lt, b.position.x, b.position.y - r * 2.2 - 12);
+        ctx.fillStyle = G.TS('textColor'); ctx.fillText(lt, b.position.x, b.position.y - r * 2.2 - 12);
         ctx.textAlign = 'left';
       }
     }
@@ -2582,10 +2733,10 @@ G.UI = (function () {
 
   // 화면 밖 물방울: 가장자리 화살표 (사용자 결정 2026-10-20). 주인공은 노란 화살표
   function drawArrows(ctx, game) {
-    var img = G.Assets.get('ui_arrow'), pad = 26, top = 70, bottom = V.h - 96;
+    var img = G.Assets.get('ui_arrow'), pad = 26, top = G.TS('hudH') + 14, bottom = V.h - 96;
     G.Game.walking(game).forEach(function (d) {
       var p = toScreen(d.body.position.x, d.body.position.y);
-      if (p.x >= 0 && p.x <= V.w && p.y >= 56 && p.y <= V.h) return;
+      if (p.x >= 0 && p.x <= V.w && p.y >= G.TS('hudH') && p.y <= V.h) return;
       var cx = Math.max(pad, Math.min(V.w - pad, p.x)), cy = Math.max(top, Math.min(bottom, p.y));
       var a = Math.atan2(p.y - cy, p.x - cx), s = d.hero ? 18 : 12;
       ctx.save(); ctx.translate(cx, cy); ctx.rotate(a);
@@ -2598,67 +2749,72 @@ G.UI = (function () {
     });
   }
 
+  // 위 막대 (글자·크기·위치는 uitext.js, 사용자 요청 2026-10-21). 잉크·정지 무제한이면 "무제한"·"∞"
   function drawHUD(ctx, game) {
-    ctx.fillStyle = 'rgba(243,233,210,0.92)';
-    ctx.fillRect(0, 0, V.w, 56);
+    var S = G.TS, H = S('hudH'), y1 = H - 21, y2 = H - 8, gy = (H - 56) / 2, lv = game.level.data, ink = S('textColor');
+    ctx.fillStyle = S('hudBg');
+    ctx.fillRect(0, 0, V.w, H);
     ctx.strokeStyle = C.outline; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(0, 56); ctx.lineTo(V.w, 56); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, H); ctx.lineTo(V.w, H); ctx.stroke();
 
-    ctx.fillStyle = C.outline; ctx.font = 'bold 18px sans-serif';
-    ctx.fillText('잉크', 20, 35);
-    var gx = 70, gw = 260, ratio = Math.max(0, game.ink / game.inkMax);
+    var ix = S('inkX');
+    ctx.fillStyle = ink; ctx.font = G.TF('hudLabelSize', true);
+    ctx.fillText(G.T('hud.ink'), ix, y1);
+    var gx = ix + ctx.measureText(G.T('hud.ink')).width + 14, gw = S('inkGaugeW'), ratio = lv.infInk ? 1 : Math.max(0, game.ink / game.inkMax);
     var frame = G.Assets.get('ui_gauge_frame');
     ctx.fillStyle = ratio > 0 ? 'rgba(43,33,24,0.85)' : '#999';
-    if (frame) { ctx.fillRect(gx + 4, 15, (gw - 8) * ratio, 26); ctx.drawImage(frame, gx - 6, 7, gw + 12, 44); }
-    else { ctx.strokeRect(gx, 18, gw, 22); ctx.fillRect(gx + 2, 20, (gw - 4) * ratio, 18); }
-    ctx.fillStyle = C.outline; ctx.font = '15px sans-serif';
-    ctx.fillText(Math.round(game.ink) + ' / ' + game.inkMax, gx + gw + 10, 35);
+    if (frame) { ctx.fillRect(gx + 4, gy + 15, (gw - 8) * ratio, 26); ctx.drawImage(frame, gx - 6, gy + 7, gw + 12, 44); }
+    else { ctx.strokeRect(gx, gy + 18, gw, 22); ctx.fillRect(gx + 2, gy + 20, (gw - 4) * ratio, 18); }
+    ctx.fillStyle = ink; ctx.font = G.TF('hudValueSize');
+    var inkTxt = lv.infInk ? G.T('hud.inkInf') : Math.round(game.ink) + ' / ' + game.inkMax;
+    ctx.fillText(inkTxt, gx + gw + 10, y1);
 
-    ctx.font = 'bold 18px sans-serif';
-    ctx.fillText('정지', 440, 35);
-    var stopImg = G.Assets.get('ui_stop_on');
-    for (var i = 0; i < game.stops.max; i++) {
-      var on = i < game.stops.left, cx = 500 + i * 34;
-      if (stopImg) { ctx.globalAlpha = on ? 1 : 0.22; ctx.drawImage(stopImg, cx - 16, 12, 32, 32); ctx.globalAlpha = 1; continue; }
-      ctx.beginPath(); ctx.arc(cx, 29, 12, 0, 6.283);
+    var sx0 = Math.max(S('stopX'), gx + gw + 10 + ctx.measureText(inkTxt).width + 20);   // 잉크 글자가 길어지면 겹치지 않게 밀림
+    ctx.font = G.TF('hudLabelSize', true);
+    ctx.fillText(G.T('hud.stop'), sx0, y1);
+    var stopImg = G.Assets.get('ui_stop_on'), first = sx0 + ctx.measureText(G.T('hud.stop')).width + 28, nStop = lv.infStops ? 1 : game.stops.max;
+    for (var i = 0; i < nStop; i++) {
+      var on = lv.infStops || i < game.stops.left, cx = first + i * 34;
+      if (stopImg) { ctx.globalAlpha = on ? 1 : 0.22; ctx.drawImage(stopImg, cx - 16, gy + 12, 32, 32); ctx.globalAlpha = 1; continue; }
+      ctx.beginPath(); ctx.arc(cx, gy + 29, 12, 0, 6.283);
       ctx.fillStyle = on ? C.star : 'rgba(43,33,24,0.12)'; ctx.fill();
       ctx.lineWidth = 2; ctx.strokeStyle = C.outline; ctx.stroke();
     }
+    if (lv.infStops) { ctx.fillStyle = ink; ctx.font = G.TF('hudLabelSize', true); ctx.fillText(G.T('hud.stopInf'), first + 22, y1); }
 
     // 물방울: 걷는 수 · 도착 · 잠든 수 / 정화
     var walking = G.Game.walking(game).length, sleeping = game.level.sleepers.filter(function (s) { return s.state === 'sleep'; }).length;
-    var px = 510 + Math.max(3, game.stops.max) * 34;
-    ctx.fillStyle = C.outline; ctx.font = 'bold 17px sans-serif';
-    ctx.fillText('물방울 ' + game.rescued + '/' + game.total + ' 도착', px, 30);
-    ctx.font = '13px sans-serif';
-    if (game.level.data.drops.follow) {           // 대열 · 이탈(혼자 걷는 중) · 잠듦 · 잃음 (사용자 결정 2026-10-20)
+    var px = first + 10 + Math.max(3, nStop) * 34;
+    ctx.fillStyle = ink; ctx.font = G.TF('hudHomeSize', true);
+    ctx.fillText(G.T('hud.home', { rescued: game.rescued, total: game.total }), px, y1 - 5);
+    ctx.font = G.TF('hudSmallSize');
+    if (lv.drops.follow) {                         // 대열 · 이탈(혼자 걷는 중) · 잠듦 · 잃음 (사용자 결정 2026-10-20)
       var alone = G.Game.walking(game).filter(function (d) { return d.mode === 'free'; }).length;
-      ctx.fillText('대열 ' + game.line.length + ' · 이탈 ' + alone + ' · 잠듦 ' + sleeping + ' · 잃음 ' + game.lost, px, 48);
-    } else ctx.fillText('걷는 중 ' + walking + ' · 잠듦 ' + sleeping + ' · 잃음 ' + game.lost, px, 48);
+      ctx.fillText(G.T('hud.lineInfo', { line: game.line.length, alone: alone, sleep: sleeping, lost: game.lost }), px, y2);
+    } else ctx.fillText(G.T('hud.walkInfo', { walk: walking, sleep: sleeping, lost: game.lost }), px, y2);
 
     // 오른쪽: 이번 판에 주운 별 (사용자 결정 2026-10-20) + 스테이지 이름·시간·정화
-    var lv = game.level.data, sx = V.w - 22 - 26 * Math.max(0, game.starsTotal - 1);
-    for (var k = 0; k < game.starsTotal; k++) drawStarIcon(ctx, sx + k * 26 - 4, 20, 11, k < game.starKeys.length);
-    ctx.textAlign = 'right'; ctx.font = '13px sans-serif';
-    ctx.fillText(lv.name + '  ·  ' + game.attempt + '번째  ·  ' + (game.timeMs / 1000).toFixed(1) + '초  ·  정화 ' +
-      Math.round(G.Game.purity(game) * 100) + '%', V.w - 20, 48);
+    var sx = V.w - 22 - 26 * Math.max(0, game.starsTotal - 1);
+    for (var k = 0; k < game.starsTotal; k++) drawStarIcon(ctx, sx + k * 26 - 4, gy + 20, 11, k < game.starKeys.length);
+    ctx.textAlign = 'right'; ctx.font = G.TF('hudSmallSize'); ctx.fillStyle = ink;
+    ctx.fillText(G.T('hud.stage', { name: lv.name, attempt: game.attempt, time: (game.timeMs / 1000).toFixed(1), purity: Math.round(G.Game.purity(game) * 100) }), V.w - 20, y2);
     ctx.textAlign = 'left';
   }
 
   // 스킵 버튼: 주인공이 도착하면 화면 위 가운데 (사용자 결정 2026-10-20)
-  var skipRect = { x: V.w / 2 - 230, y: 66, w: 460, h: 44 };
+  function skipRect() { var w = G.TS('skipW'); return { x: V.w / 2 - w / 2, y: G.TS('skipY'), w: w, h: 44 }; }
   function drawSkip(ctx, game) {
     if (!G.Game.canSkip(game)) return;
-    var r = skipRect, all = game.total + 1;          // 끝내면: 들어간 + 줄 선(곧 들어갈) 물방울
+    var r = skipRect(), all = game.total + 1;        // 끝내면: 들어간 + 줄 선(곧 들어갈) 물방울
     var purity = game.rescued + (game.heroIn ? 1 : 0) + game.goalQueue.length + game.entering.length;
     ctx.fillStyle = 'rgba(255,253,246,0.95)'; ctx.strokeStyle = C.outline; ctx.lineWidth = 3;
     ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(r.x, r.y, r.w, r.h, 10); else ctx.rect(r.x, r.y, r.w, r.h);
     ctx.fill(); ctx.stroke();
-    ctx.fillStyle = C.outline; ctx.font = 'bold 17px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText('남은 물방울 기다리지 않고 끝내기 (Enter)  ·  정화 ' + purity + '/' + all, V.w / 2, r.y + 28);
+    ctx.fillStyle = G.TS('textColor'); ctx.font = G.TF('skipSize', true); ctx.textAlign = 'center';
+    ctx.fillText(G.T('skip.button', { n: purity, all: all }), V.w / 2, r.y + 28);
     ctx.textAlign = 'left';
   }
-  function skipAt(sx, sy) { var r = skipRect; return sx >= r.x && sx <= r.x + r.w && sy >= r.y && sy <= r.y + r.h; }
+  function skipAt(sx, sy) { var r = skipRect(); return sx >= r.x && sx <= r.x + r.w && sy >= r.y && sy <= r.y + r.h; }
 
   // 아래 5색 병 선반 (병 클릭 / 숫자 키 1~5)
   function shelfSlots() {
@@ -2673,7 +2829,7 @@ G.UI = (function () {
     return hit;
   }
   function drawShelf(ctx, game) {
-    var S = G.DATA.art.shelf, slots = shelfSlots(), allowed = game.level.data.inks;
+    var S = G.DATA.art.shelf, slots = shelfSlots(), allowed = game.level.data.inks, ink = G.TS('textColor');
     var shelfW = S.x * 2 + slots.length * S.slot - 6, shelfImg = G.Assets.get('ui_shelf');
     if (shelfImg) ctx.drawImage(shelfImg, 0, V.h - 30, shelfW + 10, 30);
     else { ctx.fillStyle = '#B07A45'; ctx.fillRect(4, V.h - 16, shelfW, 12); ctx.strokeStyle = C.outline; ctx.lineWidth = 2.5; ctx.strokeRect(4, V.h - 16, shelfW, 12); }
@@ -2695,34 +2851,35 @@ G.UI = (function () {
         ctx.fillStyle = '#C9A26B'; ctx.fillRect(cx - bw * 0.2, by + bh * 0.08, bw * 0.4, bh * 0.17); ctx.strokeRect(cx - bw * 0.2, by + bh * 0.08, bw * 0.4, bh * 0.17);
       }
       ctx.restore();
-      ctx.fillStyle = on ? C.outline : 'rgba(43,33,24,0.35)'; ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'center';
-      ctx.fillText(on ? String(b.key) : '잠김', cx, by - 4);
+      ctx.fillStyle = on ? ink : 'rgba(43,33,24,0.35)'; ctx.font = 'bold 14px ' + G.TS('font'); ctx.textAlign = 'center';
+      ctx.fillText(on ? String(b.key) : G.T('shelf.locked'), cx, by - 4);
       ctx.textAlign = 'left';
     });
     var cur = G.DATA.inks[game.color];
-    ctx.fillStyle = C.outline; ctx.font = 'bold 15px sans-serif';
+    ctx.fillStyle = ink; ctx.font = G.TF('shelfNameSize', true);
     ctx.fillText(cur ? cur.name : '', shelfW + 12, V.h - 40);
-    ctx.font = '13px sans-serif'; ctx.fillStyle = 'rgba(43,33,24,0.6)';
-    ctx.fillText('병 클릭 · 1~5 · 우클릭: 선 빨아들이기 · 휠: 줌', shelfW + 12, V.h - 20);
+    ctx.font = G.TF('shelfHelpSize'); ctx.fillStyle = 'rgba(43,33,24,0.6)';
+    ctx.fillText(G.T('shelf.help'), shelfW + 12, V.h - 20);
   }
 
   function drawStopOverlay(ctx, game) {
     if (!game.stopped) return;
+    var H = G.TS('hudH'), col = G.TS('stopColor');
     ctx.fillStyle = C.stopTint;
-    ctx.fillRect(0, 56, V.w, V.h - 56);
-    ctx.strokeStyle = C.blue; ctx.lineWidth = 6;
-    ctx.strokeRect(3, 59, V.w - 6, V.h - 62);
-    ctx.fillStyle = C.blue; ctx.font = 'bold 22px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText('정지 중 — 드래그로 그리기 · 스페이스로 재생하면 선이 떨어져요', V.w / 2, 140);
+    ctx.fillRect(0, H, V.w, V.h - H);
+    ctx.strokeStyle = col; ctx.lineWidth = 6;
+    ctx.strokeRect(3, H + 3, V.w - 6, V.h - H - 6);
+    ctx.fillStyle = col; ctx.font = G.TF('stopBannerSize', true); ctx.textAlign = 'center';
+    ctx.fillText(G.T('stop.banner'), V.w / 2, G.TS('stopBannerY'));
     ctx.textAlign = 'left';
   }
 
   function drawMessages(ctx, game) {
-    ctx.textAlign = 'center'; ctx.font = 'bold 22px sans-serif';
+    ctx.textAlign = 'center'; ctx.font = G.TF('msgSize', true);
     game.messages.forEach(function (m, i) {
       ctx.globalAlpha = Math.min(1, m.ms / 400);
-      ctx.fillStyle = C.red;
-      ctx.fillText(m.text, V.w / 2, 180 + i * 30);
+      ctx.fillStyle = G.TS('msgColor');
+      ctx.fillText(m.text, V.w / 2, G.TS('msgY') + i * (G.TS('msgSize') + 8));
     });
     ctx.globalAlpha = 1; ctx.textAlign = 'left';
   }
@@ -2746,12 +2903,14 @@ G.UI = (function () {
   }
 
   function drawResult(ctx, game) {
+    var ink = G.TS('textColor');
     if (game.status === 'run') return;
     if (game.status === 'ready') {
-      ctx.textAlign = 'center'; ctx.fillStyle = C.outline; ctx.font = 'bold 28px sans-serif';
-      ctx.fillText('클릭 또는 스페이스: 출발', V.w / 2, 250);
-      ctx.font = '17px sans-serif';
-      ctx.fillText('드래그: 그리기 · 스페이스: 시간 정지 · 우클릭: 선 빨아들이기 · 1~5·병 클릭: 색 · 휠: 줌 · R: 처음부터', V.w / 2, 285);
+      var ry = G.TS('readyY');
+      ctx.textAlign = 'center'; ctx.fillStyle = ink; ctx.font = G.TF('readyTitleSize', true);
+      ctx.fillText(G.T('ready.title'), V.w / 2, ry);
+      ctx.font = G.TF('readyHelpSize');
+      ctx.fillText(G.T('ready.help'), V.w / 2, ry + 35);
       ctx.textAlign = 'left';
       return;
     }
@@ -2765,35 +2924,35 @@ G.UI = (function () {
     else { ctx.fillStyle = C.paper; ctx.fillRect(x, y, w, h); ctx.strokeStyle = C.outline; ctx.lineWidth = 4; ctx.strokeRect(x, y, w, h); }
     var face = G.Assets.get(game.status === 'fail' ? 'char_erased' : 'char_goal');
     if (face && !clear) ctx.drawImage(face, x + 28, y + 6, 136, 136);
-    ctx.textAlign = 'center'; ctx.fillStyle = game.status === 'clear' ? C.green : C.red;
-    ctx.font = 'bold 40px sans-serif';
-    ctx.fillText(game.status === 'clear' ? '정화!' : game.failReason, V.w / 2, y + 70);
-    ctx.fillStyle = C.outline;
+    ctx.textAlign = 'center'; ctx.fillStyle = game.status === 'clear' ? G.TS('clearColor') : G.TS('failColor');
+    ctx.font = G.TF('resultTitleSize', true);
+    ctx.fillText(game.status === 'clear' ? G.T('result.clear') : game.failReason, V.w / 2, y + 70);
+    ctx.fillStyle = ink;
     if (clear) {                                   // 별 n/3 과 정화 % 를 따로 (사용자 결정 2026-10-20)
       var r = game.result, best = game.best;
-      ctx.font = 'bold 17px sans-serif'; ctx.fillStyle = C.outline;
-      ctx.fillText('별 ' + r.stars + ' / ' + r.starsTotal, V.w / 2, y + 102);
+      ctx.font = G.TF('resultSize', true); ctx.fillStyle = ink;
+      ctx.fillText(G.T('result.stars', { stars: r.stars, total: r.starsTotal }), V.w / 2, y + 102);
       for (var k = 0; k < r.starsTotal; k++) drawStarIcon(ctx, V.w / 2 + (k - (r.starsTotal - 1) / 2) * 56, y + 136, 25, k < r.stars);
       // 정화 막대
       var bw = 300, bx = V.w / 2 - bw / 2, by = y + 186;
-      ctx.font = 'bold 17px sans-serif'; ctx.fillStyle = C.outline;
+      ctx.font = G.TF('resultSize', true); ctx.fillStyle = ink;
       // 캐릭터: 정화 막대 왼쪽 위 꼭지점 위에 앉음 (사용자 요청 2026-10-20: 136 → 170). 정화 글자는 캐릭터를 비켜 오른쪽으로
       var fs = 170;
       if (face) ctx.drawImage(face, bx - fs / 2 + 4, by - fs * 0.93, fs, fs);
-      ctx.fillText('정화 ' + Math.round(r.purity * 100) + '%  (물방울 ' + r.inJar + ' / ' + r.all + ')', bx + 80 + (bw - 80) / 2, by - 8);
+      ctx.fillText(G.T('result.purity', { purity: Math.round(r.purity * 100), inJar: r.inJar, all: r.all }), bx + 80 + (bw - 80) / 2, by - 8);
       ctx.fillStyle = 'rgba(43,33,24,0.12)'; ctx.fillRect(bx, by, bw, 14);
       ctx.fillStyle = mix(C.jarDark, G.Game.jarColor(game), r.purity); ctx.fillRect(bx, by, bw * r.purity, 14);
       ctx.lineWidth = 2; ctx.strokeStyle = C.outline; ctx.strokeRect(bx, by, bw, 14);
-      ctx.fillStyle = C.outline; ctx.font = '15px sans-serif';
-      ctx.fillText((r.timeMs / 1000).toFixed(1) + '초' + (best ? '  ·  최고 기록: 별 ' + (best.stars || 0) + '/' + r.starsTotal +
-        ' · 정화 ' + Math.round((best.bestPurity || 0) * 100) + '%' : ''), V.w / 2, y + 236);
+      ctx.fillStyle = ink; ctx.font = G.TF('resultSize');
+      ctx.fillText(G.T('result.time', { time: (r.timeMs / 1000).toFixed(1) }) + (best ? G.T('result.best', { stars: best.stars || 0, total: r.starsTotal,
+        purity: Math.round((best.bestPurity || 0) * 100) }) : ''), V.w / 2, y + 236);
     } else {
-      ctx.font = '20px sans-serif';
-      ctx.fillText('물방울 ' + game.rescued + '/' + game.total + ' 도착 · ' + game.attempt + '번째 시도', V.w / 2, y + 125);
-      ctx.fillText((game.timeMs / 1000).toFixed(1) + '초', V.w / 2, y + 158);
+      ctx.font = G.TF('resultRetrySize');
+      ctx.fillText(G.T('result.failInfo', { rescued: game.rescued, total: game.total, attempt: game.attempt }), V.w / 2, y + 125);
+      ctx.fillText(G.T('result.time', { time: (game.timeMs / 1000).toFixed(1) }), V.w / 2, y + 158);
     }
-    ctx.font = 'bold 20px sans-serif'; ctx.fillStyle = C.outline;
-    ctx.fillText('R 또는 클릭: 다시 하기' + (game.status === 'clear' && game.hasNext ? ' · N: 다음 스테이지' : ''), V.w / 2, y + h - (clear ? 74 : 30));   // 사용자 요청 2026-10-20: 조금 위로
+    ctx.font = G.TF('resultRetrySize', true); ctx.fillStyle = ink;
+    ctx.fillText(G.T('result.retry') + (game.status === 'clear' && game.hasNext ? G.T('result.next') : ''), V.w / 2, y + h - (clear ? 74 : 30));   // 사용자 요청 2026-10-20: 조금 위로
     ctx.textAlign = 'left';
   }
 
@@ -2954,7 +3113,7 @@ var G = G || {};
   app.account = app.testMode ? JSON.parse(JSON.stringify(app.save)) : app.save;
   app.game = G.Game.create(D.defaultTimeMode, app.levels[0], app.account);
   app.game.hasNext = !!app.levels[1];
-  if (app.testMode) app.game.toast('레벨 툴 테스트 플레이: ' + app.levels[0].name + ' (계정에 저장 안 됨)');
+  if (app.testMode) app.game.toast(G.T('toast.test', { name: app.levels[0].name }));
   function persist() { if (!app.testMode) G.Save.write(app.save); }
   app.game.onAccountChange = function () { persist(); G.Debug.refresh(app); };
   app.game.onFinish = function (g) {
@@ -3008,7 +3167,7 @@ var G = G || {};
   canvas.addEventListener('mousedown', function (e) {
     var g = app.game, sp = mouseScreen(e);
     if (e.button === 2) {                          // 우클릭: 선 빨아들이기 (달리는 중에도)
-      if (g.status === 'run' && !G.Draw.suck(g, G.UI.toWorld(sp.x, sp.y), D.ink.suckReach / G.UI.cam.z)) g.toast('빨아들일 선이 없어요');
+      if (g.status === 'run' && !G.Draw.suck(g, G.UI.toWorld(sp.x, sp.y), D.ink.suckReach / G.UI.cam.z)) g.toast(G.T('toast.noSuck'));
       return;
     }
     if (e.button !== 0) return;
@@ -3017,7 +3176,7 @@ var G = G || {};
     if (G.Game.canSkip(g) && G.UI.skipAt(sp.x, sp.y)) { G.Game.skip(g); return; }
     if (g.status === 'ready') { G.Game.start(g); return; }
     if (g.status !== 'run') { app.restart(); return; }
-    if (g.ink <= 0) { g.toast('잉크가 없어요 — 우클릭으로 선을 빨아들이면 돌려받아요'); return; }
+    if (g.ink <= 0 && !g.level.data.infInk) { g.toast(G.T('toast.noInk')); return; }
     G.Draw.begin(g, G.UI.toWorld(sp.x, sp.y));
   });
   window.addEventListener('mousemove', function (e) { if (app.game.stroke) { var sp = mouseScreen(e); G.Draw.move(app.game, G.UI.toWorld(sp.x, sp.y)); } });

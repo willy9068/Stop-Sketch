@@ -44,7 +44,7 @@ var G = G || {};
   }
   function restore(snap) {
     var o = JSON.parse(snap);
-    S.levels = o.levels; S.cur = Math.min(o.cur, S.levels.length - 1); S.sel = null;
+    S.levels = o.levels; S.cur = Math.min(o.cur, S.levels.length - 1); S.sel = null; S.multi = [];
     changed();
   }
   function undo() { if (!S.undo.length) return; S.redo.push(snapshot()); restore(S.undo.pop()); }
@@ -61,15 +61,37 @@ var G = G || {};
   }
 
   // ---------- 선택 대상 ----------
-  function selObj() {
-    if (!S.sel) return null;
+  // kind: prop / ground / start / goal / seg / camTop·camBot (게임 화면 위 끝·아래 끝 선, 사용자 요청 2026-10-21)
+  function objOf(sel) {
+    if (!sel) return null;
     var l = lv();
-    if (S.sel.kind === 'prop') return l.props[S.sel.i];
-    if (S.sel.kind === 'ground') return l.ground[S.sel.i];
-    if (S.sel.kind === 'start') return l.start;
-    if (S.sel.kind === 'goal') return l.goal;
-    if (S.sel.kind === 'seg') return (l.segments || [])[S.sel.i] || null;
+    if (sel.kind === 'prop') return l.props[sel.i] || null;
+    if (sel.kind === 'ground') return l.ground[sel.i] || null;
+    if (sel.kind === 'start') return l.start;
+    if (sel.kind === 'goal') return l.goal;
+    if (sel.kind === 'seg') return (l.segments || [])[sel.i] || null;
+    if (sel.kind === 'camTop' || sel.kind === 'camBot') return l.camera;
     return null;
+  }
+  function selObj() { return objOf(S.sel); }
+
+  // 여러 개 선택 (사용자 요청 2026-10-21: Ctrl+클릭으로 더하고 빼서 한꺼번에 옮기기). S.sel 은 그중 마지막으로 누른 것(오른쪽 칸에 보임)
+  //   S.sel 이 목록에 없으면(다른 방법으로 선택이 바뀜) S.sel 하나만
+  function sameSel(a, b) { return a && b && a.kind === b.kind && a.i === b.i; }
+  function inMulti(sel) { return (S.multi || []).some(function (m) { return sameSel(m, sel); }); }
+  function selList() {
+    if (!S.sel) return [];
+    return S.multi && S.multi.length > 1 && inMulti(S.sel) ? S.multi : [S.sel];
+  }
+
+  // 하나를 (원래 자리 q 에서) dx, dy 만큼 옮김
+  function moveObj(sel, o, q, dx, dy) {
+    if (sel.kind === 'start' || sel.kind === 'goal') { o.x = snap(q.x + dx); o.y = snap(q.y + dy); }   // 위아래로도 (사용자 결정 2026-10-20)
+    else if (sel.kind === 'seg') o.x = snap(q.x + dx);
+    else if (sel.kind === 'camTop') o.top = Math.min(snap(q.top + dy), o.bottom - 100);
+    else if (sel.kind === 'camBot') o.bottom = Math.max(snap(q.bottom + dy), o.top + 100);
+    else if (sel.kind === 'ground') { var w0 = q.x1 - q.x0; o.x0 = snap(q.x0 + dx); o.x1 = o.x0 + w0; o.top = snap(q.top + dy); }
+    else { o.x = snap(q.x + dx); o.y = snap(q.y + dy); }
   }
 
   // 구간 경계 이름표 사각형 (화면 위쪽에 보이는 보라색 글자 자리, 월드 좌표). 사용자 요청 2026-10-20: 툴에서 위치·글자 바꾸기
@@ -88,13 +110,14 @@ var G = G || {};
     if (sel.kind === 'start') { top = l.start.y; return { x: l.start.x - 28, y: top - 72, w: 56, h: 72 }; }
     if (sel.kind === 'goal') { top = l.goal.y; return { x: l.goal.x - 12, y: top - D.art.goalJar.h, w: D.art.goalJar.w, h: D.art.goalJar.h }; }
     if (sel.kind === 'seg') return (l.segments || [])[sel.i] ? segRect(sel.i) : null;
+    if (sel.kind === 'camTop' || sel.kind === 'camBot') return camLabelRect(sel.kind);
     return null;
   }
 
   // 손잡이 목록: 이름과 월드 좌표
   function handles() {
     var s = S.sel, o = selObj();
-    if (!o || s.kind === 'start' || s.kind === 'goal' || s.kind === 'seg') return [];
+    if (!o || s.kind === 'start' || s.kind === 'goal' || s.kind === 'seg' || s.kind === 'camTop' || s.kind === 'camBot' || selList().length > 1) return [];
     var r = selRect(s), mx = r.x + r.w / 2, my = r.y + r.h / 2, out = [];
     if (o.type === 'crystal') {                      // 배치된 선: 양 끝(길이)·위(두께)·회전 (사용자 결정 2026-10-20)
       var ce = crystalEnds(o), up = { x: Math.sin(ce.a), y: -Math.cos(ce.a) }, rr = o.h / 2 + 26 / S.view.zoom;
@@ -152,21 +175,45 @@ var G = G || {};
     ctx.restore();
   }
 
+  // 게임 화면 위 끝·아래 끝 이름표 사각형 (화면 왼쪽, 월드 좌표). 이름표나 빈 곳의 선을 끌면 옮겨짐 (사용자 요청 2026-10-21)
+  function camLabelRect(kind) {
+    var l = lv(), z = S.view.zoom, a = toWorld(0, 0), y = kind === 'camTop' ? l.camera.top : l.camera.bottom;
+    return { x: a.x + 6 / z, y: y - 20 / z, w: 150 / z, h: 24 / z };
+  }
+  // 시작할 때 게임 화면 (기본 줌, 게임 카메라와 같은 계산: 주인공이 화면 높이 72% 쯤, 위·아래 끝 안)
+  function startFrame(l) {
+    var cz = Math.max(D.art.camera.minZoom, Math.min(D.art.camera.maxZoom, l.camera.zoom)), vw = D.view.w / cz, vh = D.view.h / cz;
+    var hy = l.start.y - D.drop.heroRadius, ty = Math.min(hy - vh * 0.72, l.camera.bottom - vh);
+    ty = l.camera.bottom - l.camera.top >= vh ? Math.max(ty, l.camera.top) : l.camera.bottom - vh;
+    return { x: l.start.x - vw / 2, y: ty, w: vw, h: vh, z: cz };
+  }
+
   function drawGapsAndGuides(l) {
-    var a = toWorld(0, 0), b = toWorld(cv.width, cv.height);
-    // 게임 화면 위·아래 끝 (카메라 기본 위치)
+    var a = toWorld(0, 0), b = toWorld(cv.width, cv.height), z = S.view.zoom, cam = l.camera;
+    // 게임 화면 위·아래 끝: 카메라가 이 밖은 보여 주지 않음 (스테이지 설정 → 카메라, 사용자 요청 2026-10-21)
+    ['camTop', 'camBot'].forEach(function (k) {
+      var y = k === 'camTop' ? cam.top : cam.bottom, on = S.sel && S.sel.kind === k;
+      ctx.save();
+      ctx.setLineDash([12 / z, 8 / z]);
+      ctx.lineWidth = (on ? 3 : 1.5) / z; ctx.strokeStyle = on ? '#1F6FE0' : 'rgba(31,111,224,0.5)';
+      ctx.beginPath(); ctx.moveTo(a.x, y); ctx.lineTo(b.x, y); ctx.stroke();
+      var r = camLabelRect(k);
+      ctx.setLineDash([]); ctx.fillStyle = on ? '#1F6FE0' : 'rgba(231,238,249,0.95)'; ctx.fillRect(r.x, r.y, r.w, r.h);
+      ctx.restore();
+      label((k === 'camTop' ? '▲ 게임 화면 위 끝 ' : '▼ 게임 화면 아래 끝 ') + y, r.x + 5 / z, r.y + 16 / z, on ? '#fff' : 'rgba(31,111,224,0.9)');
+    });
+    // 시작할 때 화면 (기본 줌)
+    var sf = startFrame(l);
     ctx.save();
-    ctx.setLineDash([12 / S.view.zoom, 8 / S.view.zoom]);
-    ctx.lineWidth = 1.5 / S.view.zoom; ctx.strokeStyle = 'rgba(31,111,224,0.5)';
-    ctx.beginPath(); ctx.moveTo(a.x, 0); ctx.lineTo(b.x, 0); ctx.moveTo(a.x, D.view.h); ctx.lineTo(b.x, D.view.h); ctx.stroke();
+    ctx.setLineDash([4 / z, 6 / z]); ctx.lineWidth = 1.5 / z; ctx.strokeStyle = 'rgba(31,166,85,0.6)';
+    ctx.strokeRect(sf.x, sf.y, sf.w, sf.h);
     ctx.restore();
-    label('게임 화면 위 끝', a.x + 10 / S.view.zoom, -6 / S.view.zoom, 'rgba(31,111,224,0.7)');
-    label('게임 화면 아래 끝', a.x + 10 / S.view.zoom, D.view.h - 6 / S.view.zoom, 'rgba(31,111,224,0.7)');
+    label('시작 화면 (줌 ' + sf.z + ')', sf.x + 6 / z, sf.y + sf.h - 8 / z, 'rgba(31,166,85,0.9)');
     // 그림으로 건너야 하는 틈
     LC.gaps(l).forEach(function (g) {
       ctx.fillStyle = 'rgba(224,49,43,0.10)';
-      ctx.fillRect(g.x0, 0, g.w, D.view.h + 200);
-      label('틈 ' + g.w + (g.dy ? (g.dy < 0 ? ' ↑' : ' ↓') + Math.abs(g.dy) : ''), g.x0 + 4, D.view.h + 40, '#c0392b');
+      ctx.fillRect(g.x0, cam.top, g.w, cam.bottom - cam.top);
+      label('틈 ' + g.w + (g.dy ? (g.dy < 0 ? ' ↑' : ' ↓') + Math.abs(g.dy) : ''), g.x0 + 4, cam.bottom - 40 / z, '#c0392b');
     });
     LC.blockingWalls(l).forEach(function (w) { label('막는 벽 ' + w.h, w.x, w.y - 8 / S.view.zoom, '#c0392b'); });
   }
@@ -212,6 +259,22 @@ var G = G || {};
       var dg = S.drag;
       ctx.fillStyle = 'rgba(31,111,224,0.25)';
       ctx.fillRect(Math.min(dg.x0, dg.x1), dg.top, Math.abs(dg.x1 - dg.x0), 60);
+    }
+
+    // 여러 개 선택: 나머지도 점선 상자로 (Ctrl+클릭)
+    var list = selList();
+    if (list.length > 1) {
+      ctx.save(); ctx.lineWidth = 2 / z; ctx.strokeStyle = 'rgba(31,111,224,0.8)'; ctx.setLineDash([6 / z, 4 / z]);
+      list.forEach(function (sl) { var rr = sameSel(sl, S.sel) ? null : selRect(sl); if (rr) ctx.strokeRect(rr.x, rr.y, rr.w, rr.h); });
+      ctx.restore();
+    }
+    // Ctrl+드래그 상자 선택 중
+    if (S.drag && S.drag.mode === 'box') {
+      var bx = S.drag;
+      ctx.save(); ctx.fillStyle = 'rgba(31,111,224,0.08)'; ctx.strokeStyle = '#1F6FE0'; ctx.lineWidth = 1 / z; ctx.setLineDash([4 / z, 3 / z]);
+      ctx.fillRect(Math.min(bx.x0, bx.x1), Math.min(bx.y0, bx.y1), Math.abs(bx.x1 - bx.x0), Math.abs(bx.y1 - bx.y0));
+      ctx.strokeRect(Math.min(bx.x0, bx.x1), Math.min(bx.y0, bx.y1), Math.abs(bx.x1 - bx.x0), Math.abs(bx.y1 - bx.y0));
+      ctx.restore();
     }
 
     // 선택 표시
@@ -306,6 +369,8 @@ var G = G || {};
   function hitTest(w) {
     var l = lv(), i, segs = l.segments || [];
     for (i = segs.length - 1; i >= 0; i--) if (inRect(w, segRect(i))) return { kind: 'seg', i: i };   // 구간 이름표가 가장 먼저
+    if (inRect(w, camLabelRect('camTop'))) return { kind: 'camTop' };   // 게임 화면 위·아래 끝 이름표
+    if (inRect(w, camLabelRect('camBot'))) return { kind: 'camBot' };
     if (inRect(w, selRect({ kind: 'start' }))) return { kind: 'start' };
     if (inRect(w, selRect({ kind: 'goal' }))) return { kind: 'goal' };
     var order = [function (p) { return p.type === 'drop' || p.type === 'star' || p.type === 'stopup' || p.type === 'inkup'; }, function (p) { var d = P.def(p.type); return d && d.solid; },
@@ -320,6 +385,8 @@ var G = G || {};
       if (w.x >= g.x0 && w.x <= g.x1 && w.y >= g.top - 6 && w.y <= g.top + (g.h || D.level.groundDepth)) return { kind: 'ground', i: i };
     }
     for (i = segs.length - 1; i >= 0; i--) if (Math.abs(w.x - segs[i].x) <= 5 / S.view.zoom) return { kind: 'seg', i: i };   // 빈 곳의 보라 점선
+    if (Math.abs(w.y - l.camera.top) <= 5 / S.view.zoom) return { kind: 'camTop' };              // 빈 곳의 파란 점선
+    if (Math.abs(w.y - l.camera.bottom) <= 5 / S.view.zoom) return { kind: 'camBot' };
     return null;
   }
 
@@ -403,20 +470,43 @@ var G = G || {};
       if (!e.shiftKey) setTool('select');
       return;
     }
-    var h = S.sel && hitHandle(m.sx, m.sy);
+    var ctrl = e.ctrlKey || e.metaKey;
+    var h = !ctrl && S.sel && hitHandle(m.sx, m.sy);
     if (h) {
       pushUndo();
       S.drag = { mode: 'resize', h: h, start: { x: m.x, y: m.y }, orig: JSON.parse(JSON.stringify(selObj())) };
       return;
     }
     var hit = hitTest(m);
-    S.sel = hit;
+    if (ctrl) {                                      // Ctrl+클릭: 선택에 더하기/빼기, Ctrl+빈 곳 드래그: 상자로 더하기 (사용자 요청 2026-10-21)
+      if (!hit) { S.drag = { mode: 'box', x0: m.x, y0: m.y, x1: m.x, y1: m.y }; return; }
+      var cur = selList().slice();
+      if (inMultiList(cur, hit)) {
+        cur = cur.filter(function (x) { return !sameSel(x, hit); });
+        S.multi = cur; S.sel = cur[cur.length - 1] || null;
+        refreshAll(); return;
+      }
+      cur.push(hit); S.multi = cur; S.sel = hit;
+    } else if (!(hit && selList().length > 1 && inMulti(hit))) { S.sel = hit; S.multi = hit ? [hit] : []; }
+    else S.sel = hit;                                // 여러 개 선택 중 그중 하나를 누르면 모두 함께 끌기
     if (hit) {
       pushUndo();
-      S.drag = { mode: 'move', start: { x: m.x, y: m.y }, orig: JSON.parse(JSON.stringify(selObj())), moved: false };
+      S.drag = { mode: 'move', start: { x: m.x, y: m.y }, moved: false,
+        items: selList().map(function (sl) { return { sel: sl, orig: JSON.parse(JSON.stringify(objOf(sl))) }; }) };
     }
     refreshAll();
   });
+  function inMultiList(list, sel) { return list.some(function (x) { return sameSel(x, sel); }); }
+
+  // 상자 안(조금이라도 겹치면)의 것들: 물건·땅·시작·도착
+  function boxSelect(bx) {
+    var l = lv(), r = { x: Math.min(bx.x0, bx.x1), y: Math.min(bx.y0, bx.y1), w: Math.abs(bx.x1 - bx.x0), h: Math.abs(bx.y1 - bx.y0) }, out = [];
+    function hitR(a) { return a && a.x < r.x + r.w && r.x < a.x + a.w && a.y < r.y + r.h && r.y < a.y + a.h; }
+    l.props.forEach(function (p, i) { if (hitR(selRect({ kind: 'prop', i: i }))) out.push({ kind: 'prop', i: i }); });
+    l.ground.forEach(function (g, i) { if (hitR(selRect({ kind: 'ground', i: i }))) out.push({ kind: 'ground', i: i }); });
+    ['start', 'goal'].forEach(function (k) { if (hitR(selRect({ kind: k }))) out.push({ kind: k }); });
+    return out;
+  }
 
   window.addEventListener('mousemove', function (e) {
     var m = mousePos(e), dr = S.drag;
@@ -429,14 +519,12 @@ var G = G || {};
       render(); return;
     }
     if (dr.mode === 'newGround') { dr.x1 = snap(m.x); render(); return; }
+    if (dr.mode === 'box') { dr.x1 = m.x; dr.y1 = m.y; render(); return; }
     var o = selObj(), dx = m.x - dr.start.x, dy = m.y - dr.start.y, q = dr.orig;
     if (!o) return;
-    if (dr.mode === 'move') {
+    if (dr.mode === 'move') {                        // 여러 개 선택이면 모두 같은 만큼
       dr.moved = true;
-      if (S.sel.kind === 'start' || S.sel.kind === 'goal') { o.x = snap(q.x + dx); o.y = snap(q.y + dy); }   // 위아래로도 (사용자 결정 2026-10-20)
-      else if (S.sel.kind === 'seg') o.x = snap(q.x + dx);
-      else if (S.sel.kind === 'ground') { var w0 = q.x1 - q.x0; o.x0 = snap(q.x0 + dx); o.x1 = o.x0 + w0; o.top = snap(q.top + dy); }
-      else { o.x = snap(q.x + dx); o.y = snap(q.y + dy); }
+      dr.items.forEach(function (it) { var ob = objOf(it.sel); if (ob) moveObj(it.sel, ob, it.orig, dx, dy); });
     } else if (dr.mode === 'resize') resize(o, q, dr.h, dx, dy);
     changed(true);
   });
@@ -476,6 +564,11 @@ var G = G || {};
       S.sel = { kind: 'ground', i: lv().ground.length - 1 };
       if (!dr.keep) setTool('select');
       changed();
+    } else if (dr.mode === 'box') {
+      var cur = selList().slice();
+      boxSelect(dr).forEach(function (sl) { if (!inMultiList(cur, sl)) cur.push(sl); });
+      S.multi = cur; S.sel = cur[cur.length - 1] || null;
+      refreshAll();
     } else if (dr.mode === 'move' && !dr.moved) {
       S.undo.pop();                                  // 클릭만 하고 안 움직였으면 되돌리기 기록 취소
       refreshAll();
@@ -532,7 +625,7 @@ var G = G || {};
     if ((e.ctrlKey || e.metaKey) && k === 'y') { e.preventDefault(); redo(); return; }
     if ((e.ctrlKey || e.metaKey) && k === 'd') { e.preventDefault(); duplicate(); return; }
     if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); removeSel(); return; }
-    if (e.key === 'Escape') { S.sel = null; setTool('select'); refreshAll(); return; }
+    if (e.key === 'Escape') { S.sel = null; S.multi = []; setTool('select'); refreshAll(); return; }
     if (e.key === 'Home') { S.view.x = lv().start.x - 300; render(); return; }
     if (e.key === 'End') { S.view.x = lv().goal.x - cv.width / S.view.zoom + 300; render(); return; }
     if (e.key.indexOf('Arrow') === 0 && S.sel) { e.preventDefault(); nudge(e.key, e.shiftKey ? 10 : 1); return; }
@@ -542,13 +635,18 @@ var G = G || {};
   window.addEventListener('keyup', function (e) { if (e.code === 'Space') { S.spaceDown = false; cv.style.cursor = 'default'; } });
 
   function nudge(key, n) {
-    var o = selObj(), dx = key === 'ArrowLeft' ? -n : key === 'ArrowRight' ? n : 0, dy = key === 'ArrowUp' ? -n : key === 'ArrowDown' ? n : 0;
-    if (!o) return;
+    var dx = key === 'ArrowLeft' ? -n : key === 'ArrowRight' ? n : 0, dy = key === 'ArrowUp' ? -n : key === 'ArrowDown' ? n : 0;
+    if (!selObj()) return;
     pushUndo();
-    if (S.sel.kind === 'ground') { o.x0 += dx; o.x1 += dx; o.top += dy; }
-    else if (S.sel.kind === 'start' || S.sel.kind === 'goal') { o.x += dx; o.y += dy; }
-    else if (S.sel.kind === 'seg') o.x += dx;
-    else { o.x += dx; o.y += dy; }
+    selList().forEach(function (sl) {                // 여러 개 선택이면 모두
+      var o = objOf(sl);
+      if (!o) return;
+      if (sl.kind === 'ground') { o.x0 += dx; o.x1 += dx; o.top += dy; }
+      else if (sl.kind === 'seg') o.x += dx;
+      else if (sl.kind === 'camTop') o.top += dy;
+      else if (sl.kind === 'camBot') o.bottom += dy;
+      else { o.x += dx; o.y += dy; }
+    });
     changed();
   }
 
@@ -563,11 +661,15 @@ var G = G || {};
     changed();
   }
 
+  // 여러 개 선택이면 모두 지움 (시작·도착·화면 끝 선은 못 지움). 번호가 밀리지 않게 뒤에서부터
   function removeSel() {
-    if (!S.sel || S.sel.kind === 'start' || S.sel.kind === 'goal') return;
+    var list = selList().filter(function (sl) { return sl.kind === 'prop' || sl.kind === 'ground' || sl.kind === 'seg'; });
+    if (!list.length) return;
     pushUndo();
-    (S.sel.kind === 'ground' ? lv().ground : S.sel.kind === 'seg' ? lv().segments : lv().props).splice(S.sel.i, 1);
-    S.sel = null;
+    list.slice().sort(function (a, b) { return b.i - a.i; }).forEach(function (sl) {
+      (sl.kind === 'ground' ? lv().ground : sl.kind === 'seg' ? lv().segments : lv().props).splice(sl.i, 1);
+    });
+    S.sel = null; S.multi = [];
     changed();
   }
 
@@ -612,8 +714,14 @@ var G = G || {};
       '<div class="f"><label>id</label><input id="l_id" value="' + esc(l.id) + '"></div>' +
       '<div class="f"><label>테스트용</label><label><input type="checkbox" id="l_test"' + (l.test ? ' checked' : '') + '>게임·제출본에서 숨김</label></div>' +
       '<div class="f"><label>배경</label><select id="l_bg">' + opts(bgs, l.bg) + '</select></div>' +
-      num('l_ink', '잉크', l.ink) + num('l_stops', '정지 횟수', l.stops) +
+      num('l_ink', '잉크', l.ink) + check('l_infInk', '잉크 무제한', l.infInk, '켜면 잉크가 줄지 않음') +
+      num('l_stops', '정지 횟수', l.stops) + check('l_infStops', '정지 무제한', l.infStops, '켜면 정지 횟수가 줄지 않음') +
       num('l_start', '시작 x', l.start.x) + num('l_goal', '도착 x', l.goal.x) +
+      sec('카메라', '사용자 요청 2026-10-21') +
+      '<div class="f"><label>기본 줌</label><input type="number" id="c_zoom" step="0.05" value="' + l.camera.zoom + '"></div>' +
+      hint('1 = 화면 1280×720 그대로, 작을수록 넓게 보임 (' + D.art.camera.minZoom + ' ~ ' + D.art.camera.maxZoom + '). 휠 줌은 잠시 뒤 이 값으로 돌아옴') +
+      num('c_top', '화면 위 끝 y', l.camera.top) + num('c_bottom', '화면 아래 끝 y', l.camera.bottom) +
+      hint('카메라가 두 파란 점선 밖은 안 보여 줌. 화면의 파란 이름표·점선을 끌어도 됨. 초록 점선 = 시작할 때 화면') +
       sec('평가', '별 n/3 + 정화 %') + hint('별: 주인공이 닿아야 획득, 스테이지당 ' + D.level.starsPerStage + '개 (왼쪽 도구 "별"). 정화: 잉크병에 들어간 물방울 비율') +
       sec('쓸 수 있는 색', '게임 키 1~5') +
       '<div class="f"><label></label><div>' +
@@ -640,8 +748,20 @@ var G = G || {};
   }
 
   function buildSelForm() {
-    var o = selObj(), s = S.sel, h = '';
-    if (!o) { $('selForm').innerHTML = '없음 (클릭해서 선택)'; return; }
+    var o = selObj(), s = S.sel, h = '', many = selList().length;
+    if (!o) { $('selForm').innerHTML = '없음 (클릭해서 선택 · Ctrl+클릭으로 여러 개)'; return; }
+    if (many > 1) {                                  // 여러 개 선택 (사용자 요청 2026-10-21)
+      $('selForm').innerHTML = '<b>' + many + '개 선택</b><div class="hint" style="margin-left:0">끌면 모두 함께 옮겨짐 · 방향키 1px(Shift 10px) · Ctrl+클릭으로 더하기/빼기 · Ctrl+빈 곳 드래그로 상자 선택 · Esc 해제</div>' +
+        '<div class="row"><button data-act="del">모두 삭제 (Delete)</button></div>';
+      return;
+    }
+    if (s.kind === 'camTop' || s.kind === 'camBot') {
+      h = '<b>' + (s.kind === 'camTop' ? '게임 화면 위 끝' : '게임 화면 아래 끝') + '</b>' +
+          num('f_camy', 'y', s.kind === 'camTop' ? o.top : o.bottom) +
+          '<div class="hint" style="margin-left:0">카메라가 이 선 ' + (s.kind === 'camTop' ? '위' : '아래') + '는 보여 주지 않아요. 끌어서 옮기기 · 방향키 1px(Shift 10px)</div>';
+      $('selForm').innerHTML = h;
+      return;
+    }
     if (s.kind === 'seg') {
       h = '<b>구간 경계</b>' + num('f_x', 'x', o.x) +
           '<div class="f"><label>이름</label><input id="f_name" value="' + esc(o.name) + '"></div>' +
@@ -700,6 +820,12 @@ var G = G || {};
     if (inputUndoArmed) { pushUndo(); inputUndoArmed = false; }
     if (isChange) inputUndoArmed = true;
     if (id === 'l_test') l.test = t.checked || undefined;
+    else if (id === 'l_infInk') l.infInk = t.checked || undefined;        // 무제한 (사용자 요청 2026-10-21)
+    else if (id === 'l_infStops') l.infStops = t.checked || undefined;
+    else if (id === 'c_zoom') l.camera.zoom = Math.max(D.art.camera.minZoom, Math.min(D.art.camera.maxZoom, Math.round(+t.value * 100) / 100 || D.art.camera.baseZoom));
+    else if (id === 'c_top') l.camera.top = Math.min(v, l.camera.bottom - 100);
+    else if (id === 'c_bottom') l.camera.bottom = Math.max(v, l.camera.top + 100);
+    else if (id === 'f_camy' && S.sel) { if (S.sel.kind === 'camTop') l.camera.top = Math.min(v, l.camera.bottom - 100); else l.camera.bottom = Math.max(v, l.camera.top + 100); }
     else if (id === 'l_name') l.name = v; else if (id === 'l_id') l.id = v; else if (id === 'l_bg') l.bg = v;
     else if (id === 'l_ink') l.ink = v; else if (id === 'l_stops') l.stops = v;
     else if (id === 'l_start') l.start.x = v; else if (id === 'l_goal') l.goal.x = v;
@@ -783,8 +909,8 @@ var G = G || {};
   function levelsText() {
     var body = S.levels.map(function (l) {
       var lines = ['  {'];
-      ['id', 'name', 'test', 'bg', 'ink', 'stops', 'inks', 'fx', 'drops', 'eraser', 'segments', 'start', 'goal'].forEach(function (k) {
-        if (k === 'test' && !l.test) return;           // 테스트용 표시는 있을 때만
+      ['id', 'name', 'test', 'bg', 'ink', 'infInk', 'stops', 'infStops', 'inks', 'fx', 'drops', 'eraser', 'camera', 'segments', 'start', 'goal'].forEach(function (k) {
+        if ((k === 'test' || k === 'infInk' || k === 'infStops') && !l[k]) return;   // 테스트용·무제한 표시는 켰을 때만
         var v = k === 'segments' ? (l.segments || []).slice().sort(function (a, b) { return a.x - b.x; }) : l[k];   // 구간 경계는 x 순서로 저장
         lines.push('    ' + JSON.stringify(k) + ': ' + JSON.stringify(v) + ',');
       });
@@ -930,6 +1056,12 @@ var G = G || {};
       var el = $('f_' + k);
       if (el && document.activeElement !== el && o[k] != null) el.value = o[k];
     });
+    ['c_top', 'c_bottom'].forEach(function (id) {   // 화면 끝 선을 끄는 중
+      var el = $(id);
+      if (el && document.activeElement !== el) el.value = lv().camera[id.slice(2)];
+    });
+    var cy = $('f_camy');
+    if (cy && document.activeElement !== cy && S.sel) cy.value = S.sel.kind === 'camTop' ? lv().camera.top : lv().camera.bottom;
     var bf = $('l_start'), gf = $('l_goal');
     if (bf && document.activeElement !== bf) bf.value = lv().start.x;
     if (gf && document.activeElement !== gf) gf.value = lv().goal.x;

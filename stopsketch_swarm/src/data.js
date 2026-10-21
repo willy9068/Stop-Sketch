@@ -177,8 +177,11 @@ G.DATA = {
     crystal: { left: 90, right: 16 },  // prop_crystal.png 왼쪽·오른쪽 뾰족한 끝 폭(원본 px, 그림이 비대칭). 가운데는 반복
     goalJar: { w: 170, h: 198, mouth: 0.5 },   // 검은 잉크병: 왼쪽 끝 ≈ 도착 x. 물방울이 이 통 안(가로)에 들어오면 흡수
     shelf: { h: 84, slot: 66, x: 12, bottle: 58 },
-    // 카메라 (사용자 결정 2026-10-20): 무리가 다 보이게 자동 줌(최소 minZoom). 휠이 우선, manualMs 동안 휠을 안 쓰면 자동으로
-    camera: { minZoom: 0.5, maxZoom: 1.3, margin: 160, manualMs: 3000, ease: 0.06, zoomOutEase: 0.08, zoomInEase: 0.012 }   // zoomInEase: 다시 모일 때 천천히 줌 인 (약 3초, 사용자 요청 2026-10-20)
+    // 카메라 (사용자 결정 2026-10-21): 주인공과 대열만 따라감. 이탈한 물방울 때문에 줌 아웃하지 않음 → 화면 밖이면 가장자리 화살표, 보고 싶으면 휠로 직접 줌 아웃
+    //   (2026-10-20 "무리가 다 보이게 자동 줌 아웃" 을 바꿈). 휠이 우선, manualMs 동안 휠을 안 쓰면 기본 줌으로
+    //   baseZoom: 기본 줌 · topY: 화면 위 끝 기본값(월드 y) · bottomPad: 화면 아래 끝 기본값 = 가장 낮은 땅 윗면 + 이 값
+    //   셋 다 스테이지마다 levels.js camera {zoom, top, bottom} 로 바꿈 (레벨 툴, 사용자 요청 2026-10-21)
+    camera: { baseZoom: 1, topY: -400, bottomPad: 120, minZoom: 0.5, maxZoom: 1.3, margin: 160, manualMs: 3000, ease: 0.06, zoomOutEase: 0.08, zoomInEase: 0.012 }   // zoomInEase: 천천히 줌 인 (약 3초, 사용자 요청 2026-10-20)
   },
 
   save: {

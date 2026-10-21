@@ -3,7 +3,7 @@
 var fs = require('fs'), path = require('path'), vm = require('vm');
 var SRC = path.join(__dirname, '..', 'src');
 global.Matter = require(path.join(SRC, 'vendor', 'matter.min.js'));
-['data.js', 'levels.js', 'rules.js', 'levelcheck.js', 'util.js', 'physics.js', 'props.js', 'level.js', 'drop.js', 'draw.js', 'game.js'].forEach(function (f) {
+['data.js', 'uitext.js', 'levels.js', 'rules.js', 'levelcheck.js', 'util.js', 'physics.js', 'props.js', 'level.js', 'drop.js', 'draw.js', 'game.js'].forEach(function (f) {
   vm.runInThisContext(fs.readFileSync(path.join(SRC, f), 'utf8'), { filename: f });
 });
 var D = G.DATA, STEP = D.loop.stepMs;
@@ -326,4 +326,27 @@ G.LEVELS.forEach(function (lv) {
   var log = [];
   for (var i = 1; i <= 60 * 4; i++) { G.Game.update(g, STEP); if (i % 30 === 0) log.push((i / 60).toFixed(1) + 's ' + (g.hero.ta || 0).toFixed(2)); }
   console.log('15 빨강 물들기: ' + log.join(' · ') + ' (튕긴 뒤에도 1까지 올라가야 정상)');
+})();
+
+// 16. 대열도 빨강에 물듦 (사용자 요청 2026-10-21: 주인공이 빨강에 튕기면 대열 물방울 일부가 안 물들던 문제)
+//   주인공은 빨강에 1~2스텝만 닿고, 대열은 발자국을 따라 옮겨져 빨강에 직접 닿지 못함 → 발자국에 밟은 색을 기록해 대열도 물듦
+(function () {
+  var out = [];
+  [2.5, 3, 3.5, 4, 5.2].forEach(function (sp) {
+    var lv = { id: 't', name: '시험', ink: 3000, stops: 9, start: { x: 0 }, goal: { x: 2600 }, inks: ['black', 'red'],
+      drops: { heroSpeed: sp, smallSpeed: sp }, eraser: { pct: 1, delayMs: 600000 },
+      ground: [{ x0: -400, x1: 900, top: 600 }, { x0: 1150, x1: 3000, top: 600 }],
+      props: [120, 160, 200, 240, 280, 320, 360, 400].map(function (x) { return { type: 'drop', x: x, y: 587 }; }) };
+    var g = G.Game.create('A', lv); G.Game.start(g);
+    for (var i = 0; i < 60 * 3; i++) G.Game.update(g, STEP);
+    drawLine(g, [{ x: 760, y: 598 }, { x: 900, y: 598 }], 'red');
+    var top = {}, passed = {};
+    for (i = 0; i < 60 * 40 && g.status === 'run'; i++) {
+      G.Game.update(g, STEP);
+      g.drops.forEach(function (d, k) { top[k] = Math.max(top[k] || 0, d.ta || 0); if (d.body && d.body.position.x > 900 && d.mode !== 'free') passed[k] = 1; });
+    }
+    var n = Object.keys(passed).length, miss = Object.keys(passed).filter(function (k) { return top[k] < 0.5; }).length;
+    out.push('속도 ' + sp + ': 지나감 ' + n + ' · 안 물듦 ' + miss);
+  });
+  console.log('16 대열 빨강 물들기: ' + out.join(' · ') + ' (안 물듦 0 이어야 정상)');
 })();

@@ -1,6 +1,7 @@
 // 화면 그리기 — 물방울 무리 시험판 (사용자 결정 2026-10-20). 이미지가 없으면 코드로 그린 임시 모양.
-//   카메라: 걷는 물방울이 다 보이게 자동 줌(최소 minZoom), 마우스 휠이 우선이고 잠시 뒤 자동으로 돌아옴.
-//   화면 밖 물방울은 가장자리 화살표. 지우개(왼쪽 흰 영역), 검은 잉크병 정화, 아래 5색 병 선반, 스킵 버튼
+//   카메라 (사용자 결정 2026-10-21): 주인공과 대열만 따라감(기본 줌, 스테이지 camera.zoom). 이탈한 물방울 때문에 줌 아웃하지 않음.
+//   마우스 휠이 우선이고 잠시 뒤 기본 줌으로 돌아옴. 화면 위 끝·아래 끝(camera.top/bottom) 밖은 안 보여 줌.
+//   화면 밖 물방울은 가장자리 화살표. 글자·UI 크기는 uitext.js (G.T / G.TS). 지우개(왼쪽 흰 영역), 검은 잉크병 정화, 아래 5색 병 선반, 스킵 버튼
 var G = G || {};
 
 G.UI = (function () {
@@ -15,8 +16,9 @@ G.UI = (function () {
   }
 
   // ---- 카메라 ----
+  // 따라갈 물방울: 주인공 + 대열(붙는 중 포함). 혼자 걷는(이탈한) 물방울은 빼고 화살표로만 (사용자 결정 2026-10-21)
   function focusBox(game) {
-    var list = G.Game.walking(game), box = null;
+    var list = G.Game.walking(game).filter(function (d) { return d.mode !== 'free'; }), box = null;
     if (!list.length) {                            // 아무도 안 걸으면 잉크병 쪽
       var gx = game.level.goalX, gy = game.level.data.goal.y;
       return { x0: gx - 200, x1: gx + 300, y0: gy - 200, y1: gy, hx: gx, hy: gy - 30 };
@@ -35,11 +37,12 @@ G.UI = (function () {
 
   function updateCamera(game, realMs) {
     if (game.status === 'fail' && cam.inited) return;   // 실패하면 그 자리에서 멈춤
-    var A = G.DATA.art.camera, box = focusBox(game);
+    var A = G.DATA.art.camera, box = focusBox(game), LC = game.level.data.camera;
     if (cam.manualMs > 0 && G.Game.scale(game) > 0) cam.manualMs -= realMs || 16;
     if (cam.manualMs <= 0) cam.manualZ = null;
-    var tz = cam.manualZ != null ? cam.manualZ : G.Rules.fitZoom(box, V, A);
-    // 줌 아웃은 빠르게(물방울을 놓치지 않게), 줌 인은 천천히 (사용자 요청 2026-10-20: 다시 모일 때 화면이 확 바뀌지 않게). 휠 줌은 바로
+    var base = Math.max(A.minZoom, Math.min(A.maxZoom, LC.zoom));      // 기본 줌 (스테이지마다, 레벨 툴)
+    var tz = cam.manualZ != null ? cam.manualZ : G.Rules.fitZoom(box, V, A, base);   // 대열이 길 때만 조금 줄어듦
+    // 줌 아웃은 빠르게, 줌 인은 천천히 (사용자 요청 2026-10-20: 화면이 확 바뀌지 않게). 휠 줌은 바로
     var k = cam.manualZ != null ? A.zoomOutEase : (tz > cam.z ? A.zoomInEase : A.zoomOutEase);
     cam.z += (tz - cam.z) * (cam.inited ? Math.min(1, k * (realMs || 16) / 16.7) : 1);
     var vw = V.w / cam.z, vh = V.h / cam.z;
@@ -47,8 +50,9 @@ G.UI = (function () {
     var room = Math.max(0, vw / 2 - A.margin);
     var cx = Math.max(box.hx - room, Math.min(box.hx + room, (box.x0 + box.x1) / 2));
     var cy = (box.y0 + box.y1) / 2;
-    var lowest = game.failY - G.DATA.physics.failY + 600;            // 이 스테이지의 가장 낮은 땅 (우물 바닥 등)
-    var tx = cx - vw / 2, ty = Math.min(cy - vh * 0.72, lowest + 120 - vh);   // 땅이 화면 아래쪽에 오게, 가장 낮은 땅 아래로는 안 내려감
+    // 땅이 화면 아래쪽에 오게. 화면 아래 끝 밑·위 끝 위는 안 보여 줌 (사이가 화면보다 좁으면 아래 끝에 맞춤)
+    var tx = cx - vw / 2, ty = Math.min(cy - vh * 0.72, LC.bottom - vh);
+    ty = LC.bottom - LC.top >= vh ? Math.max(ty, LC.top) : LC.bottom - vh;
     if (!cam.inited) { cam.x = tx; cam.y = ty; cam.inited = true; }
     cam.x += (tx - cam.x) * A.ease * 2;
     cam.y += (ty - cam.y) * A.ease;
@@ -323,9 +327,10 @@ G.UI = (function () {
       ctx.fillStyle = C.star; ctx.strokeStyle = C.outline; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.arc(b.position.x, b.position.y - r * 2.2, 5, 0, 6.283); ctx.fill(); ctx.stroke();
       if (lineLen) {
-        ctx.font = 'bold 18px sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(255,253,246,0.95)';
-        ctx.strokeText('×' + lineLen, b.position.x, b.position.y - r * 2.2 - 12);
-        ctx.fillStyle = C.outline; ctx.fillText('×' + lineLen, b.position.x, b.position.y - r * 2.2 - 12);
+        var lt = G.T('hud.lineLen', { n: lineLen });
+        ctx.font = G.TF('lineLenSize', true); ctx.textAlign = 'center'; ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(255,253,246,0.95)';
+        ctx.strokeText(lt, b.position.x, b.position.y - r * 2.2 - 12);
+        ctx.fillStyle = G.TS('textColor'); ctx.fillText(lt, b.position.x, b.position.y - r * 2.2 - 12);
         ctx.textAlign = 'left';
       }
     }
@@ -440,10 +445,10 @@ G.UI = (function () {
 
   // 화면 밖 물방울: 가장자리 화살표 (사용자 결정 2026-10-20). 주인공은 노란 화살표
   function drawArrows(ctx, game) {
-    var img = G.Assets.get('ui_arrow'), pad = 26, top = 70, bottom = V.h - 96;
+    var img = G.Assets.get('ui_arrow'), pad = 26, top = G.TS('hudH') + 14, bottom = V.h - 96;
     G.Game.walking(game).forEach(function (d) {
       var p = toScreen(d.body.position.x, d.body.position.y);
-      if (p.x >= 0 && p.x <= V.w && p.y >= 56 && p.y <= V.h) return;
+      if (p.x >= 0 && p.x <= V.w && p.y >= G.TS('hudH') && p.y <= V.h) return;
       var cx = Math.max(pad, Math.min(V.w - pad, p.x)), cy = Math.max(top, Math.min(bottom, p.y));
       var a = Math.atan2(p.y - cy, p.x - cx), s = d.hero ? 18 : 12;
       ctx.save(); ctx.translate(cx, cy); ctx.rotate(a);
@@ -456,67 +461,72 @@ G.UI = (function () {
     });
   }
 
+  // 위 막대 (글자·크기·위치는 uitext.js, 사용자 요청 2026-10-21). 잉크·정지 무제한이면 "무제한"·"∞"
   function drawHUD(ctx, game) {
-    ctx.fillStyle = 'rgba(243,233,210,0.92)';
-    ctx.fillRect(0, 0, V.w, 56);
+    var S = G.TS, H = S('hudH'), y1 = H - 21, y2 = H - 8, gy = (H - 56) / 2, lv = game.level.data, ink = S('textColor');
+    ctx.fillStyle = S('hudBg');
+    ctx.fillRect(0, 0, V.w, H);
     ctx.strokeStyle = C.outline; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(0, 56); ctx.lineTo(V.w, 56); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, H); ctx.lineTo(V.w, H); ctx.stroke();
 
-    ctx.fillStyle = C.outline; ctx.font = 'bold 18px sans-serif';
-    ctx.fillText('잉크', 20, 35);
-    var gx = 70, gw = 260, ratio = Math.max(0, game.ink / game.inkMax);
+    var ix = S('inkX');
+    ctx.fillStyle = ink; ctx.font = G.TF('hudLabelSize', true);
+    ctx.fillText(G.T('hud.ink'), ix, y1);
+    var gx = ix + ctx.measureText(G.T('hud.ink')).width + 14, gw = S('inkGaugeW'), ratio = lv.infInk ? 1 : Math.max(0, game.ink / game.inkMax);
     var frame = G.Assets.get('ui_gauge_frame');
     ctx.fillStyle = ratio > 0 ? 'rgba(43,33,24,0.85)' : '#999';
-    if (frame) { ctx.fillRect(gx + 4, 15, (gw - 8) * ratio, 26); ctx.drawImage(frame, gx - 6, 7, gw + 12, 44); }
-    else { ctx.strokeRect(gx, 18, gw, 22); ctx.fillRect(gx + 2, 20, (gw - 4) * ratio, 18); }
-    ctx.fillStyle = C.outline; ctx.font = '15px sans-serif';
-    ctx.fillText(Math.round(game.ink) + ' / ' + game.inkMax, gx + gw + 10, 35);
+    if (frame) { ctx.fillRect(gx + 4, gy + 15, (gw - 8) * ratio, 26); ctx.drawImage(frame, gx - 6, gy + 7, gw + 12, 44); }
+    else { ctx.strokeRect(gx, gy + 18, gw, 22); ctx.fillRect(gx + 2, gy + 20, (gw - 4) * ratio, 18); }
+    ctx.fillStyle = ink; ctx.font = G.TF('hudValueSize');
+    var inkTxt = lv.infInk ? G.T('hud.inkInf') : Math.round(game.ink) + ' / ' + game.inkMax;
+    ctx.fillText(inkTxt, gx + gw + 10, y1);
 
-    ctx.font = 'bold 18px sans-serif';
-    ctx.fillText('정지', 440, 35);
-    var stopImg = G.Assets.get('ui_stop_on');
-    for (var i = 0; i < game.stops.max; i++) {
-      var on = i < game.stops.left, cx = 500 + i * 34;
-      if (stopImg) { ctx.globalAlpha = on ? 1 : 0.22; ctx.drawImage(stopImg, cx - 16, 12, 32, 32); ctx.globalAlpha = 1; continue; }
-      ctx.beginPath(); ctx.arc(cx, 29, 12, 0, 6.283);
+    var sx0 = Math.max(S('stopX'), gx + gw + 10 + ctx.measureText(inkTxt).width + 20);   // 잉크 글자가 길어지면 겹치지 않게 밀림
+    ctx.font = G.TF('hudLabelSize', true);
+    ctx.fillText(G.T('hud.stop'), sx0, y1);
+    var stopImg = G.Assets.get('ui_stop_on'), first = sx0 + ctx.measureText(G.T('hud.stop')).width + 28, nStop = lv.infStops ? 1 : game.stops.max;
+    for (var i = 0; i < nStop; i++) {
+      var on = lv.infStops || i < game.stops.left, cx = first + i * 34;
+      if (stopImg) { ctx.globalAlpha = on ? 1 : 0.22; ctx.drawImage(stopImg, cx - 16, gy + 12, 32, 32); ctx.globalAlpha = 1; continue; }
+      ctx.beginPath(); ctx.arc(cx, gy + 29, 12, 0, 6.283);
       ctx.fillStyle = on ? C.star : 'rgba(43,33,24,0.12)'; ctx.fill();
       ctx.lineWidth = 2; ctx.strokeStyle = C.outline; ctx.stroke();
     }
+    if (lv.infStops) { ctx.fillStyle = ink; ctx.font = G.TF('hudLabelSize', true); ctx.fillText(G.T('hud.stopInf'), first + 22, y1); }
 
     // 물방울: 걷는 수 · 도착 · 잠든 수 / 정화
     var walking = G.Game.walking(game).length, sleeping = game.level.sleepers.filter(function (s) { return s.state === 'sleep'; }).length;
-    var px = 510 + Math.max(3, game.stops.max) * 34;
-    ctx.fillStyle = C.outline; ctx.font = 'bold 17px sans-serif';
-    ctx.fillText('물방울 ' + game.rescued + '/' + game.total + ' 도착', px, 30);
-    ctx.font = '13px sans-serif';
-    if (game.level.data.drops.follow) {           // 대열 · 이탈(혼자 걷는 중) · 잠듦 · 잃음 (사용자 결정 2026-10-20)
+    var px = first + 10 + Math.max(3, nStop) * 34;
+    ctx.fillStyle = ink; ctx.font = G.TF('hudHomeSize', true);
+    ctx.fillText(G.T('hud.home', { rescued: game.rescued, total: game.total }), px, y1 - 5);
+    ctx.font = G.TF('hudSmallSize');
+    if (lv.drops.follow) {                         // 대열 · 이탈(혼자 걷는 중) · 잠듦 · 잃음 (사용자 결정 2026-10-20)
       var alone = G.Game.walking(game).filter(function (d) { return d.mode === 'free'; }).length;
-      ctx.fillText('대열 ' + game.line.length + ' · 이탈 ' + alone + ' · 잠듦 ' + sleeping + ' · 잃음 ' + game.lost, px, 48);
-    } else ctx.fillText('걷는 중 ' + walking + ' · 잠듦 ' + sleeping + ' · 잃음 ' + game.lost, px, 48);
+      ctx.fillText(G.T('hud.lineInfo', { line: game.line.length, alone: alone, sleep: sleeping, lost: game.lost }), px, y2);
+    } else ctx.fillText(G.T('hud.walkInfo', { walk: walking, sleep: sleeping, lost: game.lost }), px, y2);
 
     // 오른쪽: 이번 판에 주운 별 (사용자 결정 2026-10-20) + 스테이지 이름·시간·정화
-    var lv = game.level.data, sx = V.w - 22 - 26 * Math.max(0, game.starsTotal - 1);
-    for (var k = 0; k < game.starsTotal; k++) drawStarIcon(ctx, sx + k * 26 - 4, 20, 11, k < game.starKeys.length);
-    ctx.textAlign = 'right'; ctx.font = '13px sans-serif';
-    ctx.fillText(lv.name + '  ·  ' + game.attempt + '번째  ·  ' + (game.timeMs / 1000).toFixed(1) + '초  ·  정화 ' +
-      Math.round(G.Game.purity(game) * 100) + '%', V.w - 20, 48);
+    var sx = V.w - 22 - 26 * Math.max(0, game.starsTotal - 1);
+    for (var k = 0; k < game.starsTotal; k++) drawStarIcon(ctx, sx + k * 26 - 4, gy + 20, 11, k < game.starKeys.length);
+    ctx.textAlign = 'right'; ctx.font = G.TF('hudSmallSize'); ctx.fillStyle = ink;
+    ctx.fillText(G.T('hud.stage', { name: lv.name, attempt: game.attempt, time: (game.timeMs / 1000).toFixed(1), purity: Math.round(G.Game.purity(game) * 100) }), V.w - 20, y2);
     ctx.textAlign = 'left';
   }
 
   // 스킵 버튼: 주인공이 도착하면 화면 위 가운데 (사용자 결정 2026-10-20)
-  var skipRect = { x: V.w / 2 - 230, y: 66, w: 460, h: 44 };
+  function skipRect() { var w = G.TS('skipW'); return { x: V.w / 2 - w / 2, y: G.TS('skipY'), w: w, h: 44 }; }
   function drawSkip(ctx, game) {
     if (!G.Game.canSkip(game)) return;
-    var r = skipRect, all = game.total + 1;          // 끝내면: 들어간 + 줄 선(곧 들어갈) 물방울
+    var r = skipRect(), all = game.total + 1;        // 끝내면: 들어간 + 줄 선(곧 들어갈) 물방울
     var purity = game.rescued + (game.heroIn ? 1 : 0) + game.goalQueue.length + game.entering.length;
     ctx.fillStyle = 'rgba(255,253,246,0.95)'; ctx.strokeStyle = C.outline; ctx.lineWidth = 3;
     ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(r.x, r.y, r.w, r.h, 10); else ctx.rect(r.x, r.y, r.w, r.h);
     ctx.fill(); ctx.stroke();
-    ctx.fillStyle = C.outline; ctx.font = 'bold 17px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText('남은 물방울 기다리지 않고 끝내기 (Enter)  ·  정화 ' + purity + '/' + all, V.w / 2, r.y + 28);
+    ctx.fillStyle = G.TS('textColor'); ctx.font = G.TF('skipSize', true); ctx.textAlign = 'center';
+    ctx.fillText(G.T('skip.button', { n: purity, all: all }), V.w / 2, r.y + 28);
     ctx.textAlign = 'left';
   }
-  function skipAt(sx, sy) { var r = skipRect; return sx >= r.x && sx <= r.x + r.w && sy >= r.y && sy <= r.y + r.h; }
+  function skipAt(sx, sy) { var r = skipRect(); return sx >= r.x && sx <= r.x + r.w && sy >= r.y && sy <= r.y + r.h; }
 
   // 아래 5색 병 선반 (병 클릭 / 숫자 키 1~5)
   function shelfSlots() {
@@ -531,7 +541,7 @@ G.UI = (function () {
     return hit;
   }
   function drawShelf(ctx, game) {
-    var S = G.DATA.art.shelf, slots = shelfSlots(), allowed = game.level.data.inks;
+    var S = G.DATA.art.shelf, slots = shelfSlots(), allowed = game.level.data.inks, ink = G.TS('textColor');
     var shelfW = S.x * 2 + slots.length * S.slot - 6, shelfImg = G.Assets.get('ui_shelf');
     if (shelfImg) ctx.drawImage(shelfImg, 0, V.h - 30, shelfW + 10, 30);
     else { ctx.fillStyle = '#B07A45'; ctx.fillRect(4, V.h - 16, shelfW, 12); ctx.strokeStyle = C.outline; ctx.lineWidth = 2.5; ctx.strokeRect(4, V.h - 16, shelfW, 12); }
@@ -553,34 +563,35 @@ G.UI = (function () {
         ctx.fillStyle = '#C9A26B'; ctx.fillRect(cx - bw * 0.2, by + bh * 0.08, bw * 0.4, bh * 0.17); ctx.strokeRect(cx - bw * 0.2, by + bh * 0.08, bw * 0.4, bh * 0.17);
       }
       ctx.restore();
-      ctx.fillStyle = on ? C.outline : 'rgba(43,33,24,0.35)'; ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'center';
-      ctx.fillText(on ? String(b.key) : '잠김', cx, by - 4);
+      ctx.fillStyle = on ? ink : 'rgba(43,33,24,0.35)'; ctx.font = 'bold 14px ' + G.TS('font'); ctx.textAlign = 'center';
+      ctx.fillText(on ? String(b.key) : G.T('shelf.locked'), cx, by - 4);
       ctx.textAlign = 'left';
     });
     var cur = G.DATA.inks[game.color];
-    ctx.fillStyle = C.outline; ctx.font = 'bold 15px sans-serif';
+    ctx.fillStyle = ink; ctx.font = G.TF('shelfNameSize', true);
     ctx.fillText(cur ? cur.name : '', shelfW + 12, V.h - 40);
-    ctx.font = '13px sans-serif'; ctx.fillStyle = 'rgba(43,33,24,0.6)';
-    ctx.fillText('병 클릭 · 1~5 · 우클릭: 선 빨아들이기 · 휠: 줌', shelfW + 12, V.h - 20);
+    ctx.font = G.TF('shelfHelpSize'); ctx.fillStyle = 'rgba(43,33,24,0.6)';
+    ctx.fillText(G.T('shelf.help'), shelfW + 12, V.h - 20);
   }
 
   function drawStopOverlay(ctx, game) {
     if (!game.stopped) return;
+    var H = G.TS('hudH'), col = G.TS('stopColor');
     ctx.fillStyle = C.stopTint;
-    ctx.fillRect(0, 56, V.w, V.h - 56);
-    ctx.strokeStyle = C.blue; ctx.lineWidth = 6;
-    ctx.strokeRect(3, 59, V.w - 6, V.h - 62);
-    ctx.fillStyle = C.blue; ctx.font = 'bold 22px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText('정지 중 — 드래그로 그리기 · 스페이스로 재생하면 선이 떨어져요', V.w / 2, 140);
+    ctx.fillRect(0, H, V.w, V.h - H);
+    ctx.strokeStyle = col; ctx.lineWidth = 6;
+    ctx.strokeRect(3, H + 3, V.w - 6, V.h - H - 6);
+    ctx.fillStyle = col; ctx.font = G.TF('stopBannerSize', true); ctx.textAlign = 'center';
+    ctx.fillText(G.T('stop.banner'), V.w / 2, G.TS('stopBannerY'));
     ctx.textAlign = 'left';
   }
 
   function drawMessages(ctx, game) {
-    ctx.textAlign = 'center'; ctx.font = 'bold 22px sans-serif';
+    ctx.textAlign = 'center'; ctx.font = G.TF('msgSize', true);
     game.messages.forEach(function (m, i) {
       ctx.globalAlpha = Math.min(1, m.ms / 400);
-      ctx.fillStyle = C.red;
-      ctx.fillText(m.text, V.w / 2, 180 + i * 30);
+      ctx.fillStyle = G.TS('msgColor');
+      ctx.fillText(m.text, V.w / 2, G.TS('msgY') + i * (G.TS('msgSize') + 8));
     });
     ctx.globalAlpha = 1; ctx.textAlign = 'left';
   }
@@ -604,12 +615,14 @@ G.UI = (function () {
   }
 
   function drawResult(ctx, game) {
+    var ink = G.TS('textColor');
     if (game.status === 'run') return;
     if (game.status === 'ready') {
-      ctx.textAlign = 'center'; ctx.fillStyle = C.outline; ctx.font = 'bold 28px sans-serif';
-      ctx.fillText('클릭 또는 스페이스: 출발', V.w / 2, 250);
-      ctx.font = '17px sans-serif';
-      ctx.fillText('드래그: 그리기 · 스페이스: 시간 정지 · 우클릭: 선 빨아들이기 · 1~5·병 클릭: 색 · 휠: 줌 · R: 처음부터', V.w / 2, 285);
+      var ry = G.TS('readyY');
+      ctx.textAlign = 'center'; ctx.fillStyle = ink; ctx.font = G.TF('readyTitleSize', true);
+      ctx.fillText(G.T('ready.title'), V.w / 2, ry);
+      ctx.font = G.TF('readyHelpSize');
+      ctx.fillText(G.T('ready.help'), V.w / 2, ry + 35);
       ctx.textAlign = 'left';
       return;
     }
@@ -623,35 +636,35 @@ G.UI = (function () {
     else { ctx.fillStyle = C.paper; ctx.fillRect(x, y, w, h); ctx.strokeStyle = C.outline; ctx.lineWidth = 4; ctx.strokeRect(x, y, w, h); }
     var face = G.Assets.get(game.status === 'fail' ? 'char_erased' : 'char_goal');
     if (face && !clear) ctx.drawImage(face, x + 28, y + 6, 136, 136);
-    ctx.textAlign = 'center'; ctx.fillStyle = game.status === 'clear' ? C.green : C.red;
-    ctx.font = 'bold 40px sans-serif';
-    ctx.fillText(game.status === 'clear' ? '정화!' : game.failReason, V.w / 2, y + 70);
-    ctx.fillStyle = C.outline;
+    ctx.textAlign = 'center'; ctx.fillStyle = game.status === 'clear' ? G.TS('clearColor') : G.TS('failColor');
+    ctx.font = G.TF('resultTitleSize', true);
+    ctx.fillText(game.status === 'clear' ? G.T('result.clear') : game.failReason, V.w / 2, y + 70);
+    ctx.fillStyle = ink;
     if (clear) {                                   // 별 n/3 과 정화 % 를 따로 (사용자 결정 2026-10-20)
       var r = game.result, best = game.best;
-      ctx.font = 'bold 17px sans-serif'; ctx.fillStyle = C.outline;
-      ctx.fillText('별 ' + r.stars + ' / ' + r.starsTotal, V.w / 2, y + 102);
+      ctx.font = G.TF('resultSize', true); ctx.fillStyle = ink;
+      ctx.fillText(G.T('result.stars', { stars: r.stars, total: r.starsTotal }), V.w / 2, y + 102);
       for (var k = 0; k < r.starsTotal; k++) drawStarIcon(ctx, V.w / 2 + (k - (r.starsTotal - 1) / 2) * 56, y + 136, 25, k < r.stars);
       // 정화 막대
       var bw = 300, bx = V.w / 2 - bw / 2, by = y + 186;
-      ctx.font = 'bold 17px sans-serif'; ctx.fillStyle = C.outline;
+      ctx.font = G.TF('resultSize', true); ctx.fillStyle = ink;
       // 캐릭터: 정화 막대 왼쪽 위 꼭지점 위에 앉음 (사용자 요청 2026-10-20: 136 → 170). 정화 글자는 캐릭터를 비켜 오른쪽으로
       var fs = 170;
       if (face) ctx.drawImage(face, bx - fs / 2 + 4, by - fs * 0.93, fs, fs);
-      ctx.fillText('정화 ' + Math.round(r.purity * 100) + '%  (물방울 ' + r.inJar + ' / ' + r.all + ')', bx + 80 + (bw - 80) / 2, by - 8);
+      ctx.fillText(G.T('result.purity', { purity: Math.round(r.purity * 100), inJar: r.inJar, all: r.all }), bx + 80 + (bw - 80) / 2, by - 8);
       ctx.fillStyle = 'rgba(43,33,24,0.12)'; ctx.fillRect(bx, by, bw, 14);
       ctx.fillStyle = mix(C.jarDark, G.Game.jarColor(game), r.purity); ctx.fillRect(bx, by, bw * r.purity, 14);
       ctx.lineWidth = 2; ctx.strokeStyle = C.outline; ctx.strokeRect(bx, by, bw, 14);
-      ctx.fillStyle = C.outline; ctx.font = '15px sans-serif';
-      ctx.fillText((r.timeMs / 1000).toFixed(1) + '초' + (best ? '  ·  최고 기록: 별 ' + (best.stars || 0) + '/' + r.starsTotal +
-        ' · 정화 ' + Math.round((best.bestPurity || 0) * 100) + '%' : ''), V.w / 2, y + 236);
+      ctx.fillStyle = ink; ctx.font = G.TF('resultSize');
+      ctx.fillText(G.T('result.time', { time: (r.timeMs / 1000).toFixed(1) }) + (best ? G.T('result.best', { stars: best.stars || 0, total: r.starsTotal,
+        purity: Math.round((best.bestPurity || 0) * 100) }) : ''), V.w / 2, y + 236);
     } else {
-      ctx.font = '20px sans-serif';
-      ctx.fillText('물방울 ' + game.rescued + '/' + game.total + ' 도착 · ' + game.attempt + '번째 시도', V.w / 2, y + 125);
-      ctx.fillText((game.timeMs / 1000).toFixed(1) + '초', V.w / 2, y + 158);
+      ctx.font = G.TF('resultRetrySize');
+      ctx.fillText(G.T('result.failInfo', { rescued: game.rescued, total: game.total, attempt: game.attempt }), V.w / 2, y + 125);
+      ctx.fillText(G.T('result.time', { time: (game.timeMs / 1000).toFixed(1) }), V.w / 2, y + 158);
     }
-    ctx.font = 'bold 20px sans-serif'; ctx.fillStyle = C.outline;
-    ctx.fillText('R 또는 클릭: 다시 하기' + (game.status === 'clear' && game.hasNext ? ' · N: 다음 스테이지' : ''), V.w / 2, y + h - (clear ? 74 : 30));   // 사용자 요청 2026-10-20: 조금 위로
+    ctx.font = G.TF('resultRetrySize', true); ctx.fillStyle = ink;
+    ctx.fillText(G.T('result.retry') + (game.status === 'clear' && game.hasNext ? G.T('result.next') : ''), V.w / 2, y + h - (clear ? 74 : 30));   // 사용자 요청 2026-10-20: 조금 위로
     ctx.textAlign = 'left';
   }
 

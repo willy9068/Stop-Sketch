@@ -42,7 +42,7 @@ var G = G || {};
   app.account = app.testMode ? JSON.parse(JSON.stringify(app.save)) : app.save;
   app.game = G.Game.create(D.defaultTimeMode, app.levels[0], app.account);
   app.game.hasNext = !!app.levels[1];
-  if (app.testMode) app.game.toast('레벨 툴 테스트 플레이: ' + app.levels[0].name + ' (계정에 저장 안 됨)');
+  if (app.testMode) app.game.toast(G.T('toast.test', { name: app.levels[0].name }));
   function persist() { if (!app.testMode) G.Save.write(app.save); }
   app.game.onAccountChange = function () { persist(); G.Debug.refresh(app); };
   app.game.onFinish = function (g) {
@@ -96,7 +96,7 @@ var G = G || {};
   canvas.addEventListener('mousedown', function (e) {
     var g = app.game, sp = mouseScreen(e);
     if (e.button === 2) {                          // 우클릭: 선 빨아들이기 (달리는 중에도)
-      if (g.status === 'run' && !G.Draw.suck(g, G.UI.toWorld(sp.x, sp.y), D.ink.suckReach / G.UI.cam.z)) g.toast('빨아들일 선이 없어요');
+      if (g.status === 'run' && !G.Draw.suck(g, G.UI.toWorld(sp.x, sp.y), D.ink.suckReach / G.UI.cam.z)) g.toast(G.T('toast.noSuck'));
       return;
     }
     if (e.button !== 0) return;
@@ -105,7 +105,7 @@ var G = G || {};
     if (G.Game.canSkip(g) && G.UI.skipAt(sp.x, sp.y)) { G.Game.skip(g); return; }
     if (g.status === 'ready') { G.Game.start(g); return; }
     if (g.status !== 'run') { app.restart(); return; }
-    if (g.ink <= 0) { g.toast('잉크가 없어요 — 우클릭으로 선을 빨아들이면 돌려받아요'); return; }
+    if (g.ink <= 0 && !g.level.data.infInk) { g.toast(G.T('toast.noInk')); return; }
     G.Draw.begin(g, G.UI.toWorld(sp.x, sp.y));
   });
   window.addEventListener('mousemove', function (e) { if (app.game.stroke) { var sp = mouseScreen(e); G.Draw.move(app.game, G.UI.toWorld(sp.x, sp.y)); } });

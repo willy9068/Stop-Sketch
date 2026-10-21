@@ -190,10 +190,10 @@ G.Rules = (function () {
     });
   }
 
-  // 이번 프레임 카메라 배율: 무리 상자(box)가 화면 안에 들어오게, minZoom~maxZoom 사이
-  function fitZoom(box, view, cam) {
+  // 이번 프레임 카메라 배율: 상자(box)가 화면 안에 들어오게, minZoom~maxZoom 사이. base: 기본 줌 (이보다 크게는 안 함, 없으면 1)
+  function fitZoom(box, view, cam, base) {
     var w = box.x1 - box.x0 + cam.margin * 2, h = box.y1 - box.y0 + cam.margin * 2;
-    var z = Math.min(view.w / w, view.h / h, 1);
+    var z = Math.min(view.w / w, view.h / h, base != null ? base : 1);
     return Math.max(cam.minZoom, Math.min(cam.maxZoom, z));
   }
 

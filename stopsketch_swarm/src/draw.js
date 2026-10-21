@@ -6,7 +6,7 @@ var G = G || {};
 
 G.Draw = {
   begin: function (game, p) {
-    if (game.status !== 'run' || game.ink <= 0) return false;
+    if (game.status !== 'run' || (game.ink <= 0 && !game.level.data.infInk)) return false;
     game.stroke = G.Rules.newStroke(p);
     game.stroke.color = game.color;
     game.stroke.cost = game.color === 'yellow' ? G.DATA.ink.yellowCost : 1;   // 길이당 잉크 비율
@@ -16,7 +16,8 @@ G.Draw = {
   move: function (game, p) {
     if (!game.stroke) return;
     var k = game.stroke.cost || 1;
-    game.ink -= G.Rules.addSample(game.stroke, p, game.ink / k, G.DATA.ink) * k;
+    if (game.level.data.infInk) { G.Rules.addSample(game.stroke, p, Infinity, G.DATA.ink); }   // 잉크 무제한 (레벨 툴, 사용자 요청 2026-10-21)
+    else game.ink -= G.Rules.addSample(game.stroke, p, game.ink / k, G.DATA.ink) * k;
     if (game.stroke.full) this.end(game);
   },
 
@@ -25,7 +26,7 @@ G.Draw = {
     if (!s) return;
     game.stroke = null;
     var r = G.Rules.finishStroke(s, G.DATA.ink);
-    if (!r.ok) { game.ink += r.refund * (s.cost || 1); game.toast('선이 너무 짧아요 (잉크 반환)'); return; }
+    if (!r.ok) { if (!game.level.data.infInk) game.ink += r.refund * (s.cost || 1); game.toast(G.T('toast.short')); return; }
     var line = { pts: G.Rules.simplify(r.pts, G.DATA.ink.simplifyTol), color: s.color || 'black', len: s.len, active: false, body: null, local: null, rising: false };
     game.lines.push(line);
     if (!game.stopped) this.activate(game, line);
@@ -125,7 +126,7 @@ G.Draw = {
       });
     }
     if (n) game.fx.push({ type: 'cut', pts: line.pts, t: game.timeMs });
-    else game.toast('노랑: 칠한 자리에 배치된 선이 없어요');
+    else game.toast(G.T('toast.noCrystal'));
   },
 
   // 초록이 닿으면 멈추는 것들: 벽·발판·땅, 배치된 선, 떨어진 조각, 다른 선

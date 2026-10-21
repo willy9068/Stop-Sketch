@@ -35,6 +35,14 @@ G.LevelCheck = (function () {
     if (o.eraser.pct == null) o.eraser.pct = D.eraser.pct;
     if (o.eraser.delayMs == null) o.eraser.delayMs = D.eraser.delayMs;
     // 쓸 수 있는 색 (없으면 3색 모두), 색 효과 세기 (빠진 칸만 기본값)
+    // 정지 횟수·잉크 무제한 (레벨 툴, 사용자 요청 2026-10-21). 켤 때만 저장
+    if (!o.infStops) delete o.infStops;
+    if (!o.infInk) delete o.infInk;
+    // 카메라: 기본 줌, 화면 위 끝·아래 끝(월드 y) — 카메라가 이 밖은 보여 주지 않음 (사용자 요청 2026-10-21)
+    o.camera = o.camera || {};
+    if (o.camera.zoom == null) o.camera.zoom = D.art.camera.baseZoom;
+    if (o.camera.bottom == null) o.camera.bottom = o.ground.reduce(function (m, g) { return Math.max(m, g.top); }, 600) + D.art.camera.bottomPad;
+    if (o.camera.top == null) o.camera.top = Math.min(D.art.camera.topY, o.camera.bottom - D.view.h / o.camera.zoom);
     o.inks = (o.inks || D.inks.order).filter(function (c) { return D.inks[c]; });
     o.fx = o.fx || {};
     Object.keys(D.inkFx).forEach(function (k) { if (o.fx[k] == null) o.fx[k] = D.inkFx[k]; });
@@ -129,7 +137,13 @@ G.LevelCheck = (function () {
     var est = estimateInk(lv);
     add('info', '틈 ' + gaps(lv).length + '개 · 막는 벽 ' + blockingWalls(lv).length + '개 · 모범 풀이 잉크 합계 약 ' + est + ' / 기본 잉크 ' + lv.ink + ' (우클릭으로 빨아들이면 다시 씀)');
     if (est > lv.ink * 1.5) add('warn', '잉크가 많이 모자라요 — 선을 여러 번 빨아들여 다시 써야 해요');
-    if (lv.stops < 1) add('info', '정지 횟수 0: 달리면서만 그려야 해요');
+    if (lv.infStops) add('info', '정지 횟수 무제한 (켬)');
+    else if (lv.stops < 1) add('info', '정지 횟수 0: 달리면서만 그려야 해요');
+    if (lv.infInk) add('info', '잉크 무제한 (켬)');
+    var cam = lv.camera, band = cam.bottom - cam.top, vh = D.view.h / cam.zoom;
+    add('info', '카메라: 기본 줌 ' + cam.zoom + ' (화면 높이 ' + Math.round(vh) + ') · 위 끝 y ' + cam.top + ' · 아래 끝 y ' + cam.bottom);
+    if (cam.zoom < D.art.camera.minZoom || cam.zoom > D.art.camera.maxZoom) add('warn', '기본 줌은 ' + D.art.camera.minZoom + ' ~ ' + D.art.camera.maxZoom + ' 사이로 맞춰져요');
+    if (band < vh) add('warn', '화면 위 끝~아래 끝 간격(' + band + ')이 기본 줌의 화면 높이(' + Math.round(vh) + ')보다 좁아요 — 아래 끝에 맞추고 위 끝 위도 보여요');
     if (!lv.inks.length) add('error', '쓸 수 있는 색이 없어요 (스테이지 설정 → 쓸 수 있는 색)');
     else add('info', '쓸 수 있는 색: ' + lv.inks.map(function (c) { return D.inks[c].name; }).join(', ') +
       ' · 튕김 ' + lv.fx.bounce + ' · 가속 ' + lv.fx.boostPct + '% ' + (lv.fx.boostMs / 1000) + '초 · 떠오름 ' + lv.fx.riseSpeed);

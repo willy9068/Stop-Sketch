@@ -75,7 +75,7 @@ G.Game = {
 
   setColor: function (game, c) {
     if (!G.DATA.inks[c]) return false;
-    if (game.level.data.inks.indexOf(c) < 0) { game.toast(G.DATA.inks[c].name + ': 이 스테이지에서는 아직 못 써요'); return false; }
+    if (game.level.data.inks.indexOf(c) < 0) { game.toast(G.T('toast.inkLocked', { ink: G.DATA.inks[c].name })); return false; }
     game.color = c;
     return true;
   },
@@ -83,7 +83,7 @@ G.Game = {
   toggleStop: function (game) {
     if (game.status !== 'run') return;
     if (game.stopped) { this.resume(game); return; }
-    if (!G.Rules.useStop(game.stops)) { game.toast('정지 횟수가 없어요'); return; }
+    if (!game.level.data.infStops && !G.Rules.useStop(game.stops)) { game.toast(G.T('toast.noStops')); return; }   // 정지 무제한이면 안 줄어듦 (레벨 툴, 사용자 요청 2026-10-21)
     game.stopped = true;
     game.stoppedMs = 0;
     game.stopsUsedThisRun += 1;
@@ -140,8 +140,8 @@ G.Game = {
       if (d.state !== 'walk' || game.status !== 'run') return;
       var p = d.body.position;
       if (d.dead) return self.kill(game, d, d.dead);
-      if (p.y > game.failY) return self.kill(game, d, '떨어졌어요');
-      if (p.x - d.r < game.eraserX) return self.kill(game, d, '지우개에 지워졌어요');
+      if (p.y > game.failY) return self.kill(game, d, 'fall');
+      if (p.x - d.r < game.eraserX) return self.kill(game, d, 'erased');
       self.collect(game, d);
       if (d.hero || !game.level.data.drops.follow) self.wake(game, d);
       if (d.mode === 'free' && game.level.data.drops.follow) self.rejoin(game, d);
@@ -177,7 +177,7 @@ G.Game = {
     if (len < 1) return;
     var n = h.groundN || { x: 0, y: -1 };
     game.trailS += len;
-    tr.push({ x: p.x, y: p.y, s: game.trailS, nx: n.x, ny: n.y, g: !!h.grounded });
+    tr.push({ x: p.x, y: p.y, s: game.trailS, nx: n.x, ny: n.y, g: !!h.grounded, c: h.under || null });   // c: 주인공이 밟은 색 (대열 물들기)
     if (tr.length > 3000) {
       var minS = game.trailS - game.level.data.drops.gap * (game.line.length + 2);
       game.line.forEach(function (d) { if (d.s != null) minS = Math.min(minS, d.s); });
@@ -199,6 +199,21 @@ G.Game = {
     return { x: a.x + (b.x - a.x) * u - a.nx * off, y: a.y + (b.y - a.y) * u - a.ny * off, g: a.g && b.g };
   },
 
+  // 발자국 s0 ~ s1 사이에서 주인공이 밟은 색. 닿자마자 튕기는 색(빨강)이 있으면 그 색 먼저
+  //   (사용자 요청 2026-10-21: 주인공은 빨강에 1~2스텝만 닿고 튕겨서, 발자국을 따라 옮겨지는 대열 물방울은 빨강에 직접 닿지 못해 안 물들던 문제)
+  trailColor: function (game, s0, s1) {
+    var tr = game.trail, lo = 0, hi = tr.length - 1, out = null, touch = G.DATA.tint.touchColors;
+    if (s0 == null || !(s1 > s0)) return null;
+    while (hi - lo > 1) { var mid = (lo + hi) >> 1; if (tr[mid].s <= s0) lo = mid; else hi = mid; }
+    for (var i = lo; i < tr.length && tr[i].s <= s1; i++) {
+      var c = tr[i].c;
+      if (!c || tr[i].s < s0) continue;
+      if (touch.indexOf(c) >= 0) return c;
+      out = out || c;
+    }
+    return out;
+  },
+
   // 대열에서 내 자리: 주인공 뒤 (순서 + 1) × 간격. 주인공이 도착했으면 모두 발자국 끝(잉크병)으로
   slotS: function (game, d) {
     if (game.heroHome) return game.trailS;
@@ -207,10 +222,11 @@ G.Game = {
 
   // 물리 스텝 전: 대열 물방울을 제자리(발자국 위)로 옮김
   placeLine: function (game, d) {
-    var F = G.DATA.drop.follow, M = G.Physics.M, want = this.slotS(game, d);
+    var F = G.DATA.drop.follow, M = G.Physics.M, want = this.slotS(game, d), s0 = d.s;
     if (game.heroHome) d.s = Math.min(want, d.s + Math.max(game.level.data.drops.heroSpeed, (want - d.s) * F.catchUp));
     else if (want > d.s) d.s += (want - d.s) * F.catchUp;
     var t = this.trailAt(game, d.s, d.r);
+    d.trailC = this.trailColor(game, s0, d.s);
     d.prev = { x: d.body.position.x, y: d.body.position.y };
     d.expect = t;
     M.Body.setPosition(d.body, { x: t.x, y: t.y });
@@ -222,9 +238,9 @@ G.Game = {
     var F = G.DATA.drop.follow, M = G.Physics.M, b = d.body, e = d.expect;
     var dx = b.position.x - e.x, dy = b.position.y - e.y, disp = Math.sqrt(dx * dx + dy * dy);
     var sup = G.Drop.support(d, game.engine);
-    if (sup.spike) { d.dead = '가시에 찔렸어요'; return; }
+    if (sup.spike) { d.dead = 'spike'; return; }
     d.vel = { x: e.x - d.prev.x, y: e.y - d.prev.y };
-    d.under = sup.color;
+    d.under = d.trailC || sup.color;               // 주인공이 그 자리에서 밟은 색이 먼저 (직접 닿은 색은 그다음)
     if (Math.abs(d.vel.x) > 0.05) d.dir = d.vel.x > 0 ? 1 : -1;
     d.nudge = disp > F.nudgeDist ? (d.nudge || 0) + 1 : 0;
     d.unsup = e.g && !sup.ground ? (d.unsup || 0) + 1 : 0;
@@ -313,12 +329,12 @@ G.Game = {
       if (it.kind === 'star') game.starKeys.push(it.key);
       else if (it.kind === 'stopup') {
         game.stops.left += D.stopUp; game.stops.max += D.stopUp;
-        game.toast('정지 +' + D.stopUp + ' (이 스테이지에서만)');
+        game.toast(G.T('toast.stopUp', { n: D.stopUp }));
       } else if (it.kind === 'inkup') {
         acc.bottles[it.key] = true;
         acc.inkBonus = (acc.inkBonus || 0) + D.ink.upAmount;
         game.inkMax += D.ink.upAmount; game.ink += D.ink.upAmount;
-        game.toast('잉크 최대량 +' + D.ink.upAmount + ' (영구)');
+        game.toast(G.T('toast.inkUp', { n: D.ink.upAmount }));
         if (game.onAccountChange) game.onAccountChange(game);
       }
     });
@@ -332,7 +348,7 @@ G.Game = {
     G.Drop.remove(game.engine, d);
     game.goalQueue.push(d);
     game.lastReachMs = game.timeMs;
-    if (d.hero) { game.heroHome = true; game.toast('주인공 도착! Enter: 남은 물방울을 기다리지 않고 끝내기'); }
+    if (d.hero) { game.heroHome = true; game.toast(G.T('toast.heroHome')); }
   },
 
   // 잉크병에 닿았는가: 도착 x 오른쪽이면서 잉크병 높이 안 (사용자 결정 2026-10-20: 도착을 위아래로도 옮김)
@@ -388,14 +404,15 @@ G.Game = {
     if (d.hero) game.heroIn = true; else game.rescued += 1;
   },
 
+  // reason: 실패 이유 이름 fall / erased / spike (글자는 uitext.js fail.*). 스킵으로 지울 때는 ''
   kill: function (game, d, reason) {
-    if (reason === '지우개에 지워졌어요' && d.body) {   // 지워지는 순간: 가루 효과 + 지워진 얼굴 (화면 시간으로, 실패 뒤에도 재생)
+    if (reason === 'erased' && d.body) {   // 지워지는 순간: 가루 효과 + 지워진 얼굴 (화면 시간으로, 실패 뒤에도 재생)
       game.fx.push({ type: 'erasePuff', x: d.body.position.x, y: d.body.position.y, r: d.r, real: Date.now(), t: game.timeMs });
     }
     d.state = 'dead';
     this.unline(game, d);
     G.Drop.remove(game.engine, d);
-    if (d.hero) { this.finish(game, 'fail', reason); return; }
+    if (d.hero) { this.finish(game, 'fail', reason ? G.T('fail.' + reason) : ''); return; }
     game.lost += 1;
   },
 

@@ -52,7 +52,7 @@ G.Drop = {
     d.events.length = 0;
     for (var t = 0; t < touch.length; t++) {
       var pts = touch[t].pts, other = touch[t].other, root = touch[t].root, color = other.inkColor || root.inkColor;
-      if (root.label === 'spike' || other.label === 'spike') { d.dead = '가시에 찔렸어요'; return; }
+      if (root.label === 'spike' || other.label === 'spike') { d.dead = 'spike'; return; }
       for (var i = 0; i < pts.length; i++) {
         var dy = pts[i].y - b.position.y, dx = pts[i].x - b.position.x;
         if (dy > r * D.groundCheck) {
@@ -68,7 +68,7 @@ G.Drop = {
       }
     }
     d.grounded = ground;
-    d.under = under;
+    d.under = red ? 'red' : under;                 // 빨강을 같이 밟았으면 빨강 (닿자마자 튕겨 나가므로 놓치지 않게)
     if (front) {                                   // 바닥 면 방향 = 앞선 접점에서 중심으로 (턱 모서리면 그 기울기로 타고 오름)
       var len = Math.sqrt(front.dx * front.dx + front.dy * front.dy) || 1;
       d.groundN = { x: -front.dx / len, y: -front.dy / len };

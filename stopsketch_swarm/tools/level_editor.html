@@ -95,17 +95,19 @@
       <b>땅</b>은 드래그해서 길이를 정합니다.<br>
       선택한 것은 끌어서 옮기고, 네모 손잡이로 크기를 바꿉니다.<br>
       <kbd>Delete</kbd> 삭제 · <kbd>Ctrl+D</kbd> 복제 · 방향키 1px (<kbd>Shift</kbd> 10px)<br>
+      <kbd>Ctrl</kbd>+클릭: 여러 개 선택(더하기·빼기) → 하나를 끌면 모두 함께 옮겨짐 · <kbd>Ctrl</kbd>+빈 곳 드래그: 상자로 선택 · <kbd>Esc</kbd> 해제<br>
       <kbd>Ctrl+Z</kbd> 되돌리기 · <kbd>Ctrl+S</kbd> 저장 · <kbd>F5</kbd> 테스트 플레이<br>
       휠: 마우스 위치 기준 확대·축소 · 화면 이동: 오른쪽·가운데 버튼 드래그, <kbd>Space</kbd>+드래그, <kbd>Shift</kbd>+휠(가로)<br>
       땅: 위 손잡이 = 윗면(아랫면 그대로), 아래 손잡이 = 높이, 양옆 = 폭<br>
       <kbd>Home</kbd> 시작으로 · <kbd>End</kbd> 도착으로 · 아래 미니맵 클릭으로 이동<br>
-      빨간 띠 = 그림으로 건너야 하는 틈, 점선 = 게임 화면 위·아래 끝 (높이 720)<br>
+      빨간 띠 = 그림으로 건너야 하는 틈 · 파란 점선 = 게임 화면 위·아래 끝 (카메라가 그 밖은 안 보여 줌, 이름표나 선을 끌어 옮김) · 초록 점선 = 시작할 때 화면 (기본 줌)<br>
       저장한 <b>levels.js</b>는 <code>stopsketch_swarm/src/levels.js</code> 를 덮어쓰고, 제출본은 <code>python tools/build_single.py</code> 로 다시 만듭니다.
     </div>
   </div>
 </main>
 
 <script src="../src/data.js"></script>
+<script src="../src/uitext.js"></script>
 <script src="../src/levels.js"></script>
 <script src="../src/rules.js"></script>
 <script src="../src/levelcheck.js"></script>
