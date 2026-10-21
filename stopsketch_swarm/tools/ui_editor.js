@@ -28,7 +28,7 @@ var G = G || {};
     'skip.button': '스킵 버튼', 'shelf.locked': '못 쓰는 색', 'shelf.help': '선반 옆 조작 안내',
     'stop.banner': '정지 중 안내', 'ready.title': '출발 안내', 'ready.help': '조작 안내',
     'result.clear': '클리어 제목', 'result.stars': '별', 'result.purity': '정화', 'result.time': '시간', 'result.best': '최고 기록 (시간 뒤에 붙음)',
-    'result.failInfo': '실패 때 물방울', 'result.retry': '다시 하기 안내', 'result.next': '다음 스테이지 (다시 하기 뒤에 붙음)',
+    'result.failInfo': '실패 때 물방울', 'result.retry': '다시 하기 버튼', 'result.next': '다음 스테이지 버튼',
     'fail.fall': '떨어짐', 'fail.erased': '지우개에 지워짐', 'fail.spike': '가시',
     'toast.noStops': '정지 횟수 없음', 'toast.inkLocked': '못 쓰는 색을 고름', 'toast.stopUp': '정지 +1 획득', 'toast.inkUp': '잉크 병 획득',
     'toast.heroHome': '주인공 도착', 'toast.short': '선이 너무 짧음', 'toast.noCrystal': '노랑: 지울 선 없음', 'toast.noSuck': '빨아들일 선 없음',
@@ -46,7 +46,12 @@ var G = G || {};
     ['msgY', '알림 문구 y', 'toast'], ['msgSize', '알림 문구 크기', 'toast'], ['msgColor', '알림 문구 색', 'toast'],
     ['readyY', '출발 안내 y', 'ready'], ['readyTitleSize', '출발 안내 크기', 'ready'], ['readyHelpSize', '조작 안내 크기', 'ready'],
     ['resultTitleSize', '결과 제목 크기', 'clear'], ['clearColor', '클리어 제목 색', 'clear'], ['failColor', '실패 제목 색', 'fail'],
-    ['resultSize', '결과 글자 크기', 'clear'], ['resultRetrySize', '다시 하기 크기', 'clear']
+    ['resultSize', '결과 글자 크기', 'clear'], ['resultRetrySize', '결과 버튼 글자 크기', 'clear'],
+    ['resultBtnW', '결과 버튼 폭', 'clear'], ['resultBtnH', '결과 버튼 높이', 'clear'],
+    ['retryBtnX', '다시 하기 버튼 x (왼쪽)', 'clear'], ['retryBtnY', '다시 하기 버튼 y (위)', 'clear'],
+    ['nextBtnX', '다음 스테이지 버튼 x (왼쪽)', 'clear'], ['nextBtnY', '다음 스테이지 버튼 y (위)', 'clear'],
+    ['retryAloneX', '다시 하기만 있을 때 x (실패·마지막 스테이지)', 'fail'],
+    ['resultBtnBg', '결과 버튼 바탕색', 'clear'], ['resultBtnHot', '결과 버튼 마우스 올렸을 때 색', 'clear']
   ];
 
   // ---------- 미리보기 게임 ----------
@@ -95,12 +100,14 @@ var G = G || {};
 
   // ---------- 왼쪽 칸 ----------
   function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
+  // 글자 칸 높이: 줄 수만큼 (긴 한 줄은 2줄 높이)
+  function rowsFor(v) { var s = String(v); return Math.max(s.split('\n').length, s.length > 34 ? 2 : 1); }
   function isColor(v) { return typeof v === 'string' && /^(#|rgb)/.test(v); }
   function row(kind, key, label, scene) {
     var cur = G.UITEXT[kind][key], org = ORIG[kind][key], changed = JSON.stringify(cur) !== JSON.stringify(org);
     var id = kind + ':' + key, input;
     if (typeof org === 'number') input = '<input type="number" data-k="' + id + '" value="' + cur + '">';
-    else if (String(cur).length > 34) input = '<textarea rows="2" data-k="' + id + '">' + esc(cur) + '</textarea>';
+    else if (kind === 'text') input = '<textarea rows="' + rowsFor(cur) + '" data-k="' + id + '">' + esc(cur) + '</textarea>';   // 엔터 = 줄바꿈 (사용자 요청 2026-10-21)
     else input = '<input data-k="' + id + '" value="' + esc(cur) + '">';
     return '<div class="f' + (changed ? ' changed' : '') + '" data-scene="' + scene + '" data-fail="' + (key.indexOf('fail.') === 0 ? key.slice(5) : '') + '">' +
       '<label>' + esc(label) + (isColor(cur) ? '<span class="sw" style="background:' + esc(cur) + '"></span>' : '') + '<small>' + esc(key) + '</small></label>' +
@@ -134,6 +141,7 @@ var G = G || {};
     var f = e.target.closest('.f'), p = id.split(':');
     f.classList.toggle('changed', JSON.stringify(G.UITEXT[p[0]][p[1]]) !== JSON.stringify(ORIG[p[0]][p[1]]));
     var sw = f.querySelector('.sw'); if (sw) sw.style.background = e.target.value;
+    if (e.target.tagName === 'TEXTAREA') e.target.rows = rowsFor(e.target.value);
   });
   $('side').addEventListener('focusin', function (e) {   // 고치는 글자가 나오는 장면으로
     var f = e.target.closest('.f');
@@ -236,6 +244,27 @@ var G = G || {};
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); save(); }
   });
   window.addEventListener('beforeunload', function (e) { if (S.dirty) { e.preventDefault(); e.returnValue = ''; } });
+
+  // 미리보기에서 결과 창 버튼을 끌어 옮기기 (사용자 요청 2026-10-21: 다시 하기·다음 스테이지 위치 조절). 마우스를 올리면 강조색
+  function viewPt(e) { var r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) * 1280 / r.width, y: (e.clientY - r.top) * 720 / r.height }; }
+  cv.addEventListener('mousedown', function (e) {
+    var p = viewPt(e), act = S.game && G.UI.resultAt(S.game, p.x, p.y);
+    if (!act) return;
+    var next = S.game.status === 'clear' && S.game.hasNext;
+    var kx = act === 'next' ? 'nextBtnX' : next ? 'retryBtnX' : 'retryAloneX', ky = act === 'next' ? 'nextBtnY' : 'retryBtnY';
+    S.btnDrag = { kx: kx, ky: ky, p: p, x: G.UITEXT.style[kx], y: G.UITEXT.style[ky] };
+    e.preventDefault();
+  });
+  window.addEventListener('mousemove', function (e) {
+    var p = viewPt(e);
+    G.UI.hover(p.x, p.y);
+    var d = S.btnDrag;
+    if (!d) return;
+    G.UITEXT.style[d.kx] = Math.round(d.x + p.x - d.p.x);
+    G.UITEXT.style[d.ky] = Math.round(d.y + p.y - d.p.y);
+    S.dirty = true; status();
+  });
+  window.addEventListener('mouseup', function () { if (S.btnDrag) { S.btnDrag = null; buildSide(); } });
 
   G.UIEditor = S; S.fileText = fileText;   // 디버그용
   showLastSave();

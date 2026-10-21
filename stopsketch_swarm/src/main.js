@@ -104,11 +104,16 @@ var G = G || {};
     if (bottle && g.status !== 'clear' && g.status !== 'fail') { G.Game.setColor(g, bottle); return; }
     if (G.Game.canSkip(g) && G.UI.skipAt(sp.x, sp.y)) { G.Game.skip(g); return; }
     if (g.status === 'ready') { G.Game.start(g); return; }
-    if (g.status !== 'run') { app.restart(); return; }
+    if (g.status !== 'run') {                      // 결과 창: 버튼을 눌러야 다시 하기 / 다음 스테이지 (사용자 요청 2026-10-21)
+      var act = G.UI.resultAt(g, sp.x, sp.y);
+      if (act === 'retry') app.restart();
+      else if (act === 'next' && g.status === 'clear' && g.hasNext) app.goLevel(app.levelIndex + 1);
+      return;
+    }
     if (g.ink <= 0 && !g.level.data.infInk) { g.toast(G.T('toast.noInk')); return; }
     G.Draw.begin(g, G.UI.toWorld(sp.x, sp.y));
   });
-  window.addEventListener('mousemove', function (e) { if (app.game.stroke) { var sp = mouseScreen(e); G.Draw.move(app.game, G.UI.toWorld(sp.x, sp.y)); } });
+  window.addEventListener('mousemove', function (e) { G.UI.hover(mouseScreen(e).x, mouseScreen(e).y); if (app.game.stroke) { var sp = mouseScreen(e); G.Draw.move(app.game, G.UI.toWorld(sp.x, sp.y)); } });
   window.addEventListener('mouseup', function (e) { if (e.button === 0) G.Draw.end(app.game); });
 
   // ---- 루프 (고정 타임스텝) ----

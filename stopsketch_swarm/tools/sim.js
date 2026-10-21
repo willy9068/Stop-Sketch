@@ -314,7 +314,7 @@ G.LEVELS.forEach(function (lv) {
   var small = g.drops.filter(function (d) { return !d.hero; })[0];
   console.log('14 물들기 (검정 선 220px, 주인공 속도 1): ' + log.join(' · ') + ' · 작은 물방울 세기 ' + (small ? (small.ta || 0).toFixed(2) : '-'));
   for (i = 0; i < 60 * 40 && g.status === 'run'; i++) G.Game.update(g, STEP);
-  console.log('   잉크병 색 ' + G.Game.jarColor(g).map(Math.round).join(',') + ' (기본 하늘색 ' + D.colors.jarClear.join(',') + ')', g.status);
+  console.log('   잉크병 색 비율 (정화 ' + Math.round(G.Game.purity(g) * 100) + '%) ' + G.Game.jarMix(G.Game.purity(g)).toFixed(2) + ' · 50% 면 ' + G.Game.jarMix(0.5).toFixed(2) + ' (물방울 색은 안 섞임)', g.status);
 })();
 
 // 15. 빨강은 닿자마자 튕기지만 그 뒤로도 천천히 끝까지 물듦 (사용자 요청 2026-10-20)
