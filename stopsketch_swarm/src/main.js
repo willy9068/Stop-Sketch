@@ -1,5 +1,6 @@
 // 시작점: 캔버스, 입력, 고정 타임스텝 루프 — 물방울 무리 시험판
 // 조작 (사용자 결정 2026-10-20): 왼쪽 드래그 그리기 · 스페이스 시간 정지 · 우클릭 선 빨아들이기 · 1~5/병 클릭 색 · 휠 줌 · Enter 스킵
+//   Esc 일시 정지 (사용자 결정 2026-10-21): 달리는 중에만, 창이 포커스를 잃어도 자동으로. 일시 정지 중엔 Esc·R·D·창 버튼만
 var G = G || {};
 
 (function () {
@@ -78,6 +79,13 @@ var G = G || {};
 
   window.addEventListener('keydown', function (e) {
     var g = app.game;
+    if (e.code === 'Escape') { e.preventDefault(); if (!e.repeat) G.Game.togglePause(g); return; }
+    if (g.paused) {
+      if (e.code === 'Space' || e.code === 'Enter') e.preventDefault();
+      if (e.code === 'KeyR') app.restart();
+      else if (e.code === 'KeyD') G.Debug.toggle(app);
+      return;
+    }
     if (e.code === 'Space') {                       // 출발 / 시간 정지 (사용자 결정 2026-10-20)
       e.preventDefault();
       if (e.repeat) return;
@@ -92,9 +100,18 @@ var G = G || {};
   });
 
   canvas.addEventListener('contextmenu', function (e) { e.preventDefault(); });
-  canvas.addEventListener('wheel', function (e) { e.preventDefault(); if (e.deltaY) G.UI.wheel(e.deltaY); }, { passive: false });
+  canvas.addEventListener('wheel', function (e) { e.preventDefault(); if (e.deltaY && !app.game.paused) G.UI.wheel(e.deltaY); }, { passive: false });
+  // 다른 창·탭으로 가면 자동 일시 정지 (사용자 결정 2026-10-21)
+  window.addEventListener('blur', function () { G.Game.pause(app.game); });
+  document.addEventListener('visibilitychange', function () { if (document.hidden) G.Game.pause(app.game); });
   canvas.addEventListener('mousedown', function (e) {
     var g = app.game, sp = mouseScreen(e);
+    if (g.paused) {                                // 일시 정지 창: 버튼만
+      var pa = e.button === 0 && G.UI.resultAt(g, sp.x, sp.y);
+      if (pa === 'resume') G.Game.unpause(g);
+      else if (pa === 'retry') app.restart();
+      return;
+    }
     if (e.button === 2) {                          // 우클릭: 선 빨아들이기 (달리는 중에도)
       if (g.status === 'run' && !G.Draw.suck(g, G.UI.toWorld(sp.x, sp.y), D.ink.suckReach / G.UI.cam.z)) g.toast(G.T('toast.noSuck'));
       return;

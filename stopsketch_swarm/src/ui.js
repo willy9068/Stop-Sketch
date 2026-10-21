@@ -628,7 +628,7 @@ G.UI = (function () {
   function drawResult(ctx, game) {
     var ink = G.TS('textColor');
     resultShown = false;
-    if (game.status === 'run') return;
+    if (game.status === 'run') { if (game.paused) drawPause(ctx, game); return; }
     if (game.status === 'ready') {
       var ry = G.TS('readyY');
       ctx.textAlign = 'center'; ctx.fillStyle = ink; ctx.font = G.TF('readyTitleSize', true);
@@ -644,9 +644,7 @@ G.UI = (function () {
     ctx.fillStyle = 'rgba(43,33,24,0.35)';
     ctx.fillRect(0, 0, V.w, V.h);
     var S = G.TS, clear = game.status === 'clear' && game.result;
-    var panel = G.Assets.get('ui_panel'), pr = panelRect(game);   // 바탕 그림 크기는 uitext.js (사용자 요청 2026-10-21)
-    if (panel) ctx.drawImage(panel, pr.x, pr.y, pr.w, pr.h);
-    else { ctx.fillStyle = C.paper; ctx.fillRect(pr.x + 40, pr.y + 30, pr.w - 80, pr.h - 60); ctx.strokeStyle = C.outline; ctx.lineWidth = 4; ctx.strokeRect(pr.x + 40, pr.y + 30, pr.w - 80, pr.h - 60); }
+    drawPanelBg(ctx, panelRect(game));   // 바탕 그림 크기는 uitext.js (사용자 요청 2026-10-21)
     // 결과 창 안의 것은 모두 uitext.js 위치(게임 화면 px)에 그림 (사용자 요청 2026-10-21: UI 툴에서 끌어 옮기기). c = 클리어, f = 실패
     var face = G.Assets.get(game.status === 'fail' ? 'char_erased' : 'char_goal'), p = clear ? 'c' : 'f', fs = S(p + 'FaceSize');
     if (face) {
@@ -685,6 +683,24 @@ G.UI = (function () {
     ctx.textAlign = 'left';
   }
 
+  // Esc 일시 정지 창 (사용자 결정 2026-10-21): 결과 창과 같은 바탕·버튼. 제목 + 계속하기 · 다시 하기. 위치·크기는 uitext.js (UI 툴)
+  function drawPanelBg(ctx, pr) {
+    var panel = G.Assets.get('ui_panel');
+    if (panel) ctx.drawImage(panel, pr.x, pr.y, pr.w, pr.h);
+    else { ctx.fillStyle = C.paper; ctx.fillRect(pr.x + 40, pr.y + 30, pr.w - 80, pr.h - 60); ctx.strokeStyle = C.outline; ctx.lineWidth = 4; ctx.strokeRect(pr.x + 40, pr.y + 30, pr.w - 80, pr.h - 60); }
+  }
+  function drawPause(ctx, game) {
+    resultShown = true;
+    resultParts = [];
+    ctx.fillStyle = 'rgba(43,33,24,0.35)';
+    ctx.fillRect(0, 0, V.w, V.h);
+    drawPanelBg(ctx, panelRect(game));
+    ctx.textAlign = 'center'; ctx.fillStyle = G.TS('pauseColor'); ctx.font = G.TF('resultTitleSize', true);
+    sayPart(ctx, G.T('pause.title'), 'pauseTitleX', 'pauseTitleY');
+    resultBtns(game).forEach(function (b) { drawButton(ctx, b); });
+    ctx.textAlign = 'left';
+  }
+
   // 결과 창 안에 그린 것들의 자리 (UI 툴에서 끌어 옮기기용): { keys: [x 이름, y 이름], x, y, w, h }
   var resultParts = [];
   function part(kx, ky, x, y, w, h) { resultParts.push({ keys: [kx, ky], x: x, y: y, w: w, h: h }); }
@@ -698,7 +714,7 @@ G.UI = (function () {
 
   // 결과 창 바탕 그림(ui_panel) 자리: 화면 가운데, 크기는 클리어·실패 따로 (사용자 요청 2026-10-21)
   function panelRect(game) {
-    var f = game.status === 'fail', w = G.TS(f ? 'failPanelW' : 'resultPanelW'), h = G.TS(f ? 'failPanelH' : 'resultPanelH');
+    var k = game.paused ? 'pausePanel' : game.status === 'fail' ? 'failPanel' : 'resultPanel', w = G.TS(k + 'W'), h = G.TS(k + 'H');
     return { x: (V.w - w) / 2, y: (V.h - h) / 2, w: w, h: h };
   }
 
@@ -711,6 +727,10 @@ G.UI = (function () {
   }
   function resultBtns(game) {
     var S = G.TS, w = S('resultBtnW'), h = S('resultBtnH'), next = game.status === 'clear' && game.hasNext, rk = retryKeys(game), out = [];
+    if (game.paused) return [
+      { act: 'resume', x: S('pauseResumeX'), y: S('pauseResumeY'), w: w, h: h, label: G.T('pause.resume'), keys: ['pauseResumeX', 'pauseResumeY'] },
+      { act: 'retry', x: S('pauseRetryX'), y: S('pauseRetryY'), w: w, h: h, label: G.T('pause.retry'), keys: ['pauseRetryX', 'pauseRetryY'] }
+    ];
     out.push({ act: 'retry', x: S(rk[0]), y: S(rk[1]), w: w, h: h, label: G.T('result.retry'), keys: rk });
     if (next) out.push({ act: 'next', x: S('nextBtnX'), y: S('nextBtnY'), w: w, h: h, label: G.T('result.next'), keys: ['nextBtnX', 'nextBtnY'] });
     return out;
@@ -726,9 +746,9 @@ G.UI = (function () {
     say(ctx, b.label, b.x + b.w / 2, b.y + b.h / 2 - (n - 1) * lh / 2);
     ctx.restore();
   }
-  // 화면 좌표 → 누른 결과 창 버튼 ('retry' / 'next' / null). 결과 창이 보일 때만
+  // 화면 좌표 → 누른 결과 창·일시 정지 창 버튼 ('retry' / 'next' / 'resume' / null). 창이 보일 때만
   function resultAt(game, sx, sy) {
-    if (!resultShown || (game.status !== 'clear' && game.status !== 'fail')) return null;
+    if (!resultShown || (game.status !== 'clear' && game.status !== 'fail' && !game.paused)) return null;
     var hit = null;
     resultBtns(game).forEach(function (b) { if (sx >= b.x && sx <= b.x + b.w && sy >= b.y && sy <= b.y + b.h) hit = b.act; });
     return hit;

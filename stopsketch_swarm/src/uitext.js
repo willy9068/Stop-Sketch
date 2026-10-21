@@ -20,7 +20,7 @@ G.UITEXT = {
     "shelf.help": "병 클릭 · 1~5 · 우클릭: 선 빨아들이기 · 휠: 줌",
     "stop.banner": "정지 중 — 드래그로 그리기 · 스페이스로 재생하면 선이 떨어져요",
     "ready.title": "출발 : 클릭 or 스페이스 바",
-    "ready.help": "드래그: 그리기 / 스페이스: 시간 정지 / 우클릭: 선 빨아들이기 / 1~5·병 클릭: 색 / 휠: 줌 / R: 처음부터",
+    "ready.help": "드래그: 그리기 / 스페이스: 시간 정지 / 우클릭: 선 빨아들이기 / 1~5·병 클릭: 색 / 휠: 줌 / R: 처음부터 / Esc: 일시 정지",
     "result.clear": "정화!",
     "result.stars": "별 {stars} / {total}",
     "result.purity": "정화 {purity}%  (물방울 {inJar} / {all})",
@@ -29,6 +29,9 @@ G.UITEXT = {
     "result.failInfo": "물방울 {rescued}/{total} 도착 · {attempt}번째 시도",
     "result.retry": "다시 하기 (R)",
     "result.next": "다음 스테이지 (N)",
+    "pause.title": "일시 정지",
+    "pause.resume": "계속하기 (Esc)",
+    "pause.retry": "다시 하기 (R)",
     "fail.fall": "떨어졌어요",
     "fail.erased": "지우개에 지워졌어요",
     "fail.spike": "가시에 찔렸어요",
@@ -123,6 +126,15 @@ G.UITEXT = {
     "fTimeX": 640,
     "fTimeY": 393,
     "resultBtnBg": "#FFFDF6",
-    "resultBtnHot": "#FFE9A8"
+    "resultBtnHot": "#FFE9A8",
+    "pausePanelW": 640,
+    "pausePanelH": 360,
+    "pauseTitleX": 640,
+    "pauseTitleY": 320,
+    "pauseColor": "#2B2118",
+    "pauseResumeX": 420,
+    "pauseResumeY": 380,
+    "pauseRetryX": 650,
+    "pauseRetryY": 380
   }
 };

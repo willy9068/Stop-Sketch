@@ -51,6 +51,7 @@ G.Game = {
     game.stops = G.Rules.newStops(lv.stops);
     game.stopped = false;
     game.stoppedMs = 0;
+    game.paused = false;                           // Esc 일시 정지 (사용자 결정 2026-10-21) — 시간 정지(stopped)와 따로
     game.stroke = null;
     game.lines = [];
     game.fallen = [];                              // 노랑으로 잘려 떨어진 배치된 선 조각
@@ -80,7 +81,7 @@ G.Game = {
   },
 
   toggleStop: function (game) {
-    if (game.status !== 'run') return;
+    if (game.status !== 'run' || game.paused) return;
     if (game.stopped) { this.resume(game); return; }
     if (!game.level.data.infStops && !G.Rules.useStop(game.stops)) { game.toast(G.T('toast.noStops')); return; }   // 정지 무제한이면 안 줄어듦 (레벨 툴, 사용자 요청 2026-10-21)
     game.stopped = true;
@@ -95,11 +96,22 @@ G.Game = {
     game.stopped = false;
   },
 
+  // Esc 일시 정지 (사용자 결정 2026-10-21): 달리는 중에만. 정지 횟수 안 씀, 게임 시간·알림도 멈춤, 그리던 선은 끝냄.
+  //   시간 정지 중에 걸면 풀었을 때 시간 정지 그대로
+  pause: function (game) {
+    if (game.status !== 'run' || game.paused) return;
+    G.Draw.end(game);
+    game.paused = true;
+  },
+  unpause: function (game) { game.paused = false; },
+  togglePause: function (game) { if (game.paused) this.unpause(game); else this.pause(game); },
+
   scale: function (game) { return game.stopped ? 0 : 1; },
 
   walking: function (game) { return game.drops.filter(function (d) { return d.state === 'walk'; }); },
 
   update: function (game, realMs) {
+    if (game.paused) return;
     for (var i = game.messages.length - 1; i >= 0; i--) {
       game.messages[i].ms -= realMs;
       if (game.messages[i].ms <= 0) game.messages.splice(i, 1);
@@ -438,6 +450,7 @@ G.Game = {
     game.finishedAt = Date.now();
     game.failReason = reason;
     game.stopped = false;
+    game.paused = false;
     game.stroke = null;
     game.result = null;
     if (status === 'clear') {

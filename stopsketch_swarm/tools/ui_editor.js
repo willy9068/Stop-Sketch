@@ -12,12 +12,12 @@ var G = G || {};
 
   // 장면: 어떤 글자가 어디서 나오는지 보기 위한 게임 상태
   var SCENES = [
-    ['ready', '출발 전'], ['run', '달리는 중'], ['stop', '정지 중'], ['toast', '알림 문구'],
+    ['ready', '출발 전'], ['run', '달리는 중'], ['stop', '정지 중'], ['pause', '일시 정지 (Esc)'], ['toast', '알림 문구'],
     ['clear', '클리어 결과'], ['fail', '실패 결과']
   ];
   // 글자 묶음: 이름 앞부분 → [제목, 장면]
   var GROUPS = [
-    ['hud', '위 막대', 'run'], ['shelf', '아래 물감 선반', 'run'], ['ink', '물감 이름', 'run'], ['stop', '정지 화면', 'stop'],
+    ['hud', '위 막대', 'run'], ['shelf', '아래 물감 선반', 'run'], ['ink', '물감 이름', 'run'], ['stop', '정지 화면', 'stop'], ['pause', '일시 정지 창 (Esc)', 'pause'],
     ['ready', '출발 전 화면', 'ready'], ['skip', '스킵 버튼 (지금 꺼짐: data.js goalEnter.skip)', 'run'], ['result', '결과 창', 'clear'], ['fail', '실패 이유 (결과 창 제목)', 'fail'],
     ['toast', '알림 문구 (화면 가운데 빨간 글자)', 'toast']
   ];
@@ -29,6 +29,7 @@ var G = G || {};
     'stop.banner': '정지 중 안내', 'ready.title': '출발 안내', 'ready.help': '조작 안내',
     'result.clear': '클리어 제목', 'result.stars': '별', 'result.purity': '정화', 'result.time': '시간', 'result.best': '최고 기록 (시간 뒤에 붙음)',
     'result.failInfo': '실패 때 물방울', 'result.retry': '다시 하기 버튼', 'result.next': '다음 스테이지 버튼',
+    'pause.title': '일시 정지 제목', 'pause.resume': '계속하기 버튼', 'pause.retry': '다시 하기 버튼',
     'fail.fall': '떨어짐', 'fail.erased': '지우개에 지워짐', 'fail.spike': '가시',
     'toast.noStops': '정지 횟수 없음', 'toast.inkLocked': '못 쓰는 색을 고름', 'toast.stopUp': '정지 +1 획득', 'toast.inkUp': '잉크 병 획득',
     'toast.heroHome': '주인공 도착', 'toast.short': '선이 너무 짧음', 'toast.noCrystal': '노랑: 지울 선 없음', 'toast.noSuck': '빨아들일 선 없음',
@@ -68,7 +69,12 @@ var G = G || {};
     ['fFaceX', '실패: 물방울 그림 x (왼쪽)', 'fail'], ['fFaceY', '실패: 물방울 그림 y (위)', 'fail'], ['fFaceSize', '실패: 물방울 그림 크기', 'fail'],
     ['fInfoX', '실패: 물방울 도착 글자 x', 'fail'], ['fInfoY', '실패: 물방울 도착 글자 y', 'fail'],
     ['fTimeX', '실패: 시간 x', 'fail'], ['fTimeY', '실패: 시간 y', 'fail'],
-    ['resultBtnBg', '결과 버튼 바탕색', 'clear'], ['resultBtnHot', '결과 버튼 마우스 올렸을 때 색', 'clear']
+    ['resultBtnBg', '결과 버튼 바탕색', 'clear'], ['resultBtnHot', '결과 버튼 마우스 올렸을 때 색', 'clear'],
+    // 일시 정지 창 (사용자 결정 2026-10-21). 버튼 크기·글자는 결과 버튼과 같음
+    ['pausePanelW', '일시 정지 창 바탕 폭', 'pause'], ['pausePanelH', '일시 정지 창 바탕 높이', 'pause'],
+    ['pauseTitleX', '일시 정지: 제목 x', 'pause'], ['pauseTitleY', '일시 정지: 제목 y', 'pause'], ['pauseColor', '일시 정지 제목 색', 'pause'],
+    ['pauseResumeX', '계속하기 버튼 x (왼쪽)', 'pause'], ['pauseResumeY', '계속하기 버튼 y (위)', 'pause'],
+    ['pauseRetryX', '일시 정지: 다시 하기 x (왼쪽)', 'pause'], ['pauseRetryY', '일시 정지: 다시 하기 y (위)', 'pause']
   ];
 
   // ---------- 미리보기 게임 ----------
@@ -80,6 +86,7 @@ var G = G || {};
     g.hasNext = true;
     if (scene !== 'ready') { G.Game.start(g); steps(g, 100); }
     if (scene === 'stop') G.Game.toggleStop(g);
+    if (scene === 'pause') G.Game.pause(g);
     if (scene === 'skip') g.heroHome = true;
     if (scene === 'clear') {
       g.rescued = Math.ceil(g.total * 0.6); g.heroIn = true;

@@ -260,7 +260,7 @@ G.UITEXT = {
     "shelf.help": "병 클릭 · 1~5 · 우클릭: 선 빨아들이기 · 휠: 줌",
     "stop.banner": "정지 중 — 드래그로 그리기 · 스페이스로 재생하면 선이 떨어져요",
     "ready.title": "출발 : 클릭 or 스페이스 바",
-    "ready.help": "드래그: 그리기 / 스페이스: 시간 정지 / 우클릭: 선 빨아들이기 / 1~5·병 클릭: 색 / 휠: 줌 / R: 처음부터",
+    "ready.help": "드래그: 그리기 / 스페이스: 시간 정지 / 우클릭: 선 빨아들이기 / 1~5·병 클릭: 색 / 휠: 줌 / R: 처음부터 / Esc: 일시 정지",
     "result.clear": "정화!",
     "result.stars": "별 {stars} / {total}",
     "result.purity": "정화 {purity}%  (물방울 {inJar} / {all})",
@@ -269,6 +269,9 @@ G.UITEXT = {
     "result.failInfo": "물방울 {rescued}/{total} 도착 · {attempt}번째 시도",
     "result.retry": "다시 하기 (R)",
     "result.next": "다음 스테이지 (N)",
+    "pause.title": "일시 정지",
+    "pause.resume": "계속하기 (Esc)",
+    "pause.retry": "다시 하기 (R)",
     "fail.fall": "떨어졌어요",
     "fail.erased": "지우개에 지워졌어요",
     "fail.spike": "가시에 찔렸어요",
@@ -363,7 +366,16 @@ G.UITEXT = {
     "fTimeX": 640,
     "fTimeY": 393,
     "resultBtnBg": "#FFFDF6",
-    "resultBtnHot": "#FFE9A8"
+    "resultBtnHot": "#FFE9A8",
+    "pausePanelW": 640,
+    "pausePanelH": 360,
+    "pauseTitleX": 640,
+    "pauseTitleY": 320,
+    "pauseColor": "#2B2118",
+    "pauseResumeX": 420,
+    "pauseResumeY": 380,
+    "pauseRetryX": 650,
+    "pauseRetryY": 380
   }
 };
 
@@ -450,10 +462,10 @@ G.LEVELS = [
     "fx": {"bounce":15,"boostPct":190,"boostMs":1200,"riseSpeed":1.2},
     "drops": {"heroSpeed":2.5,"smallSpeed":2.5,"collide":false,"follow":true,"gap":32},
     "eraser": {"pct":20,"delayMs":3000},
-    "camera": {"zoom":0.9,"bottom":1220,"top":-130},
+    "camera": {"zoom":0.68,"bottom":1220,"top":-130},
     "segments": [],
     "start": {"x":-390,"y":470},
-    "goal": {"x":4890,"y":680},
+    "goal": {"x":5220,"y":708},
     "ground": [
       {"x0":-700,"x1":180,"top":600,"h":540},
       {"x0":360,"x1":540,"top":912,"h":300},
@@ -461,7 +473,7 @@ G.LEVELS = [
       {"x0":620,"x1":1150,"top":818,"h":393},
       {"x0":180,"x1":361,"top":756.134,"h":383.866,"angle":60},
       {"x0":1310,"x1":2500,"top":818,"h":393},
-      {"x0":2700,"x1":3890,"top":700,"h":513},
+      {"x0":2700,"x1":3890,"top":750,"h":463},
       {"x0":4260,"x1":5450,"top":700,"h":513},
       {"x0":3890,"x1":4260,"top":993,"h":220}
     ],
@@ -474,17 +486,18 @@ G.LEVELS = [
       {"type":"drop","x":2020,"y":800},
       {"type":"drop","x":450,"y":890},
       {"type":"drop","x":1230,"y":790},
-      {"type":"drop","x":3440,"y":480},
+      {"type":"drop","x":3440,"y":518},
       {"type":"star","x":4080,"y":875,"size":56},
       {"type":"star","x":450,"y":300,"size":56},
-      {"type":"star","x":3440,"y":190,"size":56},
-      {"type":"platform","x":3300,"y":500,"w":270,"h":28},
+      {"type":"star","x":3440,"y":228,"size":56},
+      {"type":"platform","x":3300,"y":538,"w":270,"h":28},
       {"type":"text","x":1530,"y":620,"size":20,"text":"노란 물감은 배치된 선을 지울 수 있어요."},
       {"type":"text","x":370,"y":650,"size":20,"text":"초록 물감은 천천히 떠올라요."},
-      {"type":"crystal","x":3240,"y":430,"w":130,"h":10,"angle":90,"pin":"end"},
-      {"type":"crystal","x":3500,"y":430,"w":130,"h":10,"angle":90,"pin":"end"},
+      {"type":"crystal","x":3240,"y":468,"w":130,"h":10,"angle":90,"pin":"end"},
+      {"type":"crystal","x":3500,"y":468,"w":130,"h":10,"angle":90,"pin":"end"},
       {"type":"spike","x":3890,"y":944,"w":370,"h":50},
-      {"type":"crystal","x":3890,"y":824,"w":370,"h":10,"angle":180,"pin":"end"}
+      {"type":"crystal","x":3890,"y":824,"w":370,"h":10,"angle":180,"pin":"end"},
+      {"type":"wall","x":5411,"y":-10,"w":40,"h":716}
     ]
   },
   {
@@ -499,7 +512,7 @@ G.LEVELS = [
     "eraser": {"pct":20,"delayMs":3000},
     "camera": {"zoom":1,"bottom":1120,"top":-400},
     "segments": [{"x":-700,"name":"이동 구간"},{"x":850,"name":"검정 다리"},{"x":1150,"name":"빨강"},{"x":1950,"name":"턱"},{"x":2550,"name":"파랑"},{"x":3350,"name":"우물 (초록)"},{"x":3900,"name":"우리 (노랑)"},{"x":4450,"name":"도착"}],
-    "start": {"x":-300,"y":600},
+    "start": {"x":-400,"y":410},
     "goal": {"x":4600,"y":900},
     "ground": [
       {"x0":-700,"x1":900,"top":600,"h":400},
@@ -510,7 +523,7 @@ G.LEVELS = [
       {"x0":3600,"x1":5100,"top":900,"h":400}
     ],
     "props": [
-      {"type":"wall","x":-660,"y":300,"w":40,"h":300},
+      {"type":"wall","x":-700,"y":300,"w":40,"h":300},
       {"type":"wall","x":5060,"y":600,"w":40,"h":300},
       {"type":"crystal","x":3935,"y":830,"w":130,"h":10,"angle":90,"pin":"end"},
       {"type":"crystal","x":4135,"y":830,"w":130,"h":10,"angle":90,"pin":"end"},
@@ -1807,6 +1820,7 @@ G.Game = {
     game.stops = G.Rules.newStops(lv.stops);
     game.stopped = false;
     game.stoppedMs = 0;
+    game.paused = false;                           // Esc 일시 정지 (사용자 결정 2026-10-21) — 시간 정지(stopped)와 따로
     game.stroke = null;
     game.lines = [];
     game.fallen = [];                              // 노랑으로 잘려 떨어진 배치된 선 조각
@@ -1836,7 +1850,7 @@ G.Game = {
   },
 
   toggleStop: function (game) {
-    if (game.status !== 'run') return;
+    if (game.status !== 'run' || game.paused) return;
     if (game.stopped) { this.resume(game); return; }
     if (!game.level.data.infStops && !G.Rules.useStop(game.stops)) { game.toast(G.T('toast.noStops')); return; }   // 정지 무제한이면 안 줄어듦 (레벨 툴, 사용자 요청 2026-10-21)
     game.stopped = true;
@@ -1851,11 +1865,22 @@ G.Game = {
     game.stopped = false;
   },
 
+  // Esc 일시 정지 (사용자 결정 2026-10-21): 달리는 중에만. 정지 횟수 안 씀, 게임 시간·알림도 멈춤, 그리던 선은 끝냄.
+  //   시간 정지 중에 걸면 풀었을 때 시간 정지 그대로
+  pause: function (game) {
+    if (game.status !== 'run' || game.paused) return;
+    G.Draw.end(game);
+    game.paused = true;
+  },
+  unpause: function (game) { game.paused = false; },
+  togglePause: function (game) { if (game.paused) this.unpause(game); else this.pause(game); },
+
   scale: function (game) { return game.stopped ? 0 : 1; },
 
   walking: function (game) { return game.drops.filter(function (d) { return d.state === 'walk'; }); },
 
   update: function (game, realMs) {
+    if (game.paused) return;
     for (var i = game.messages.length - 1; i >= 0; i--) {
       game.messages[i].ms -= realMs;
       if (game.messages[i].ms <= 0) game.messages.splice(i, 1);
@@ -2194,6 +2219,7 @@ G.Game = {
     game.finishedAt = Date.now();
     game.failReason = reason;
     game.stopped = false;
+    game.paused = false;
     game.stroke = null;
     game.result = null;
     if (status === 'clear') {
@@ -3182,7 +3208,7 @@ G.UI = (function () {
   function drawResult(ctx, game) {
     var ink = G.TS('textColor');
     resultShown = false;
-    if (game.status === 'run') return;
+    if (game.status === 'run') { if (game.paused) drawPause(ctx, game); return; }
     if (game.status === 'ready') {
       var ry = G.TS('readyY');
       ctx.textAlign = 'center'; ctx.fillStyle = ink; ctx.font = G.TF('readyTitleSize', true);
@@ -3198,9 +3224,7 @@ G.UI = (function () {
     ctx.fillStyle = 'rgba(43,33,24,0.35)';
     ctx.fillRect(0, 0, V.w, V.h);
     var S = G.TS, clear = game.status === 'clear' && game.result;
-    var panel = G.Assets.get('ui_panel'), pr = panelRect(game);   // 바탕 그림 크기는 uitext.js (사용자 요청 2026-10-21)
-    if (panel) ctx.drawImage(panel, pr.x, pr.y, pr.w, pr.h);
-    else { ctx.fillStyle = C.paper; ctx.fillRect(pr.x + 40, pr.y + 30, pr.w - 80, pr.h - 60); ctx.strokeStyle = C.outline; ctx.lineWidth = 4; ctx.strokeRect(pr.x + 40, pr.y + 30, pr.w - 80, pr.h - 60); }
+    drawPanelBg(ctx, panelRect(game));   // 바탕 그림 크기는 uitext.js (사용자 요청 2026-10-21)
     // 결과 창 안의 것은 모두 uitext.js 위치(게임 화면 px)에 그림 (사용자 요청 2026-10-21: UI 툴에서 끌어 옮기기). c = 클리어, f = 실패
     var face = G.Assets.get(game.status === 'fail' ? 'char_erased' : 'char_goal'), p = clear ? 'c' : 'f', fs = S(p + 'FaceSize');
     if (face) {
@@ -3239,6 +3263,24 @@ G.UI = (function () {
     ctx.textAlign = 'left';
   }
 
+  // Esc 일시 정지 창 (사용자 결정 2026-10-21): 결과 창과 같은 바탕·버튼. 제목 + 계속하기 · 다시 하기. 위치·크기는 uitext.js (UI 툴)
+  function drawPanelBg(ctx, pr) {
+    var panel = G.Assets.get('ui_panel');
+    if (panel) ctx.drawImage(panel, pr.x, pr.y, pr.w, pr.h);
+    else { ctx.fillStyle = C.paper; ctx.fillRect(pr.x + 40, pr.y + 30, pr.w - 80, pr.h - 60); ctx.strokeStyle = C.outline; ctx.lineWidth = 4; ctx.strokeRect(pr.x + 40, pr.y + 30, pr.w - 80, pr.h - 60); }
+  }
+  function drawPause(ctx, game) {
+    resultShown = true;
+    resultParts = [];
+    ctx.fillStyle = 'rgba(43,33,24,0.35)';
+    ctx.fillRect(0, 0, V.w, V.h);
+    drawPanelBg(ctx, panelRect(game));
+    ctx.textAlign = 'center'; ctx.fillStyle = G.TS('pauseColor'); ctx.font = G.TF('resultTitleSize', true);
+    sayPart(ctx, G.T('pause.title'), 'pauseTitleX', 'pauseTitleY');
+    resultBtns(game).forEach(function (b) { drawButton(ctx, b); });
+    ctx.textAlign = 'left';
+  }
+
   // 결과 창 안에 그린 것들의 자리 (UI 툴에서 끌어 옮기기용): { keys: [x 이름, y 이름], x, y, w, h }
   var resultParts = [];
   function part(kx, ky, x, y, w, h) { resultParts.push({ keys: [kx, ky], x: x, y: y, w: w, h: h }); }
@@ -3252,7 +3294,7 @@ G.UI = (function () {
 
   // 결과 창 바탕 그림(ui_panel) 자리: 화면 가운데, 크기는 클리어·실패 따로 (사용자 요청 2026-10-21)
   function panelRect(game) {
-    var f = game.status === 'fail', w = G.TS(f ? 'failPanelW' : 'resultPanelW'), h = G.TS(f ? 'failPanelH' : 'resultPanelH');
+    var k = game.paused ? 'pausePanel' : game.status === 'fail' ? 'failPanel' : 'resultPanel', w = G.TS(k + 'W'), h = G.TS(k + 'H');
     return { x: (V.w - w) / 2, y: (V.h - h) / 2, w: w, h: h };
   }
 
@@ -3265,6 +3307,10 @@ G.UI = (function () {
   }
   function resultBtns(game) {
     var S = G.TS, w = S('resultBtnW'), h = S('resultBtnH'), next = game.status === 'clear' && game.hasNext, rk = retryKeys(game), out = [];
+    if (game.paused) return [
+      { act: 'resume', x: S('pauseResumeX'), y: S('pauseResumeY'), w: w, h: h, label: G.T('pause.resume'), keys: ['pauseResumeX', 'pauseResumeY'] },
+      { act: 'retry', x: S('pauseRetryX'), y: S('pauseRetryY'), w: w, h: h, label: G.T('pause.retry'), keys: ['pauseRetryX', 'pauseRetryY'] }
+    ];
     out.push({ act: 'retry', x: S(rk[0]), y: S(rk[1]), w: w, h: h, label: G.T('result.retry'), keys: rk });
     if (next) out.push({ act: 'next', x: S('nextBtnX'), y: S('nextBtnY'), w: w, h: h, label: G.T('result.next'), keys: ['nextBtnX', 'nextBtnY'] });
     return out;
@@ -3280,9 +3326,9 @@ G.UI = (function () {
     say(ctx, b.label, b.x + b.w / 2, b.y + b.h / 2 - (n - 1) * lh / 2);
     ctx.restore();
   }
-  // 화면 좌표 → 누른 결과 창 버튼 ('retry' / 'next' / null). 결과 창이 보일 때만
+  // 화면 좌표 → 누른 결과 창·일시 정지 창 버튼 ('retry' / 'next' / 'resume' / null). 창이 보일 때만
   function resultAt(game, sx, sy) {
-    if (!resultShown || (game.status !== 'clear' && game.status !== 'fail')) return null;
+    if (!resultShown || (game.status !== 'clear' && game.status !== 'fail' && !game.paused)) return null;
     var hit = null;
     resultBtns(game).forEach(function (b) { if (sx >= b.x && sx <= b.x + b.w && sy >= b.y && sy <= b.y + b.h) hit = b.act; });
     return hit;
@@ -3406,6 +3452,7 @@ G.Debug = {
 // main.js
 // 시작점: 캔버스, 입력, 고정 타임스텝 루프 — 물방울 무리 시험판
 // 조작 (사용자 결정 2026-10-20): 왼쪽 드래그 그리기 · 스페이스 시간 정지 · 우클릭 선 빨아들이기 · 1~5/병 클릭 색 · 휠 줌 · Enter 스킵
+//   Esc 일시 정지 (사용자 결정 2026-10-21): 달리는 중에만, 창이 포커스를 잃어도 자동으로. 일시 정지 중엔 Esc·R·D·창 버튼만
 var G = G || {};
 
 (function () {
@@ -3484,6 +3531,13 @@ var G = G || {};
 
   window.addEventListener('keydown', function (e) {
     var g = app.game;
+    if (e.code === 'Escape') { e.preventDefault(); if (!e.repeat) G.Game.togglePause(g); return; }
+    if (g.paused) {
+      if (e.code === 'Space' || e.code === 'Enter') e.preventDefault();
+      if (e.code === 'KeyR') app.restart();
+      else if (e.code === 'KeyD') G.Debug.toggle(app);
+      return;
+    }
     if (e.code === 'Space') {                       // 출발 / 시간 정지 (사용자 결정 2026-10-20)
       e.preventDefault();
       if (e.repeat) return;
@@ -3498,9 +3552,18 @@ var G = G || {};
   });
 
   canvas.addEventListener('contextmenu', function (e) { e.preventDefault(); });
-  canvas.addEventListener('wheel', function (e) { e.preventDefault(); if (e.deltaY) G.UI.wheel(e.deltaY); }, { passive: false });
+  canvas.addEventListener('wheel', function (e) { e.preventDefault(); if (e.deltaY && !app.game.paused) G.UI.wheel(e.deltaY); }, { passive: false });
+  // 다른 창·탭으로 가면 자동 일시 정지 (사용자 결정 2026-10-21)
+  window.addEventListener('blur', function () { G.Game.pause(app.game); });
+  document.addEventListener('visibilitychange', function () { if (document.hidden) G.Game.pause(app.game); });
   canvas.addEventListener('mousedown', function (e) {
     var g = app.game, sp = mouseScreen(e);
+    if (g.paused) {                                // 일시 정지 창: 버튼만
+      var pa = e.button === 0 && G.UI.resultAt(g, sp.x, sp.y);
+      if (pa === 'resume') G.Game.unpause(g);
+      else if (pa === 'retry') app.restart();
+      return;
+    }
     if (e.button === 2) {                          // 우클릭: 선 빨아들이기 (달리는 중에도)
       if (g.status === 'run' && !G.Draw.suck(g, G.UI.toWorld(sp.x, sp.y), D.ink.suckReach / G.UI.cam.z)) g.toast(G.T('toast.noSuck'));
       return;
