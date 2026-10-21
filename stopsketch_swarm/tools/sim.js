@@ -163,7 +163,7 @@ G.LEVELS.forEach(function (lv) {
     var ideal = (960 - 450) / (speed * 60);
     console.log('  ' + (name + ' · 속도 ' + speed).padEnd(30), '오르막 통과', t1 !== null ? ((t1 - t0) / 60).toFixed(2) + 's (평지라면 ' + ideal.toFixed(2) + 's)' : '못 오름', '· 오르는 중 최저 가로 속도', minV.toFixed(2));
   }
-  console.log('7 경사·턱 오르기 (높이 120 언덕, 바닥에 걸친 선의 끝 턱 포함)');
+  console.log('7 경사·턱 오르기 (높이 120 언덕, 바닥에 걸친 선의 끝 턱 포함) — 2026-10-21부터 30도 넘는 오르막은 도움 없이 "못 오름"이 정상 (약 17° 완만한 선만 통과)');
   var photo = [{ x: 560, y: 598 }, { x: 640, y: 590 }, { x: 700, y: 575 }, { x: 760, y: 545 }, { x: 830, y: 500 }, { x: 900, y: 478 }, { x: 1000, y: 476 }];
   [5.2, 1.5, 1].forEach(function (sp) {
     climb('완만한 선 (약 20°)', [{ x: 520, y: 598 }, { x: 920, y: 478 }], sp);
@@ -366,4 +366,29 @@ G.LEVELS.forEach(function (lv) {
     out.push(a + '도 ' + g.status + ' ' + g.rescued + '/' + g.total);
   });
   console.log('17 비탈 땅: ' + out.join(' · ') + ' (모두 clear 2/2 이어야 정상)');
+})();
+
+// 18. 오르막 속도 규칙 (사용자 결정 2026-10-21): 30도까지는 느리지만 스스로 오름, 31도부터는 미끄러져 못 오름 → 파랑 가속이 있으면 60도 아래는 넘음
+(function () {
+  function slope(a, len, boost) {
+    var w = len * Math.cos(a * Math.PI / 180);
+    var lv = { id: 't', name: '시험', ink: 3000, stops: 9, start: { x: 0 }, goal: { x: 2500 }, inks: ['black', 'blue'], drops: { heroSpeed: 3 }, eraser: { pct: 1, delayMs: 600000 },
+      ground: [{ x0: -400, x1: 600, top: 600, h: 900 }, { x0: 600, x1: 600 + w, top: 600, angle: -a, h: 900 }, { x0: 600 + w, x1: 3400, top: 600, h: 900 }], props: [] };
+    var s = G.LevelCheck.groundShape(lv.ground[1]);
+    lv.ground[0].top = s.l; lv.ground[2].top = s.r; lv.start.y = s.l;
+    var g = G.Game.create('A', lv); G.Game.start(g);
+    if (boost) drawLine(g, [{ x: 300, y: s.l - 2 }, { x: 560, y: s.l - 2 }], 'blue');
+    var t0 = null, t1 = null;
+    for (var i = 0; i < 60 * 25 && g.status === 'run' && g.hero.body; i++) {
+      G.Game.update(g, STEP);
+      if (!g.hero.body) break;
+      var x = g.hero.body.position.x;
+      if (t0 === null && x > 600) t0 = i;
+      if (t1 === null && x > 600 + w) t1 = i;
+    }
+    return t1 === null ? '못 넘음' : '속도 ' + (len / 3 / (t1 - t0) * 100).toFixed(0) + '%';
+  }
+  var out = [0, 10, 20, 30, 31, 45].map(function (a) { return a + '° ' + slope(a, 300); });
+  var help = [[35, 120], [45, 100], [60, 80]].map(function (c) { return c[0] + '° ' + slope(c[0], c[1], true); });
+  console.log('18 오르막 (길이 300, 평지 대비 속도): ' + out.join(' · ') + '\n   파랑 가속 (짧은 비탈): ' + help.join(' · ') + ' (30도까지 넘고 31도부터 못 넘음, 가속하면 45도까지 넘고 60도는 못 넘어야 정상)');
 })();

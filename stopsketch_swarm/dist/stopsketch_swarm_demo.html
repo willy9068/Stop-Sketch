@@ -69,6 +69,12 @@ G.DATA = {
     wakeReach: 1.4,        // 잠든 물방울과 걷는 물방울 중심 거리가 (두 반지름 합 × 이 값) 안이면 깨어나 합류
     pinchMs: 120,          // 위·아래로 이만큼 끼어 있으면 가까운 옆으로 밀어냄 (끼여서 죽지 않음, 사용자 결정 2026-10-20)
     density: 0.0006,       // 선보다 훨씬 가볍게 (선이 물방울에 거의 밀리지 않게)
+    // 오르막 속도 (사용자 결정 2026-10-21): 10도 이하 그대로 · 20도 이하 75% · 30도 이하 50%. 31도 이상은 스스로 오르는 힘이 없음 →
+    //   중력에 더해 (각도 − 30)/10 × steepDrag 만큼 스텝마다 더 느려져 결국 미끄러져 내려옴 (파랑 가속·빨강 튕김 등 도움이 있어야 넘음)
+    //   내리막은 그대로. 바닥으로 보는 각도는 약 63도까지(groundCheck), 그보다 가파르면 벽처럼 되돌아섬(주인공 약 74도·작은 물방울 약 86도)
+    //   boostBonus: 파랑 가속 중에는 비탈을 이 각도만큼 완만하게 침 (35도 → 10도처럼). 60도 넘으면 가속해도 못 오름
+    //   minEdge: 밟은 면의 모서리가 이보다 짧으면 비탈이 아니라 턱·모서리로 봄 (선의 둥근 끝에서 멈추지 않게)
+    slope: { steps: [[10, 1], [20, 0.75], [30, 0.5]], steepDrag: 0.03, boostBonus: 25, minEdge: 20 },
     // 대열 (사용자 결정 2026-10-20): 주인공이 깨운 물방울은 오리 새끼처럼 주인공이 지나간 길(발자국)을 그대로 따라옴.
     //   주인공이 지나간 뒤 생긴 물리 영향(새로 그린 선·떨어지는 선에 밀림, 발밑 바닥이 사라짐)을 받으면 이탈 → 혼자 걷기.
     //   혼자 걷는 물방울이 주인공에 닿으면 다시 대열 끝에 붙음. 켬/끔·간격은 스테이지마다 drops.follow / drops.gap (레벨 툴)
@@ -321,12 +327,12 @@ G.UITEXT = {
     "nextBtnY": 438,
     "retryAloneX": 536,
     "retryAloneY": 438,
-    "failRetryX": 536,
-    "failRetryY": 438,
-    "resultPanelW": 640,
-    "resultPanelH": 400,
-    "failPanelW": 640,
-    "failPanelH": 310,
+    "failRetryX": 532,
+    "failRetryY": 417,
+    "resultPanelW": 875,
+    "resultPanelH": 565,
+    "failPanelW": 759,
+    "failPanelH": 422,
     "cTitleX": 640,
     "cTitleY": 260,
     "cStarsTextX": 640,
@@ -335,8 +341,8 @@ G.UITEXT = {
     "cStarsY": 326,
     "cStarSize": 50,
     "cStarGap": 56,
-    "cFaceX": 409,
-    "cFaceY": 218,
+    "cFaceX": 354,
+    "cFaceY": 186,
     "cFaceSize": 170,
     "cBarX": 490,
     "cBarY": 376,
@@ -348,8 +354,8 @@ G.UITEXT = {
     "cTimeY": 426,
     "fTitleX": 640,
     "fTitleY": 305,
-    "fFaceX": 388,
-    "fFaceY": 241,
+    "fFaceX": 374,
+    "fFaceY": 305,
     "fFaceSize": 136,
     "fInfoX": 640,
     "fInfoY": 360,
@@ -826,6 +832,12 @@ G.Rules = (function () {
     return Math.max(cam.minZoom, Math.min(cam.maxZoom, z));
   }
 
+  // 오르막 속도 배율 (사용자 결정 2026-10-21): steps = [[각도 이하, 배율], ...]. 마지막 각도보다 가파르면 0 (스스로 못 오름)
+  function slopeFactor(deg, steps) {
+    for (var i = 0; i < steps.length; i++) if (deg <= steps[i][0]) return steps[i][1];
+    return 0;
+  }
+
   // 잉크병 색 비율 0~1 = 정화 정도 ^ curve (사용자 요청 2026-10-21: 더 빨리 밝아지게). 레벨 툴도 쓰므로 여기에
   function jarMix(p, curve) { return Math.pow(Math.max(0, Math.min(1, p || 0)), curve); }
 
@@ -840,7 +852,7 @@ G.Rules = (function () {
     newStroke: newStroke, addSample: addSample, smooth: smooth, finishStroke: finishStroke,
     lineAlpha: lineAlpha, lineExpired: lineExpired,
     refundInk: refundInk, drainInk: drainInk,
-    segHit: segHit, crystalAxis: crystalAxis, eraseCrystal: eraseCrystal, fitZoom: fitZoom, jarMix: jarMix, clearResult: clearResult, mergeRecord: mergeRecord,
+    segHit: segHit, crystalAxis: crystalAxis, eraseCrystal: eraseCrystal, fitZoom: fitZoom, jarMix: jarMix, slopeFactor: slopeFactor, clearResult: clearResult, mergeRecord: mergeRecord,
     nextColor: nextColor, bounceVelocity: bounceVelocity, pointSegDist: pointSegDist, simplify: simplify,
     newStops: newStops, canStop: canStop, useStop: useStop, rechargeStops: rechargeStops,
     timeScale: timeScale, shouldAutoResume: shouldAutoResume
@@ -1212,10 +1224,26 @@ G.Physics = (function () {
     return out;
   }
 
+  // 몸체 조각 part 에서 점 p 에 가장 가까운 모서리: { n: 면 → c 쪽 단위 법선, len: 모서리 길이 } (비탈 각도 재기, 사용자 결정 2026-10-21)
+  //   길이가 짧으면 모서리·둥근 끝(턱), 길면 비탈 면
+  function edgeAt(part, p, c) {
+    var vs = part.vertices, best = null, bd = Infinity;
+    for (var i = 0; i < vs.length; i++) {
+      var a = vs[i], b = vs[(i + 1) % vs.length], dx = b.x - a.x, dy = b.y - a.y, l2 = dx * dx + dy * dy;
+      if (!l2) continue;
+      var t = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / l2)), qx = a.x + dx * t - p.x, qy = a.y + dy * t - p.y, d = qx * qx + qy * qy;
+      if (d < bd) { bd = d; best = { dx: dx, dy: dy, len: Math.sqrt(l2) }; }
+    }
+    if (!best) return null;
+    var n = { x: -best.dy / best.len, y: best.dx / best.len };
+    if (n.x * (c.x - p.x) + n.y * (c.y - p.y) < 0) { n.x = -n.x; n.y = -n.y; }
+    return { n: n, len: best.len };
+  }
+
   function allBodies(engine) { return M.Composite.allBodies(engine.world); }
 
   return {
-    M: M, create: create, add: add, remove: remove, staticRect: staticRect, staticPoly: staticPoly,
+    M: M, create: create, add: add, remove: remove, staticRect: staticRect, staticPoly: staticPoly, edgeAt: edgeAt,
     segment: segment, lineBody: lineBody, overlapsAny: overlapsAny, overlapping: overlapping,
     step: step, contacts: contacts, touching: touching, allBodies: allBodies
   };
@@ -1302,6 +1330,22 @@ G.Drop = {
     var target = d.speed * (boost ? fx.boostPct / 100 : 1) * d.dir;
     var a = Math.min(1, D.accel * (boost ? 2.5 : 1) * scale);
     var n = d.groundN || { x: 0, y: -1 }, tx = -n.y, ty = n.x;      // 바닥 면 방향 (n = 닿은 점 → 중심)
+    // 오르막 (가는 쪽으로 바닥이 올라감): 각도에 따라 느려짐, 30도 넘으면 스스로 오르지 못하고 더 느려지다 미끄러짐 (사용자 결정 2026-10-21)
+    var sn = d.surfN;
+    if (sn && sn.x * d.dir < -0.01) {
+      var deg = Math.acos(Math.max(-1, Math.min(1, -sn.y))) * 180 / Math.PI, k = G.Rules.slopeFactor(deg - (boost ? D.slope.boostBonus : 0) - 0.05, D.slope.steps);   // 파랑 가속 중이면 그만큼 완만하게 침 (외부 도움)
+      d.slopeDeg = deg;
+      if (k <= 0 && d.flat) k = 1;                 // 아직 평평한 바닥에 서 있음 = 턱·선 끝 모서리 (턱 올라타기로 넘음). 비탈에 완전히 올라서야 못 오름
+      if (k <= 0) {
+        var ux = tx * d.dir, uy = ty * d.dir, along = v.x * ux + v.y * uy;   // 오르는 쪽 속도
+        if (along > 0) {
+          var drag = Math.min(along, D.slope.steepDrag * (deg - D.slope.steps[D.slope.steps.length - 1][0]) / 10 * scale);
+          M.Body.setVelocity(d.body, { x: v.x - ux * drag, y: v.y - uy * drag });
+        }
+        return;
+      }
+      target *= k;
+    } else d.slopeDeg = 0;
     var want = { x: tx * target, y: ty * target };
     if (want.y < -0.01) {                          // 오르막: 위로 가는 속도는 빨리 맞춰 멈칫하지 않게
       M.Body.setVelocity(d.body, { x: v.x + (want.x - v.x) * Math.max(a, D.climbAccel * scale), y: v.y + (want.y - v.y) * Math.min(1, D.climbAccel * scale) });
@@ -1315,7 +1359,7 @@ G.Drop = {
     var D = G.DATA.drop, M = G.Physics.M, b = d.body, r = d.r, gameMs = realMs * scale;
     var stepUp = Math.max(D.stepUpMin, D.stepUp * r / D.heroRadius);
     var touch = G.Physics.touching(engine, b);
-    var under = null, ground = false, wall = false, red = null, blue = false, above = null, below = false, low = false, front = null;
+    var under = null, ground = false, wall = false, red = null, blue = false, above = null, below = false, low = false, front = null, flat = false;
     d.events.length = 0;
     for (var t = 0; t < touch.length; t++) {
       var pts = touch[t].pts, other = touch[t].other, root = touch[t].root, color = other.inkColor || root.inkColor;
@@ -1324,7 +1368,8 @@ G.Drop = {
         var dy = pts[i].y - b.position.y, dx = pts[i].x - b.position.x;
         if (dy > r * D.groundCheck) {
           ground = true; below = true;
-          if (!front || dx * d.dir > front.f) front = { f: dx * d.dir, dx: dx, dy: dy };   // 가는 쪽으로 가장 앞선 바닥 접점
+          if (dy > r * 0.94) flat = true;          // 거의 평평한 바닥(20도 이하)을 밟고 있음 — 턱 올라타기 판정용
+          if (!front || dx * d.dir > front.f) front = { f: dx * d.dir, dx: dx, dy: dy, part: other, p: pts[i] };   // 가는 쪽으로 가장 앞선 바닥 접점
           if (dx * d.dir > r * 0.75) low = true;   // 발 앞쪽 모서리에 걸침 → 올라타기
           if (color && color !== 'yellow' && !under) under = color;   // 밟고 있는 색 (물들기)
           if (color === 'red') red = other;
@@ -1335,13 +1380,18 @@ G.Drop = {
       }
     }
     d.grounded = ground;
+    d.flat = flat;
     d.under = red ? 'red' : under;                 // 빨강을 같이 밟았으면 빨강 (닿자마자 튕겨 나가므로 놓치지 않게)
     if (front) {                                   // 바닥 면 방향 = 앞선 접점에서 중심으로 (턱 모서리면 그 기울기로 타고 오름)
       var len = Math.sqrt(front.dx * front.dx + front.dy * front.dy) || 1;
       d.groundN = { x: -front.dx / len, y: -front.dy / len };
-    } else d.groundN = null;
+      // 비탈 면 방향: 접점 아래 모서리가 길면 그 면의 법선, 짧으면(모서리·선의 둥근 끝 = 턱) null → 비탈 규칙 안 씀 (사용자 결정 2026-10-21)
+      var eg = G.Physics.edgeAt(front.part, front.p, b.position);
+      d.surfN = eg && eg.len >= D.slope.minEdge && eg.n.y < 0 ? eg.n : null;
+    } else d.groundN = d.surfN = null;
     // 그래도 낮은 턱 앞에서 멈칫하면 살짝 들어 올려 넘김 (Matter.js 원은 턱을 스스로 넘지 못함)
-    if (low && !wall && scale > 0 && Math.abs(b.velocity.x) < d.speed * 0.4) M.Body.translate(b, { x: d.dir * 1.5 * scale, y: -3 * scale });
+    //   평평한 바닥에 선 채 앞이 걸릴 때만 (사용자 결정 2026-10-21: 가파른 비탈 위에서 들어 올려 55도도 오르던 문제)
+    if (low && flat && !wall && scale > 0 && Math.abs(b.velocity.x) < d.speed * 0.4) M.Body.translate(b, { x: d.dir * 1.5 * scale, y: -3 * scale });
     d.onInk = red ? 'red' : blue ? 'blue' : null;
     d.boostMs = Math.max(0, d.boostMs - gameMs);
     d.bounceCdMs = Math.max(0, d.bounceCdMs - gameMs);

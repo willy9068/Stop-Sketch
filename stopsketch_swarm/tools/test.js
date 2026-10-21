@@ -227,5 +227,12 @@ t('같은 시드 같은 수열', function () {
   for (var i = 0; i < 5; i++) eq(a(), b());
 });
 
+// 오르막 속도 (사용자 결정 2026-10-21): 10도 이하 그대로 · 20도 이하 75% · 30도 이하 50% · 그보다 가파르면 스스로 못 오름
+t('오르막 속도 배율', function () {
+  var st = G.DATA.drop.slope.steps;
+  eq(R.slopeFactor(0, st), 1); eq(R.slopeFactor(10, st), 1); eq(R.slopeFactor(15, st), 0.75); eq(R.slopeFactor(20, st), 0.75);
+  eq(R.slopeFactor(25, st), 0.5); eq(R.slopeFactor(30, st), 0.5); eq(R.slopeFactor(31, st), 0); eq(R.slopeFactor(60, st), 0);
+});
+
 console.log('\n' + pass + ' 통과, ' + fail + ' 실패');
 process.exit(fail ? 1 : 0);

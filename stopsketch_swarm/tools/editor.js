@@ -151,9 +151,11 @@ var G = G || {};
     var a = toWorld(0, 0), b = toWorld(cv.width, cv.height);
     ctx.fillStyle = D.colors.paper;
     ctx.fillRect(a.x, a.y, b.x - a.x, b.y - a.y);
-    if (!img) return;
-    var bw = img.width * D.view.h / img.height;   // 게임 화면 높이(720)에 맞춘 크기로 이어 붙임
-    for (var x = Math.floor(a.x / bw) * bw; x < b.x; x += bw) ctx.drawImage(img, x, 0, bw, D.view.h);
+    // 배경은 게임 화면 위 끝 ~ 아래 끝 사이에만 (사용자 요청 2026-10-21: 범위를 늘리고 줄이면 배경도 같이). 높이에 맞춘 크기로 이어 붙임
+    var top = l.camera.top, bh = l.camera.bottom - l.camera.top;
+    if (!img) return;                                // 단색 종이면 배경 그림 없음
+    var bw = img.width * bh / img.height;
+    for (var x = Math.floor(a.x / bw) * bw; x < b.x; x += bw) ctx.drawImage(img, x, top, bw, bh);
   }
 
   function drawGrid() {

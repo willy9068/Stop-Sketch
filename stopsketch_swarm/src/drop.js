@@ -35,6 +35,22 @@ G.Drop = {
     var target = d.speed * (boost ? fx.boostPct / 100 : 1) * d.dir;
     var a = Math.min(1, D.accel * (boost ? 2.5 : 1) * scale);
     var n = d.groundN || { x: 0, y: -1 }, tx = -n.y, ty = n.x;      // 바닥 면 방향 (n = 닿은 점 → 중심)
+    // 오르막 (가는 쪽으로 바닥이 올라감): 각도에 따라 느려짐, 30도 넘으면 스스로 오르지 못하고 더 느려지다 미끄러짐 (사용자 결정 2026-10-21)
+    var sn = d.surfN;
+    if (sn && sn.x * d.dir < -0.01) {
+      var deg = Math.acos(Math.max(-1, Math.min(1, -sn.y))) * 180 / Math.PI, k = G.Rules.slopeFactor(deg - (boost ? D.slope.boostBonus : 0) - 0.05, D.slope.steps);   // 파랑 가속 중이면 그만큼 완만하게 침 (외부 도움)
+      d.slopeDeg = deg;
+      if (k <= 0 && d.flat) k = 1;                 // 아직 평평한 바닥에 서 있음 = 턱·선 끝 모서리 (턱 올라타기로 넘음). 비탈에 완전히 올라서야 못 오름
+      if (k <= 0) {
+        var ux = tx * d.dir, uy = ty * d.dir, along = v.x * ux + v.y * uy;   // 오르는 쪽 속도
+        if (along > 0) {
+          var drag = Math.min(along, D.slope.steepDrag * (deg - D.slope.steps[D.slope.steps.length - 1][0]) / 10 * scale);
+          M.Body.setVelocity(d.body, { x: v.x - ux * drag, y: v.y - uy * drag });
+        }
+        return;
+      }
+      target *= k;
+    } else d.slopeDeg = 0;
     var want = { x: tx * target, y: ty * target };
     if (want.y < -0.01) {                          // 오르막: 위로 가는 속도는 빨리 맞춰 멈칫하지 않게
       M.Body.setVelocity(d.body, { x: v.x + (want.x - v.x) * Math.max(a, D.climbAccel * scale), y: v.y + (want.y - v.y) * Math.min(1, D.climbAccel * scale) });
@@ -48,7 +64,7 @@ G.Drop = {
     var D = G.DATA.drop, M = G.Physics.M, b = d.body, r = d.r, gameMs = realMs * scale;
     var stepUp = Math.max(D.stepUpMin, D.stepUp * r / D.heroRadius);
     var touch = G.Physics.touching(engine, b);
-    var under = null, ground = false, wall = false, red = null, blue = false, above = null, below = false, low = false, front = null;
+    var under = null, ground = false, wall = false, red = null, blue = false, above = null, below = false, low = false, front = null, flat = false;
     d.events.length = 0;
     for (var t = 0; t < touch.length; t++) {
       var pts = touch[t].pts, other = touch[t].other, root = touch[t].root, color = other.inkColor || root.inkColor;
@@ -57,7 +73,8 @@ G.Drop = {
         var dy = pts[i].y - b.position.y, dx = pts[i].x - b.position.x;
         if (dy > r * D.groundCheck) {
           ground = true; below = true;
-          if (!front || dx * d.dir > front.f) front = { f: dx * d.dir, dx: dx, dy: dy };   // 가는 쪽으로 가장 앞선 바닥 접점
+          if (dy > r * 0.94) flat = true;          // 거의 평평한 바닥(20도 이하)을 밟고 있음 — 턱 올라타기 판정용
+          if (!front || dx * d.dir > front.f) front = { f: dx * d.dir, dx: dx, dy: dy, part: other, p: pts[i] };   // 가는 쪽으로 가장 앞선 바닥 접점
           if (dx * d.dir > r * 0.75) low = true;   // 발 앞쪽 모서리에 걸침 → 올라타기
           if (color && color !== 'yellow' && !under) under = color;   // 밟고 있는 색 (물들기)
           if (color === 'red') red = other;
@@ -68,13 +85,18 @@ G.Drop = {
       }
     }
     d.grounded = ground;
+    d.flat = flat;
     d.under = red ? 'red' : under;                 // 빨강을 같이 밟았으면 빨강 (닿자마자 튕겨 나가므로 놓치지 않게)
     if (front) {                                   // 바닥 면 방향 = 앞선 접점에서 중심으로 (턱 모서리면 그 기울기로 타고 오름)
       var len = Math.sqrt(front.dx * front.dx + front.dy * front.dy) || 1;
       d.groundN = { x: -front.dx / len, y: -front.dy / len };
-    } else d.groundN = null;
+      // 비탈 면 방향: 접점 아래 모서리가 길면 그 면의 법선, 짧으면(모서리·선의 둥근 끝 = 턱) null → 비탈 규칙 안 씀 (사용자 결정 2026-10-21)
+      var eg = G.Physics.edgeAt(front.part, front.p, b.position);
+      d.surfN = eg && eg.len >= D.slope.minEdge && eg.n.y < 0 ? eg.n : null;
+    } else d.groundN = d.surfN = null;
     // 그래도 낮은 턱 앞에서 멈칫하면 살짝 들어 올려 넘김 (Matter.js 원은 턱을 스스로 넘지 못함)
-    if (low && !wall && scale > 0 && Math.abs(b.velocity.x) < d.speed * 0.4) M.Body.translate(b, { x: d.dir * 1.5 * scale, y: -3 * scale });
+    //   평평한 바닥에 선 채 앞이 걸릴 때만 (사용자 결정 2026-10-21: 가파른 비탈 위에서 들어 올려 55도도 오르던 문제)
+    if (low && flat && !wall && scale > 0 && Math.abs(b.velocity.x) < d.speed * 0.4) M.Body.translate(b, { x: d.dir * 1.5 * scale, y: -3 * scale });
     d.onInk = red ? 'red' : blue ? 'blue' : null;
     d.boostMs = Math.max(0, d.boostMs - gameMs);
     d.bounceCdMs = Math.max(0, d.bounceCdMs - gameMs);

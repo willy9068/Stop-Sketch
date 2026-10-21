@@ -197,6 +197,12 @@ G.Rules = (function () {
     return Math.max(cam.minZoom, Math.min(cam.maxZoom, z));
   }
 
+  // 오르막 속도 배율 (사용자 결정 2026-10-21): steps = [[각도 이하, 배율], ...]. 마지막 각도보다 가파르면 0 (스스로 못 오름)
+  function slopeFactor(deg, steps) {
+    for (var i = 0; i < steps.length; i++) if (deg <= steps[i][0]) return steps[i][1];
+    return 0;
+  }
+
   // 잉크병 색 비율 0~1 = 정화 정도 ^ curve (사용자 요청 2026-10-21: 더 빨리 밝아지게). 레벨 툴도 쓰므로 여기에
   function jarMix(p, curve) { return Math.pow(Math.max(0, Math.min(1, p || 0)), curve); }
 
@@ -211,7 +217,7 @@ G.Rules = (function () {
     newStroke: newStroke, addSample: addSample, smooth: smooth, finishStroke: finishStroke,
     lineAlpha: lineAlpha, lineExpired: lineExpired,
     refundInk: refundInk, drainInk: drainInk,
-    segHit: segHit, crystalAxis: crystalAxis, eraseCrystal: eraseCrystal, fitZoom: fitZoom, jarMix: jarMix, clearResult: clearResult, mergeRecord: mergeRecord,
+    segHit: segHit, crystalAxis: crystalAxis, eraseCrystal: eraseCrystal, fitZoom: fitZoom, jarMix: jarMix, slopeFactor: slopeFactor, clearResult: clearResult, mergeRecord: mergeRecord,
     nextColor: nextColor, bounceVelocity: bounceVelocity, pointSegDist: pointSegDist, simplify: simplify,
     newStops: newStops, canStop: canStop, useStop: useStop, rechargeStops: rechargeStops,
     timeScale: timeScale, shouldAutoResume: shouldAutoResume

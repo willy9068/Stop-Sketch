@@ -110,10 +110,26 @@ G.Physics = (function () {
     return out;
   }
 
+  // 몸체 조각 part 에서 점 p 에 가장 가까운 모서리: { n: 면 → c 쪽 단위 법선, len: 모서리 길이 } (비탈 각도 재기, 사용자 결정 2026-10-21)
+  //   길이가 짧으면 모서리·둥근 끝(턱), 길면 비탈 면
+  function edgeAt(part, p, c) {
+    var vs = part.vertices, best = null, bd = Infinity;
+    for (var i = 0; i < vs.length; i++) {
+      var a = vs[i], b = vs[(i + 1) % vs.length], dx = b.x - a.x, dy = b.y - a.y, l2 = dx * dx + dy * dy;
+      if (!l2) continue;
+      var t = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / l2)), qx = a.x + dx * t - p.x, qy = a.y + dy * t - p.y, d = qx * qx + qy * qy;
+      if (d < bd) { bd = d; best = { dx: dx, dy: dy, len: Math.sqrt(l2) }; }
+    }
+    if (!best) return null;
+    var n = { x: -best.dy / best.len, y: best.dx / best.len };
+    if (n.x * (c.x - p.x) + n.y * (c.y - p.y) < 0) { n.x = -n.x; n.y = -n.y; }
+    return { n: n, len: best.len };
+  }
+
   function allBodies(engine) { return M.Composite.allBodies(engine.world); }
 
   return {
-    M: M, create: create, add: add, remove: remove, staticRect: staticRect, staticPoly: staticPoly,
+    M: M, create: create, add: add, remove: remove, staticRect: staticRect, staticPoly: staticPoly, edgeAt: edgeAt,
     segment: segment, lineBody: lineBody, overlapsAny: overlapsAny, overlapping: overlapping,
     step: step, contacts: contacts, touching: touching, allBodies: allBodies
   };
