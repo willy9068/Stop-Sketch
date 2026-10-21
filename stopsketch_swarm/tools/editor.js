@@ -106,7 +106,7 @@ var G = G || {};
     var l = lv(), top;
     if (!sel) return null;
     if (sel.kind === 'prop') return P.rect(l.props[sel.i]);
-    if (sel.kind === 'ground') { var g = l.ground[sel.i]; return { x: g.x0, y: g.top, w: g.x1 - g.x0, h: g.h || D.level.groundDepth }; }
+    if (sel.kind === 'ground') { var g = l.ground[sel.i], gs = LC.groundShape(g), gt = Math.min(gs.l, gs.r); return { x: g.x0, y: gt, w: g.x1 - g.x0, h: gs.b - gt }; }
     if (sel.kind === 'start') { top = l.start.y; return { x: l.start.x - 28, y: top - 72, w: 56, h: 72 }; }
     if (sel.kind === 'goal') { top = l.goal.y; return { x: l.goal.x - 12, y: top - D.art.goalJar.h, w: D.art.goalJar.w, h: D.art.goalJar.h }; }
     if (sel.kind === 'seg') return (l.segments || [])[sel.i] ? segRect(sel.i) : null;
@@ -123,13 +123,26 @@ var G = G || {};
       var ce = crystalEnds(o), up = { x: Math.sin(ce.a), y: -Math.cos(ce.a) }, rr = o.h / 2 + 26 / S.view.zoom;
       return [['cw', ce.s.x, ce.s.y], ['ce', ce.e.x, ce.e.y], ['ct', ce.c.x + up.x * o.h / 2, ce.c.y + up.y * o.h / 2], ['rot', ce.c.x + up.x * rr, ce.c.y + up.y * rr]];
     }
-    if (s.kind === 'ground') { var gh = o.h || D.level.groundDepth; return [['w', o.x0, o.top + gh / 2], ['e', o.x1, o.top + gh / 2], ['n', (o.x0 + o.x1) / 2, o.top], ['s', (o.x0 + o.x1) / 2, o.top + gh]]; }
-    var d = P.def(o.type);
+    var z = S.view.zoom;
+    if (s.kind === 'ground') {                       // 땅: 양옆(폭)·위(윗면)·아래(높이)·동그란 위 손잡이(경사, 사용자 요청 2026-10-21)
+      var gs = LC.groundShape(o), cx = (o.x0 + o.x1) / 2, ga = (o.angle || 0) * Math.PI / 180, gr = 34 / z;
+      return [['w', o.x0, (gs.l + gs.b) / 2], ['e', o.x1, (gs.r + gs.b) / 2], ['n', cx, o.top], ['s', cx, gs.b],
+              ['rot', cx + Math.sin(ga) * gr, o.top - Math.cos(ga) * gr]];
+    }
+    // 그 밖의 물건: 돌린 만큼 손잡이도 돌림 + 동그란 회전 손잡이 (사용자 요청 2026-10-21: 모든 물건 회전)
+    var d = P.def(o.type), c = P.pivot(o), a = (o.angle || 0) * Math.PI / 180;
     if (d.box) {
       out = [['nw', r.x, r.y], ['n', mx, r.y], ['ne', r.x + r.w, r.y], ['e', r.x + r.w, my],
              ['se', r.x + r.w, r.y + r.h], ['s', mx, r.y + r.h], ['sw', r.x, r.y + r.h], ['w', r.x, my]];
     } else out = [['size', r.x + r.w, r.y + r.h]];
-    return out;
+    out.push(['rot', mx, r.y - 26 / z]);
+    return out.map(function (h) { var q = rotPt({ x: h[1], y: h[2] }, c, a); return [h[0], q.x, q.y]; });
+  }
+  // 점 p 를 c 기준으로 a(라디안)만큼 돌림
+  function rotPt(p, c, a) {
+    if (!a) return { x: p.x, y: p.y };
+    var dx = p.x - c.x, dy = p.y - c.y, cs = Math.cos(a), sn = Math.sin(a);
+    return { x: c.x + dx * cs - dy * sn, y: c.y + dx * sn + dy * cs };
   }
 
   // ---------- 그리기 ----------
@@ -286,6 +299,12 @@ var G = G || {};
         ctx.translate(so.x + so.w / 2, so.y + so.h / 2); ctx.rotate((so.angle || 0) * Math.PI / 180);
         ctx.strokeRect(-so.w / 2, -so.h / 2, so.w, so.h);
         ctx.setLineDash([]); ctx.beginPath(); ctx.moveTo(0, -so.h / 2); ctx.lineTo(0, -so.h / 2 - 26 / z); ctx.stroke();
+      } else if (so && S.sel.kind === 'ground' && so.angle) {   // 비탈 땅: 사다리꼴 테두리
+        var ss = LC.groundShape(so);
+        ctx.beginPath(); ctx.moveTo(so.x0, ss.l); ctx.lineTo(so.x1, ss.r); ctx.lineTo(so.x1, ss.b); ctx.lineTo(so.x0, ss.b); ctx.closePath(); ctx.stroke();
+      } else if (so && S.sel.kind === 'prop' && so.angle) {      // 돌린 물건: 돌린 상자
+        var pc = P.pivot(so);
+        ctx.translate(pc.x, pc.y); ctx.rotate(so.angle * Math.PI / 180); ctx.strokeRect(r.x - pc.x, r.y - pc.y, r.w, r.h);
       } else ctx.strokeRect(r.x, r.y, r.w, r.h);
       ctx.restore();
       ctx.fillStyle = '#fff'; ctx.strokeStyle = '#1F6FE0'; ctx.lineWidth = 2 / z;
@@ -344,7 +363,7 @@ var G = G || {};
     return { c: c, a: a, ux: ux, uy: uy, s: { x: c.x - ux * p.w / 2, y: c.y - uy * p.w / 2 }, e: { x: c.x + ux * p.w / 2, y: c.y + uy * p.w / 2 } };
   }
   function hitProp(w, p) {
-    if (p.type !== 'crystal') return inRect(w, P.rect(p));
+    if (p.type !== 'crystal') return inRect(p.angle ? rotPt(w, P.pivot(p), -p.angle * Math.PI / 180) : w, P.rect(p));   // 돌린 물건은 돌리기 전 자리로 옮겨 봄
     var ce = crystalEnds(p), dx = w.x - ce.c.x, dy = w.y - ce.c.y;
     var lx = dx * ce.ux + dy * ce.uy, ly = -dx * ce.uy + dy * ce.ux;
     return Math.abs(lx) <= p.w / 2 + 3 / S.view.zoom && Math.abs(ly) <= Math.max(p.h / 2, 6 / S.view.zoom);
@@ -382,7 +401,7 @@ var G = G || {};
     }
     for (i = l.ground.length - 1; i >= 0; i--) {
       var g = l.ground[i];
-      if (w.x >= g.x0 && w.x <= g.x1 && w.y >= g.top - 6 && w.y <= g.top + (g.h || D.level.groundDepth)) return { kind: 'ground', i: i };
+      if (w.x >= g.x0 && w.x <= g.x1 && w.y >= LC.topOf(g, w.x) - 6 && w.y <= LC.groundShape(g).b) return { kind: 'ground', i: i };
     }
     for (i = segs.length - 1; i >= 0; i--) if (Math.abs(w.x - segs[i].x) <= 5 / S.view.zoom) return { kind: 'seg', i: i };   // 빈 곳의 보라 점선
     if (Math.abs(w.y - l.camera.top) <= 5 / S.view.zoom) return { kind: 'camTop' };              // 빈 곳의 파란 점선
@@ -529,16 +548,39 @@ var G = G || {};
     changed(true);
   });
 
+  // 회전 손잡이: 중심 c 에서 마우스 쪽이 "위"가 되게. 격자 맞춤이면 땅 5도·물건 15도 단위 (Alt = 1도). 땅 경사는 ±60도까지
+  function setAngle(o, c, ground) {
+    var m = S.mouse, deg = Math.atan2(m.y - c.y, m.x - c.x) * 180 / Math.PI + 90, step = ground ? 5 : 15;
+    deg = $('snap').checked && !S.altDown ? Math.round(deg / step) * step : Math.round(deg);
+    deg = ((deg % 360) + 540) % 360 - 180;
+    if (ground) deg = Math.max(-60, Math.min(60, deg));
+    if (deg) o.angle = deg; else delete o.angle;
+  }
+
   function resize(o, q, h, dx, dy) {
     if (S.sel.kind === 'ground') {
-      if (h === 'w') o.x0 = Math.min(snap(q.x0 + dx), o.x1 - 20);
-      if (h === 'e') o.x1 = Math.max(snap(q.x1 + dx), o.x0 + 20);
+      if (h === 'rot') { setAngle(o, { x: (q.x0 + q.x1) / 2, y: q.top }, true); return; }   // 경사 (사용자 요청 2026-10-21)
+      var qs = LC.groundShape(q), tn = Math.tan((q.angle || 0) * Math.PI / 180);
+      if (h === 'w') { o.x0 = Math.min(snap(q.x0 + dx), o.x1 - 20); if (tn) o.top = Math.round(qs.r - tn * (o.x1 - o.x0) / 2); }   // 비탈이면 반대쪽 끝 높이는 그대로
+      if (h === 'e') { o.x1 = Math.max(snap(q.x1 + dx), o.x0 + 20); if (tn) o.top = Math.round(qs.l + tn * (o.x1 - o.x0) / 2); }
       var qh = q.h || D.level.groundDepth;           // 위 손잡이: 아랫면은 그대로 두고 윗면만 / 아래 손잡이: 높이 (사용자 요청 2026-10-20)
       if (h === 'n') { o.top = Math.min(snap(q.top + dy), q.top + qh - 20); o.h = q.top + qh - o.top; }
       if (h === 's') o.h = Math.max(20, snap(q.top + qh + dy) - q.top);
       return;
     }
     if (o.type === 'crystal') { resizeCrystal(o, q, h, dx, dy); return; }
+    if (h === 'rot') { setAngle(o, P.pivot(q), false); return; }   // 모든 물건 회전 (사용자 요청 2026-10-21)
+    if (q.angle && P.def(o.type).box) {              // 돌린 상자: 끄는 거리를 돌리기 전 방향으로 바꿔 크기를 바꾸고, 가운데를 다시 돌려 놓음
+      var a = q.angle * Math.PI / 180, c0 = { x: q.x + q.w / 2, y: q.y + q.h / 2 }, lp = rotPt({ x: c0.x + dx, y: c0.y + dy }, c0, -a);
+      var lx = lp.x - c0.x, ly = lp.y - c0.y, ax0 = q.x, ay0 = q.y, ax1 = q.x + q.w, ay1 = q.y + q.h;
+      if (h.indexOf('w') >= 0) ax0 = Math.min(Math.round(q.x + lx), ax1 - 10);
+      if (h.indexOf('e') >= 0) ax1 = Math.max(Math.round(ax1 + lx), ax0 + 10);
+      if (h.indexOf('n') >= 0) ay0 = Math.min(Math.round(q.y + ly), ay1 - 10);
+      if (h.indexOf('s') >= 0) ay1 = Math.max(Math.round(ay1 + ly), ay0 + 10);
+      var nc = rotPt({ x: (ax0 + ax1) / 2, y: (ay0 + ay1) / 2 }, c0, a);
+      o.w = ax1 - ax0; o.h = ay1 - ay0; o.x = Math.round(nc.x - o.w / 2); o.y = Math.round(nc.y - o.h / 2);
+      return;
+    }
     if (h === 'size') {
       var min = o.type === 'text' ? 10 : 16;
       o.size = Math.max(min, Math.round(q.size + (o.type === 'text' ? dx / 8 : (dx + dy) / 2) * 2));
@@ -628,11 +670,27 @@ var G = G || {};
     if (e.key === 'Escape') { S.sel = null; S.multi = []; setTool('select'); refreshAll(); return; }
     if (e.key === 'Home') { S.view.x = lv().start.x - 300; render(); return; }
     if (e.key === 'End') { S.view.x = lv().goal.x - cv.width / S.view.zoom + 300; render(); return; }
+    if ((k === 'q' || k === 'e') && S.sel && !e.ctrlKey && !e.metaKey) { e.preventDefault(); rotateSel(k === 'q' ? -1 : 1, e.shiftKey); return; }
     if (e.key.indexOf('Arrow') === 0 && S.sel) { e.preventDefault(); nudge(e.key, e.shiftKey ? 10 : 1); return; }
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     TOOLS.forEach(function (t) { if (k === t[2].toLowerCase()) setTool(t[0]); });
   });
   window.addEventListener('keyup', function (e) { if (e.code === 'Space') { S.spaceDown = false; cv.style.cursor = 'default'; } });
+
+  // Q/E: 선택한 것 돌리기 (땅 5도·물건 15도, Shift = 1도). 여러 개 선택이면 각자 제자리에서
+  function rotateSel(dir, fine) {
+    var list = selList().filter(function (sl) { return sl.kind === 'prop' || sl.kind === 'ground'; });
+    if (!list.length) return;
+    pushUndo();
+    list.forEach(function (sl) {
+      var o = objOf(sl), ground = sl.kind === 'ground', step = fine ? 1 : ground ? 5 : 15;
+      var v = (o.angle || 0) + dir * step;
+      if (o.type === 'crystal') { o.angle = ((v % 360) + 360) % 360; return; }
+      v = ground ? Math.max(-60, Math.min(60, v)) : ((v % 360) + 540) % 360 - 180;
+      if (v) o.angle = v; else delete o.angle;
+    });
+    changed();
+  }
 
   function nudge(key, n) {
     var dx = key === 'ArrowLeft' ? -n : key === 'ArrowRight' ? n : 0, dy = key === 'ArrowUp' ? -n : key === 'ArrowDown' ? n : 0;
@@ -771,7 +829,8 @@ var G = G || {};
       h = '<b>' + (s.kind === 'start' ? '시작 위치' : '도착 위치') + '</b>' + num('f_x', 'x', o.x) + num('f_y', s.kind === 'start' ? 'y (발밑)' : 'y (병 바닥)', o.y) +
           '<div class="hint">끌어서 옮기기 (위아래도). 놓은 자리 그대로 — 공중이면 ' + (s.kind === 'start' ? '주인공이 떨어져요' : '잉크병이 떠 있어요') + '</div>';
     } else if (s.kind === 'ground') {
-      h = '<b>땅</b>' + num('f_x0', '왼쪽 x', o.x0) + num('f_x1', '오른쪽 x', o.x1) + num('f_top', '윗면 y', o.top) + num('f_h', '높이', o.h || D.level.groundDepth) +
+      h = '<b>땅</b>' + num('f_x0', '왼쪽 x', o.x0) + num('f_x1', '오른쪽 x', o.x1) + num('f_top', '윗면 y (가운데)', o.top) + num('f_h', '높이', o.h || D.level.groundDepth) +
+          num('f_angle', '경사 (도)', o.angle || 0) + '<div class="hint">+ = 오른쪽이 낮음(내리막), − = 오른쪽이 높음(오르막). 윗면 가운데 기준, 아랫면은 평평. 동그란 위 손잡이를 끌어도 됨 (5도씩, Alt = 1도), Q/E 키</div>' +
           '<div>폭 ' + (o.x1 - o.x0) + '</div>';
     } else {
       var d = P.def(o.type);
@@ -784,9 +843,9 @@ var G = G || {};
         h += '<div class="hint">빨간 점 = 벽·땅에 박힌 끝. 노랑으로 칠해 지우면 선이 나뉘는데, 박힌 끝이 있는 조각은 제자리에 남고 나머지는 떨어져요</div>';
       } else if (d.box) {
         h += '<div class="f"><label>종류</label><select id="f_type">' + opts([['wall', '벽'], ['platform', '발판'], ['spike', '가시']], o.type) + '</select></div>';
-        h += num('f_x', 'x (왼쪽)', o.x) + num('f_y', 'y (위)', o.y) + num('f_w', '폭', o.w) + num('f_h', '높이', o.h);
+        h += num('f_x', 'x (왼쪽)', o.x) + num('f_y', 'y (위)', o.y) + num('f_w', '폭', o.w) + num('f_h', '높이', o.h) + num('f_angle', '각도 (도)', o.angle || 0);
       } else {
-        h += num('f_x', 'x', o.x) + num('f_y', 'y', o.y) + num('f_size', o.type === 'text' ? '글자 크기' : '크기', o.size || d.size);
+        h += num('f_x', 'x', o.x) + num('f_y', 'y', o.y) + num('f_size', o.type === 'text' ? '글자 크기' : '크기', o.size || d.size) + num('f_angle', '각도 (도)', o.angle || 0);
       }
       if (o.type === 'deco') {
         var list = D.art.decos.map(function (n) { return [n, n + (G.Assets.get(n) ? '' : ' (그림 없음)')]; });
@@ -849,6 +908,10 @@ var G = G || {};
       if (f === 'type') { o.type = v; }
       else if (f === 'img' || f === 'text' || f === 'pin') o[f] = v;
       else if (f === 'h' && S.sel.kind === 'ground') o.h = Math.max(20, v);
+      else if (f === 'angle' && o.type !== 'crystal') {   // 회전·경사 (사용자 요청 2026-10-21). 0 이면 저장 안 함
+        var av = S.sel.kind === 'ground' ? Math.max(-60, Math.min(60, v)) : ((v % 360) + 540) % 360 - 180;
+        if (av) o.angle = av; else delete o.angle;
+      }
       else if (o.type === 'crystal' && (f === 'cx' || f === 'cy' || f === 'w' || f === 'h' || f === 'angle')) {   // 가운데를 유지하며
         var ccx = o.x + o.w / 2, ccy = o.y + o.h / 2;
         if (f === 'cx') ccx = v; else if (f === 'cy') ccy = v;
@@ -1052,7 +1115,7 @@ var G = G || {};
   function syncSelNumbers() {
     var o = selObj();
     if (!o) return;
-    ['x', 'y', 'w', 'h', 'size', 'x0', 'x1', 'top'].forEach(function (k) {
+    ['x', 'y', 'w', 'h', 'size', 'x0', 'x1', 'top', 'angle'].forEach(function (k) {
       var el = $('f_' + k);
       if (el && document.activeElement !== el && o[k] != null) el.value = o[k];
     });

@@ -124,8 +124,21 @@ G.Props = (function () {
     ctx.restore();
   }
 
-  // opts: { editor: true } 이면 그림이 없는 장식도 자리 표시
+  // 돌린 물건의 회전 중심: 상자는 가운데, 글자는 글자 상자 가운데, 나머지(별·물방울·장식…)는 x,y (사용자 요청 2026-10-21: 모든 물건 회전)
+  function pivot(p) {
+    var d = def(p.type), r = rect(p);
+    return (d && d.box) || p.type === 'text' ? { x: r.x + r.w / 2, y: r.y + r.h / 2 } : { x: p.x, y: p.y };
+  }
+
+  // opts: { editor: true } 이면 그림이 없는 장식도 자리 표시. angle(도)이 있으면 돌려서 그림 (배치된 선은 자기 방식)
   function draw(ctx, p, opts) {
+    if (!p.angle || p.type === 'crystal') { drawRaw(ctx, p, opts); return; }
+    var c = pivot(p);
+    ctx.save(); ctx.translate(c.x, c.y); ctx.rotate(p.angle * Math.PI / 180); ctx.translate(-c.x, -c.y);
+    drawRaw(ctx, p, opts);
+    ctx.restore();
+  }
+  function drawRaw(ctx, p, opts) {
     var d = def(p.type), C = G.DATA.colors, r = rect(p);
     if (!d) return;
     if (p.type === 'text') {
@@ -207,15 +220,17 @@ G.Props = (function () {
   // 땅 여러 개를 한꺼번에 (사용자 요청 2026-10-20: 겹치거나 맞붙인 땅의 이음새가 안 보이게)
   //   1) 채우기 전부 → 2) 세로 테두리는 바깥쪽이 빈 곳인 부분만 → 3) 윗면 그림은 더 높은 땅 속에 묻힌 부분을 빼고, 세계 좌표에 맞춰 이어 붙임
   function drawGrounds(ctx, list) {
-    var C = G.DATA.colors, A = G.DATA.art, D0 = G.DATA.level.groundDepth;
-    function hh(g) { return g.h || D0; }          // 땅 높이 (사용자 결정 2026-10-20: 땅마다 h)
+    var C = G.DATA.colors, A = G.DATA.art, LC = G.LevelCheck;
+    var sh = list.map(function (g) { return LC.groundShape(g); });   // 비탈이면 윗면이 기운 사다리꼴 (사용자 요청 2026-10-21)
+    function S(g) { return sh[list.indexOf(g)]; }
+    function poly(g) { var s = S(g); ctx.moveTo(g.x0, s.l); ctx.lineTo(g.x1, s.r); ctx.lineTo(g.x1, s.b); ctx.lineTo(g.x0, s.b); ctx.closePath(); }
     var fill = G.Assets.get('ground_fill'), top = G.Assets.get('ground_top');
     if (fill) {
       if (!patterns.fill) patterns.fill = ctx.createPattern(fill, 'repeat');
       ctx.fillStyle = patterns.fill;
     } else ctx.fillStyle = C.ground;
-    list.forEach(function (g) { ctx.fillRect(g.x0, g.top, g.x1 - g.x0, hh(g)); });
-    if (fill && A.groundTint) { ctx.fillStyle = A.groundTint; list.forEach(function (g) { ctx.fillRect(g.x0, g.top, g.x1 - g.x0, hh(g)); }); }
+    ctx.beginPath(); list.forEach(poly); ctx.fill();
+    if (fill && A.groundTint) { ctx.fillStyle = A.groundTint; ctx.beginPath(); list.forEach(poly); ctx.fill(); }
 
     // 구간 [a, b] 에서 빼야 할 구간들을 뺀 나머지
     function minus(a, b, cuts) {
@@ -235,34 +250,48 @@ G.Props = (function () {
     ctx.lineWidth = top ? 3 : 4; ctx.strokeStyle = C.outline;
     ctx.beginPath();
     list.forEach(function (g) {                   // 세로 테두리: 바로 바깥(ox)에 다른 땅이 있는 높이는 숨김
-      [[g.x0, g.x0 - eps], [g.x1, g.x1 + eps]].forEach(function (e) {
+      var s = S(g);
+      [[g.x0, g.x0 - eps, s.l], [g.x1, g.x1 + eps, s.r]].forEach(function (e) {
         var cuts = list.filter(function (h) { return h !== g && h.x0 <= e[1] && e[1] <= h.x1; })
-          .map(function (h) { return [h.top, h.top + hh(h)]; });
-        minus(g.top, g.top + hh(g), cuts).forEach(function (s) { ctx.moveTo(e[0], s[0]); ctx.lineTo(e[0], s[1]); });
+          .map(function (h) { return [LC.topOf(h, e[1]), S(h).b]; });
+        minus(e[2], s.b, cuts).forEach(function (sp) { ctx.moveTo(e[0], sp[0]); ctx.lineTo(e[0], sp[1]); });
       });
     });
     list.forEach(function (g) {                   // 아랫면: 바로 아래에 다른 땅이 있는 폭은 숨김 (공중 땅의 밑면)
-      var by = g.top + hh(g), cuts = list.filter(function (h) { return h !== g && h.top <= by + eps && by + eps <= h.top + hh(h); })
+      var by = S(g).b, cuts = list.filter(function (h) { var hs = S(h); return h !== g && Math.min(hs.l, hs.r) <= by + eps && by + eps <= hs.b; })
         .map(function (h) { return [h.x0, h.x1]; });
       minus(g.x0, g.x1, cuts).forEach(function (sp) { ctx.moveTo(sp[0], by); ctx.lineTo(sp[1], by); });
     });
     ctx.stroke();
 
-    list.forEach(function (g) {                   // 윗면: 더 높은 땅의 채우기 속에 있는 부분은 빼고 그림
-      var cuts = list.filter(function (h) { return h !== g && h.top < g.top - 1 && g.top < h.top + hh(h); })
+    list.forEach(function (g) {
+      var s = S(g);
+      if (g.angle) {                              // 비탈: 윗면 그림을 기울여 이어 붙임 (가리는 땅 계산은 안 함)
+        var dx = g.x1 - g.x0, dy = s.r - s.l, L = Math.sqrt(dx * dx + dy * dy);
+        ctx.save(); ctx.translate(g.x0, s.l); ctx.rotate(Math.atan2(dy, dx));
+        if (top) {
+          var th0 = A.groundTop.h, tw0 = top.width * th0 / top.height;
+          ctx.beginPath(); ctx.rect(0, -A.groundTop.up - 2, L, th0 + 4); ctx.clip();
+          for (var x0 = 0; x0 < L; x0 += tw0) ctx.drawImage(top, x0, -A.groundTop.up, tw0, th0);
+        } else { ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(L, 0); ctx.stroke(); }
+        ctx.restore();
+        return;
+      }
+      // 평평한 윗면: 더 높은 땅의 채우기 속에 있는 부분은 빼고 그림
+      var cuts = list.filter(function (h) { var hs = S(h); return h !== g && Math.min(hs.l, hs.r) < g.top - 1 && g.top < hs.b; })
         .map(function (h) { return [h.x0, h.x1]; });
       var spans = minus(g.x0, g.x1, cuts);
       if (top) {
         var th = A.groundTop.h, tw = top.width * th / top.height, y = g.top - A.groundTop.up;
-        spans.forEach(function (s) {
+        spans.forEach(function (sp) {
           ctx.save();
-          ctx.beginPath(); ctx.rect(s[0], y - 2, s[1] - s[0], th + 4); ctx.clip();
-          for (var x = Math.floor(s[0] / tw) * tw; x < s[1]; x += tw) ctx.drawImage(top, x, y, tw, th);   // 세계 좌표 기준 → 맞붙여도 무늬가 이어짐
+          ctx.beginPath(); ctx.rect(sp[0], y - 2, sp[1] - sp[0], th + 4); ctx.clip();
+          for (var x = Math.floor(sp[0] / tw) * tw; x < sp[1]; x += tw) ctx.drawImage(top, x, y, tw, th);   // 세계 좌표 기준 → 맞붙여도 무늬가 이어짐
           ctx.restore();
         });
       } else {
         ctx.beginPath();
-        spans.forEach(function (s) { ctx.moveTo(s[0], g.top); ctx.lineTo(s[1], g.top); });
+        spans.forEach(function (sp) { ctx.moveTo(sp[0], g.top); ctx.lineTo(sp[1], g.top); });
         ctx.stroke();
       }
     });
@@ -274,9 +303,9 @@ G.Props = (function () {
     var d = def(p.type);
     if (!d || !d.solid) return null;
     if (p.type === 'crystal') return null;          // 배치된 선은 level.js 가 따로 만듦 (자를 수 있게)
-    return G.Physics.add(engine, G.Physics.staticRect(p.x + p.w / 2, p.y + p.h / 2, p.w, p.h, { label: p.type }));
+    return G.Physics.add(engine, G.Physics.staticRect(p.x + p.w / 2, p.y + p.h / 2, p.w, p.h, { label: p.type, angle: (p.angle || 0) * Math.PI / 180 }));   // 가운데 기준 회전
   }
 
-  return { def: def, rect: rect, draw: draw, drawGround: drawGround, drawGrounds: drawGrounds, build: build, drawStarShape: drawStarShape,
+  return { def: def, rect: rect, pivot: pivot, draw: draw, drawGround: drawGround, drawGrounds: drawGrounds, build: build, drawStarShape: drawStarShape,
            drawCrystal: drawCrystal, drawSleeper: drawSleeper };
 })();

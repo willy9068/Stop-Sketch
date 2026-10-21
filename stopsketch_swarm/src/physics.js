@@ -19,6 +19,14 @@ G.Physics = (function () {
     return M.Bodies.rectangle(x, y, w, h, o);
   }
 
+  // 볼록 다각형 (월드 좌표 꼭짓점 그대로). 비탈 땅 (사용자 요청 2026-10-21)
+  function staticPoly(verts, opts) {
+    var o = { isStatic: true, friction: 0.8, label: 'ground' };
+    for (var k in opts) o[k] = opts[k];
+    var c = M.Vertices.centre(verts);
+    return M.Bodies.fromVertices(c.x, c.y, [verts], o);
+  }
+
   // 점 a → b 를 잇는 얇은 사각형. 끝을 둥글게 하고 살짝 길게 해 이음매 턱을 줄인다
   function segment(a, b, thick, opts) {
     var dx = b.x - a.x, dy = b.y - a.y;
@@ -105,7 +113,7 @@ G.Physics = (function () {
   function allBodies(engine) { return M.Composite.allBodies(engine.world); }
 
   return {
-    M: M, create: create, add: add, remove: remove, staticRect: staticRect,
+    M: M, create: create, add: add, remove: remove, staticRect: staticRect, staticPoly: staticPoly,
     segment: segment, lineBody: lineBody, overlapsAny: overlapsAny, overlapping: overlapping,
     step: step, contacts: contacts, touching: touching, allBodies: allBodies
   };

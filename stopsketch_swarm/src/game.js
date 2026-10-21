@@ -44,7 +44,7 @@ G.Game = {
     game.entering = [];                            // 잉크병 입구로 뛰어드는 중
     game.enterCdMs = 0;
     game.lastReachMs = 0;
-    var lowest = lv.ground.reduce(function (m, g) { return Math.max(m, g.top); }, 600);
+    var lowest = G.LevelCheck.lowestTop(lv);           // 비탈이면 낮은 쪽 끝 (사용자 요청 2026-10-21)
     game.failY = lowest + D.physics.failY - 600;
     game.inkMax = lv.ink + (game.account.inkBonus || 0);
     game.ink = game.inkMax;
@@ -415,7 +415,7 @@ G.Game = {
 
   // 정화 정도 0~1: 도착한 물방울(주인공 포함) / 전체(주인공 + 배치된 작은 물방울)
   // 잉크병 색 비율 0~1: 정화 정도보다 빨리 밝아지게 (^jarCurve). 1 이면 물방울 기본색 그대로 (사용자 요청 2026-10-21, 물방울 색 섞기는 뺌)
-  jarMix: function (p) { return Math.pow(Math.max(0, Math.min(1, p || 0)), G.DATA.goalEnter.jarCurve); },
+  jarMix: function (p) { return G.Rules.jarMix(p, G.DATA.goalEnter.jarCurve); },
 
   purity: function (game) { return (game.rescued + (game.heroIn ? 1 : 0)) / (game.total + 1); },
 

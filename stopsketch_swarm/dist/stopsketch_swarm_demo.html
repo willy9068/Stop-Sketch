@@ -315,11 +315,18 @@ G.UITEXT = {
     "resultRetrySize": 20,
     "resultBtnW": 210,
     "resultBtnH": 46,
-    "retryBtnX": 420,
-    "retryBtnY": 438,
-    "nextBtnX": 650,
+    "retryBtnX": 438,
+    "retryBtnY": 439,
+    "nextBtnX": 658,
     "nextBtnY": 438,
-    "retryAloneX": 535,
+    "retryAloneX": 536,
+    "retryAloneY": 438,
+    "failRetryX": 536,
+    "failRetryY": 438,
+    "resultPanelW": 640,
+    "resultPanelH": 400,
+    "failPanelW": 640,
+    "failPanelH": 310,
     "resultBtnBg": "#FFFDF6",
     "resultBtnHot": "#FFE9A8"
   }
@@ -791,6 +798,9 @@ G.Rules = (function () {
     return Math.max(cam.minZoom, Math.min(cam.maxZoom, z));
   }
 
+  // 잉크병 색 비율 0~1 = 정화 정도 ^ curve (사용자 요청 2026-10-21: 더 빨리 밝아지게). 레벨 툴도 쓰므로 여기에
+  function jarMix(p, curve) { return Math.pow(Math.max(0, Math.min(1, p || 0)), curve); }
+
   // ---- 시간 배율 ----
   function timeScale(mode, stopped) { return stopped ? mode.scale : 1; }
   function shouldAutoResume(mode, stopped, stoppedMs) {
@@ -802,7 +812,7 @@ G.Rules = (function () {
     newStroke: newStroke, addSample: addSample, smooth: smooth, finishStroke: finishStroke,
     lineAlpha: lineAlpha, lineExpired: lineExpired,
     refundInk: refundInk, drainInk: drainInk,
-    segHit: segHit, crystalAxis: crystalAxis, eraseCrystal: eraseCrystal, fitZoom: fitZoom, clearResult: clearResult, mergeRecord: mergeRecord,
+    segHit: segHit, crystalAxis: crystalAxis, eraseCrystal: eraseCrystal, fitZoom: fitZoom, jarMix: jarMix, clearResult: clearResult, mergeRecord: mergeRecord,
     nextColor: nextColor, bounceVelocity: bounceVelocity, pointSegDist: pointSegDist, simplify: simplify,
     newStops: newStops, canStop: canStop, useStop: useStop, rechargeStops: rechargeStops,
     timeScale: timeScale, shouldAutoResume: shouldAutoResume
@@ -855,7 +865,7 @@ G.LevelCheck = (function () {
     // 카메라: 기본 줌, 화면 위 끝·아래 끝(월드 y) — 카메라가 이 밖은 보여 주지 않음 (사용자 요청 2026-10-21)
     o.camera = o.camera || {};
     if (o.camera.zoom == null) o.camera.zoom = D.art.camera.baseZoom;
-    if (o.camera.bottom == null) o.camera.bottom = o.ground.reduce(function (m, g) { return Math.max(m, g.top); }, 600) + D.art.camera.bottomPad;
+    if (o.camera.bottom == null) o.camera.bottom = Math.round(lowestTop(o)) + D.art.camera.bottomPad;
     if (o.camera.top == null) o.camera.top = Math.min(D.art.camera.topY, o.camera.bottom - D.view.h / o.camera.zoom);
     o.inks = (o.inks || D.inks.order).filter(function (c) { return D.inks[c]; });
     o.fx = o.fx || {};
@@ -863,17 +873,31 @@ G.LevelCheck = (function () {
     return o;
   }
 
+  // 땅 모양 (사용자 요청 2026-10-21: 비탈길). angle(도) = 윗면 기울기, 윗면 가운데(top)를 축으로 돎. 아랫면은 평평
+  //   + 면 오른쪽이 낮아짐(내리막), - 면 오른쪽이 높아짐(오르막). l·r = 왼쪽·오른쪽 끝 윗면 y, b = 아랫면 y
+  function groundShape(g) {
+    var D0 = G.DATA.level.groundDepth, h = g.h || D0, t = Math.tan((g.angle || 0) * Math.PI / 180) * (g.x1 - g.x0) / 2;
+    var l = g.top - t, r = g.top + t;
+    return { l: l, r: r, b: Math.max(g.top + h, Math.max(l, r) + 20) };
+  }
+  // 땅 g 의 x 에서 윗면 y
+  function topOf(g, x) {
+    if (!g.angle) return g.top;
+    var s = groundShape(g), u = (x - g.x0) / ((g.x1 - g.x0) || 1);
+    return s.l + (s.r - s.l) * Math.max(0, Math.min(1, u));
+  }
+
   function groundTopAt(lv, x) {
     for (var i = 0; i < lv.ground.length; i++) {
       var g = lv.ground[i];
-      if (x >= g.x0 && x <= g.x1) return g.top;
+      if (x >= g.x0 && x <= g.x1) return topOf(g, x);
     }
     return null;
   }
 
   // (x, y) 바로 아래(같은 높이 포함)에 땅이 있는가
   function groundBelow(lv, x, y) {
-    return lv.ground.some(function (g) { return x >= g.x0 && x <= g.x1 && g.top >= y - 2; });
+    return lv.ground.some(function (g) { return x >= g.x0 && x <= g.x1 && topOf(g, x) >= y - 2; });
   }
 
   // 시작~도착 사이의 틈 목록 (땅 조각 사이 빈 곳). dy: 건너편이 높으면 음수
@@ -882,9 +906,9 @@ G.LevelCheck = (function () {
     var reach = null, reachTop = 0;               // 지금까지 땅이 이어진 오른쪽 끝 (겹친 조각 고려)
     segs.forEach(function (s) {
       if (reach !== null && s.x0 > reach && s.x0 >= lv.start.x && reach <= lv.goal.x) {
-        out.push({ x0: reach, x1: s.x0, w: s.x0 - reach, dy: s.top - reachTop });
+        out.push({ x0: reach, x1: s.x0, w: s.x0 - reach, dy: Math.round(groundShape(s).l - reachTop) });
       }
-      if (reach === null || s.x1 > reach) { reach = s.x1; reachTop = s.top; }
+      if (reach === null || s.x1 > reach) { reach = s.x1; reachTop = groundShape(s).r; }
     });
     return out;
   }
@@ -972,7 +996,10 @@ G.LevelCheck = (function () {
     return out;
   }
 
-  return { normalize: normalize, groundTopAt: groundTopAt, groundBelow: groundBelow, gaps: gaps, blockingWalls: blockingWalls, estimateInk: estimateInk, dropCount: dropCount, check: check };
+  // 가장 낮은 땅 윗면 (비탈이면 낮은 쪽 끝). 땅이 없으면 600
+  function lowestTop(lv) { return lv.ground.reduce(function (m, g) { var s = groundShape(g); return Math.max(m, s.l, s.r); }, 600); }
+
+  return { normalize: normalize, groundShape: groundShape, topOf: topOf, lowestTop: lowestTop, groundTopAt: groundTopAt, groundBelow: groundBelow, gaps: gaps, blockingWalls: blockingWalls, estimateInk: estimateInk, dropCount: dropCount, check: check };
 })();
 
 </script>
@@ -1066,6 +1093,14 @@ G.Physics = (function () {
     return M.Bodies.rectangle(x, y, w, h, o);
   }
 
+  // 볼록 다각형 (월드 좌표 꼭짓점 그대로). 비탈 땅 (사용자 요청 2026-10-21)
+  function staticPoly(verts, opts) {
+    var o = { isStatic: true, friction: 0.8, label: 'ground' };
+    for (var k in opts) o[k] = opts[k];
+    var c = M.Vertices.centre(verts);
+    return M.Bodies.fromVertices(c.x, c.y, [verts], o);
+  }
+
   // 점 a → b 를 잇는 얇은 사각형. 끝을 둥글게 하고 살짝 길게 해 이음매 턱을 줄인다
   function segment(a, b, thick, opts) {
     var dx = b.x - a.x, dy = b.y - a.y;
@@ -1152,7 +1187,7 @@ G.Physics = (function () {
   function allBodies(engine) { return M.Composite.allBodies(engine.world); }
 
   return {
-    M: M, create: create, add: add, remove: remove, staticRect: staticRect,
+    M: M, create: create, add: add, remove: remove, staticRect: staticRect, staticPoly: staticPoly,
     segment: segment, lineBody: lineBody, overlapsAny: overlapsAny, overlapping: overlapping,
     step: step, contacts: contacts, touching: touching, allBodies: allBodies
   };
@@ -1171,7 +1206,9 @@ G.Level = {
     var owned = (account && account.bottles) || {};
     var out = { data: lv, goalX: lv.goal.x, sleepers: [], items: [], crystals: [], statics: [] };
     lv.ground.forEach(function (g) {
-      out.statics.push(P.add(engine, P.staticRect((g.x0 + g.x1) / 2, g.top + g.h / 2, g.x1 - g.x0, g.h)));
+      if (!g.angle) { out.statics.push(P.add(engine, P.staticRect((g.x0 + g.x1) / 2, g.top + g.h / 2, g.x1 - g.x0, g.h))); return; }
+      var s = G.LevelCheck.groundShape(g);         // 비탈 땅: 윗면이 기운 사다리꼴 (사용자 요청 2026-10-21)
+      out.statics.push(P.add(engine, P.staticPoly([{ x: g.x0, y: s.l }, { x: g.x1, y: s.r }, { x: g.x1, y: s.b }, { x: g.x0, y: s.b }])));
     });
     var nBottle = 0, nStar = 0;
     lv.props.forEach(function (p) {
@@ -1570,7 +1607,7 @@ G.Game = {
     game.entering = [];                            // 잉크병 입구로 뛰어드는 중
     game.enterCdMs = 0;
     game.lastReachMs = 0;
-    var lowest = lv.ground.reduce(function (m, g) { return Math.max(m, g.top); }, 600);
+    var lowest = G.LevelCheck.lowestTop(lv);           // 비탈이면 낮은 쪽 끝 (사용자 요청 2026-10-21)
     game.failY = lowest + D.physics.failY - 600;
     game.inkMax = lv.ink + (game.account.inkBonus || 0);
     game.ink = game.inkMax;
@@ -1941,7 +1978,7 @@ G.Game = {
 
   // 정화 정도 0~1: 도착한 물방울(주인공 포함) / 전체(주인공 + 배치된 작은 물방울)
   // 잉크병 색 비율 0~1: 정화 정도보다 빨리 밝아지게 (^jarCurve). 1 이면 물방울 기본색 그대로 (사용자 요청 2026-10-21, 물방울 색 섞기는 뺌)
-  jarMix: function (p) { return Math.pow(Math.max(0, Math.min(1, p || 0)), G.DATA.goalEnter.jarCurve); },
+  jarMix: function (p) { return G.Rules.jarMix(p, G.DATA.goalEnter.jarCurve); },
 
   purity: function (game) { return (game.rescued + (game.heroIn ? 1 : 0)) / (game.total + 1); },
 
@@ -2132,8 +2169,21 @@ G.Props = (function () {
     ctx.restore();
   }
 
-  // opts: { editor: true } 이면 그림이 없는 장식도 자리 표시
+  // 돌린 물건의 회전 중심: 상자는 가운데, 글자는 글자 상자 가운데, 나머지(별·물방울·장식…)는 x,y (사용자 요청 2026-10-21: 모든 물건 회전)
+  function pivot(p) {
+    var d = def(p.type), r = rect(p);
+    return (d && d.box) || p.type === 'text' ? { x: r.x + r.w / 2, y: r.y + r.h / 2 } : { x: p.x, y: p.y };
+  }
+
+  // opts: { editor: true } 이면 그림이 없는 장식도 자리 표시. angle(도)이 있으면 돌려서 그림 (배치된 선은 자기 방식)
   function draw(ctx, p, opts) {
+    if (!p.angle || p.type === 'crystal') { drawRaw(ctx, p, opts); return; }
+    var c = pivot(p);
+    ctx.save(); ctx.translate(c.x, c.y); ctx.rotate(p.angle * Math.PI / 180); ctx.translate(-c.x, -c.y);
+    drawRaw(ctx, p, opts);
+    ctx.restore();
+  }
+  function drawRaw(ctx, p, opts) {
     var d = def(p.type), C = G.DATA.colors, r = rect(p);
     if (!d) return;
     if (p.type === 'text') {
@@ -2215,15 +2265,17 @@ G.Props = (function () {
   // 땅 여러 개를 한꺼번에 (사용자 요청 2026-10-20: 겹치거나 맞붙인 땅의 이음새가 안 보이게)
   //   1) 채우기 전부 → 2) 세로 테두리는 바깥쪽이 빈 곳인 부분만 → 3) 윗면 그림은 더 높은 땅 속에 묻힌 부분을 빼고, 세계 좌표에 맞춰 이어 붙임
   function drawGrounds(ctx, list) {
-    var C = G.DATA.colors, A = G.DATA.art, D0 = G.DATA.level.groundDepth;
-    function hh(g) { return g.h || D0; }          // 땅 높이 (사용자 결정 2026-10-20: 땅마다 h)
+    var C = G.DATA.colors, A = G.DATA.art, LC = G.LevelCheck;
+    var sh = list.map(function (g) { return LC.groundShape(g); });   // 비탈이면 윗면이 기운 사다리꼴 (사용자 요청 2026-10-21)
+    function S(g) { return sh[list.indexOf(g)]; }
+    function poly(g) { var s = S(g); ctx.moveTo(g.x0, s.l); ctx.lineTo(g.x1, s.r); ctx.lineTo(g.x1, s.b); ctx.lineTo(g.x0, s.b); ctx.closePath(); }
     var fill = G.Assets.get('ground_fill'), top = G.Assets.get('ground_top');
     if (fill) {
       if (!patterns.fill) patterns.fill = ctx.createPattern(fill, 'repeat');
       ctx.fillStyle = patterns.fill;
     } else ctx.fillStyle = C.ground;
-    list.forEach(function (g) { ctx.fillRect(g.x0, g.top, g.x1 - g.x0, hh(g)); });
-    if (fill && A.groundTint) { ctx.fillStyle = A.groundTint; list.forEach(function (g) { ctx.fillRect(g.x0, g.top, g.x1 - g.x0, hh(g)); }); }
+    ctx.beginPath(); list.forEach(poly); ctx.fill();
+    if (fill && A.groundTint) { ctx.fillStyle = A.groundTint; ctx.beginPath(); list.forEach(poly); ctx.fill(); }
 
     // 구간 [a, b] 에서 빼야 할 구간들을 뺀 나머지
     function minus(a, b, cuts) {
@@ -2243,34 +2295,48 @@ G.Props = (function () {
     ctx.lineWidth = top ? 3 : 4; ctx.strokeStyle = C.outline;
     ctx.beginPath();
     list.forEach(function (g) {                   // 세로 테두리: 바로 바깥(ox)에 다른 땅이 있는 높이는 숨김
-      [[g.x0, g.x0 - eps], [g.x1, g.x1 + eps]].forEach(function (e) {
+      var s = S(g);
+      [[g.x0, g.x0 - eps, s.l], [g.x1, g.x1 + eps, s.r]].forEach(function (e) {
         var cuts = list.filter(function (h) { return h !== g && h.x0 <= e[1] && e[1] <= h.x1; })
-          .map(function (h) { return [h.top, h.top + hh(h)]; });
-        minus(g.top, g.top + hh(g), cuts).forEach(function (s) { ctx.moveTo(e[0], s[0]); ctx.lineTo(e[0], s[1]); });
+          .map(function (h) { return [LC.topOf(h, e[1]), S(h).b]; });
+        minus(e[2], s.b, cuts).forEach(function (sp) { ctx.moveTo(e[0], sp[0]); ctx.lineTo(e[0], sp[1]); });
       });
     });
     list.forEach(function (g) {                   // 아랫면: 바로 아래에 다른 땅이 있는 폭은 숨김 (공중 땅의 밑면)
-      var by = g.top + hh(g), cuts = list.filter(function (h) { return h !== g && h.top <= by + eps && by + eps <= h.top + hh(h); })
+      var by = S(g).b, cuts = list.filter(function (h) { var hs = S(h); return h !== g && Math.min(hs.l, hs.r) <= by + eps && by + eps <= hs.b; })
         .map(function (h) { return [h.x0, h.x1]; });
       minus(g.x0, g.x1, cuts).forEach(function (sp) { ctx.moveTo(sp[0], by); ctx.lineTo(sp[1], by); });
     });
     ctx.stroke();
 
-    list.forEach(function (g) {                   // 윗면: 더 높은 땅의 채우기 속에 있는 부분은 빼고 그림
-      var cuts = list.filter(function (h) { return h !== g && h.top < g.top - 1 && g.top < h.top + hh(h); })
+    list.forEach(function (g) {
+      var s = S(g);
+      if (g.angle) {                              // 비탈: 윗면 그림을 기울여 이어 붙임 (가리는 땅 계산은 안 함)
+        var dx = g.x1 - g.x0, dy = s.r - s.l, L = Math.sqrt(dx * dx + dy * dy);
+        ctx.save(); ctx.translate(g.x0, s.l); ctx.rotate(Math.atan2(dy, dx));
+        if (top) {
+          var th0 = A.groundTop.h, tw0 = top.width * th0 / top.height;
+          ctx.beginPath(); ctx.rect(0, -A.groundTop.up - 2, L, th0 + 4); ctx.clip();
+          for (var x0 = 0; x0 < L; x0 += tw0) ctx.drawImage(top, x0, -A.groundTop.up, tw0, th0);
+        } else { ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(L, 0); ctx.stroke(); }
+        ctx.restore();
+        return;
+      }
+      // 평평한 윗면: 더 높은 땅의 채우기 속에 있는 부분은 빼고 그림
+      var cuts = list.filter(function (h) { var hs = S(h); return h !== g && Math.min(hs.l, hs.r) < g.top - 1 && g.top < hs.b; })
         .map(function (h) { return [h.x0, h.x1]; });
       var spans = minus(g.x0, g.x1, cuts);
       if (top) {
         var th = A.groundTop.h, tw = top.width * th / top.height, y = g.top - A.groundTop.up;
-        spans.forEach(function (s) {
+        spans.forEach(function (sp) {
           ctx.save();
-          ctx.beginPath(); ctx.rect(s[0], y - 2, s[1] - s[0], th + 4); ctx.clip();
-          for (var x = Math.floor(s[0] / tw) * tw; x < s[1]; x += tw) ctx.drawImage(top, x, y, tw, th);   // 세계 좌표 기준 → 맞붙여도 무늬가 이어짐
+          ctx.beginPath(); ctx.rect(sp[0], y - 2, sp[1] - sp[0], th + 4); ctx.clip();
+          for (var x = Math.floor(sp[0] / tw) * tw; x < sp[1]; x += tw) ctx.drawImage(top, x, y, tw, th);   // 세계 좌표 기준 → 맞붙여도 무늬가 이어짐
           ctx.restore();
         });
       } else {
         ctx.beginPath();
-        spans.forEach(function (s) { ctx.moveTo(s[0], g.top); ctx.lineTo(s[1], g.top); });
+        spans.forEach(function (sp) { ctx.moveTo(sp[0], g.top); ctx.lineTo(sp[1], g.top); });
         ctx.stroke();
       }
     });
@@ -2282,10 +2348,10 @@ G.Props = (function () {
     var d = def(p.type);
     if (!d || !d.solid) return null;
     if (p.type === 'crystal') return null;          // 배치된 선은 level.js 가 따로 만듦 (자를 수 있게)
-    return G.Physics.add(engine, G.Physics.staticRect(p.x + p.w / 2, p.y + p.h / 2, p.w, p.h, { label: p.type }));
+    return G.Physics.add(engine, G.Physics.staticRect(p.x + p.w / 2, p.y + p.h / 2, p.w, p.h, { label: p.type, angle: (p.angle || 0) * Math.PI / 180 }));   // 가운데 기준 회전
   }
 
-  return { def: def, rect: rect, draw: draw, drawGround: drawGround, drawGrounds: drawGrounds, build: build, drawStarShape: drawStarShape,
+  return { def: def, rect: rect, pivot: pivot, draw: draw, drawGround: drawGround, drawGrounds: drawGrounds, build: build, drawStarShape: drawStarShape,
            drawCrystal: drawCrystal, drawSleeper: drawSleeper };
 })();
 
@@ -2435,7 +2501,7 @@ G.UI = (function () {
     ctx.save();
     ctx.beginPath();
     if (ctx.roundRect) ctx.roundRect(bx, by, bw, bh, 26); else ctx.rect(bx, by, bw, bh);
-    var t = G.Game.jarMix(purity);
+    var t = G.Rules.jarMix(purity, G.DATA.goalEnter.jarCurve);
     ctx.fillStyle = mix(C.jarDark, C.jarClear, t);
     ctx.fill();
     ctx.fillStyle = 'rgba(255,255,255,0.25)'; ctx.fillRect(bx + 12, by + 14, 8, bh * 0.55);
@@ -2658,7 +2724,7 @@ G.UI = (function () {
       if (it.owned) { ctx.save(); ctx.globalAlpha = 0.2; G.Props.draw(ctx, it.prop); ctx.restore(); return; }
       if (!it.got) G.Props.draw(ctx, it.prop);
     });
-    game.level.sleepers.forEach(function (sl) { if (sl.state === 'sleep') G.Props.drawSleeper(ctx, sl.x, sl.y, G.DATA.drop.smallRadius); });
+    game.level.sleepers.forEach(function (sl) { if (sl.state === 'sleep') G.Props.draw(ctx, sl.prop); });   // 돌려 놓았으면 돌려서
 
     game.lines.forEach(function (ln) {
       ctx.globalAlpha = ln.active ? 1 : 0.5;
@@ -2938,8 +3004,8 @@ G.UI = (function () {
     ctx.fillRect(0, 0, V.w, V.h);
     var clear = game.status === 'clear' && game.result;
     var w = 560, h = clear ? 340 : 250, x = (V.w - w) / 2, y = (V.h - h) / 2;
-    var panel = G.Assets.get('ui_panel');
-    if (panel) ctx.drawImage(panel, x - 40, y - 30, w + 80, h + 60);
+    var panel = G.Assets.get('ui_panel'), pr = panelRect(game);   // 바탕 그림 크기는 uitext.js (사용자 요청 2026-10-21)
+    if (panel) ctx.drawImage(panel, pr.x, pr.y, pr.w, pr.h);
     else { ctx.fillStyle = C.paper; ctx.fillRect(x, y, w, h); ctx.strokeStyle = C.outline; ctx.lineWidth = 4; ctx.strokeRect(x, y, w, h); }
     var face = G.Assets.get(game.status === 'fail' ? 'char_erased' : 'char_goal');
     if (face && !clear) ctx.drawImage(face, x + 28, y + 6, 136, 136);
@@ -2960,7 +3026,7 @@ G.UI = (function () {
       if (face) ctx.drawImage(face, bx - fs / 2 + 4, by - fs * 0.93, fs, fs);
       say(ctx, G.T('result.purity', { purity: Math.round(r.purity * 100), inJar: r.inJar, all: r.all }), bx + 80 + (bw - 80) / 2, by - 8);
       ctx.fillStyle = 'rgba(43,33,24,0.12)'; ctx.fillRect(bx, by, bw, 14);
-      ctx.fillStyle = mix(C.jarDark, C.jarClear, G.Game.jarMix(r.purity)); ctx.fillRect(bx, by, bw * r.purity, 14);
+      ctx.fillStyle = mix(C.jarDark, C.jarClear, G.Rules.jarMix(r.purity, G.DATA.goalEnter.jarCurve)); ctx.fillRect(bx, by, bw * r.purity, 14);
       ctx.lineWidth = 2; ctx.strokeStyle = C.outline; ctx.strokeRect(bx, by, bw, 14);
       ctx.fillStyle = ink; ctx.font = G.TF('resultSize');
       say(ctx, G.T('result.time', { time: (r.timeMs / 1000).toFixed(1) }) + (best ? G.T('result.best', { stars: best.stars || 0, total: r.starsTotal,
@@ -2974,13 +3040,23 @@ G.UI = (function () {
     ctx.textAlign = 'left';
   }
 
+  // 결과 창 바탕 그림(ui_panel) 자리: 화면 가운데, 크기는 클리어·실패 따로 (사용자 요청 2026-10-21)
+  function panelRect(game) {
+    var f = game.status === 'fail', w = G.TS(f ? 'failPanelW' : 'resultPanelW'), h = G.TS(f ? 'failPanelH' : 'resultPanelH');
+    return { x: (V.w - w) / 2, y: (V.h - h) / 2, w: w, h: h };
+  }
+
   // 결과 창 버튼 (사용자 요청 2026-10-21): 다시 하기 · 다음 스테이지(클리어 + 다음이 있을 때). 위치·크기는 uitext.js (UI 툴)
-  //   다음 스테이지가 없으면 다시 하기는 retryAloneX 에
+  //   다시 하기 자리는 세 가지 따로: 클리어(retryBtn) · 클리어인데 다음 스테이지 없음(retryAlone) · 실패(failRetry)
   var resultShown = false, hoverPt = null;
+  function retryKeys(game) {
+    if (game.status === 'fail') return ['failRetryX', 'failRetryY'];
+    return game.hasNext ? ['retryBtnX', 'retryBtnY'] : ['retryAloneX', 'retryAloneY'];
+  }
   function resultBtns(game) {
-    var S = G.TS, w = S('resultBtnW'), h = S('resultBtnH'), next = game.status === 'clear' && game.hasNext, out = [];
-    out.push({ act: 'retry', x: next ? S('retryBtnX') : S('retryAloneX'), y: S('retryBtnY'), w: w, h: h, label: G.T('result.retry') });
-    if (next) out.push({ act: 'next', x: S('nextBtnX'), y: S('nextBtnY'), w: w, h: h, label: G.T('result.next') });
+    var S = G.TS, w = S('resultBtnW'), h = S('resultBtnH'), next = game.status === 'clear' && game.hasNext, rk = retryKeys(game), out = [];
+    out.push({ act: 'retry', x: S(rk[0]), y: S(rk[1]), w: w, h: h, label: G.T('result.retry'), keys: rk });
+    if (next) out.push({ act: 'next', x: S('nextBtnX'), y: S('nextBtnY'), w: w, h: h, label: G.T('result.next'), keys: ['nextBtnX', 'nextBtnY'] });
     return out;
   }
   function drawButton(ctx, b) {
@@ -3002,6 +3078,8 @@ G.UI = (function () {
     return hit;
   }
   function hover(sx, sy) { hoverPt = { x: sx, y: sy }; }
+  // UI 툴: 결과 창이 보일 때 버튼 목록·바탕 자리
+  function resultLayout(game) { return resultShown ? { btns: resultBtns(game), panel: panelRect(game) } : null; }
 
   // 잉크병 밝기: 들어간 물방울 수(정화)를 향해 서서히 (사용자 요청 2026-10-20: 갑자기 밝아지지 않게). 새 시도면 바로 어둡게
   var jarShown = 0;
@@ -3030,7 +3108,7 @@ G.UI = (function () {
 
   return { render: render, toWorld: toWorld, toScreen: toScreen, cam: cam, wheel: wheel, resetCamera: resetCamera,
            drawBackground: drawBackground, drawGoal: drawGoal, drawStart: drawStart,
-           inkAt: inkAt, skipAt: skipAt, resultAt: resultAt, hover: hover, drawInkLine: drawInkLine };
+           inkAt: inkAt, skipAt: skipAt, resultAt: resultAt, hover: hover, resultLayout: resultLayout, drawInkLine: drawInkLine };
 })();
 
 </script>

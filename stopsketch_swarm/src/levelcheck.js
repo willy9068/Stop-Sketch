@@ -41,7 +41,7 @@ G.LevelCheck = (function () {
     // 카메라: 기본 줌, 화면 위 끝·아래 끝(월드 y) — 카메라가 이 밖은 보여 주지 않음 (사용자 요청 2026-10-21)
     o.camera = o.camera || {};
     if (o.camera.zoom == null) o.camera.zoom = D.art.camera.baseZoom;
-    if (o.camera.bottom == null) o.camera.bottom = o.ground.reduce(function (m, g) { return Math.max(m, g.top); }, 600) + D.art.camera.bottomPad;
+    if (o.camera.bottom == null) o.camera.bottom = Math.round(lowestTop(o)) + D.art.camera.bottomPad;
     if (o.camera.top == null) o.camera.top = Math.min(D.art.camera.topY, o.camera.bottom - D.view.h / o.camera.zoom);
     o.inks = (o.inks || D.inks.order).filter(function (c) { return D.inks[c]; });
     o.fx = o.fx || {};
@@ -49,17 +49,31 @@ G.LevelCheck = (function () {
     return o;
   }
 
+  // 땅 모양 (사용자 요청 2026-10-21: 비탈길). angle(도) = 윗면 기울기, 윗면 가운데(top)를 축으로 돎. 아랫면은 평평
+  //   + 면 오른쪽이 낮아짐(내리막), - 면 오른쪽이 높아짐(오르막). l·r = 왼쪽·오른쪽 끝 윗면 y, b = 아랫면 y
+  function groundShape(g) {
+    var D0 = G.DATA.level.groundDepth, h = g.h || D0, t = Math.tan((g.angle || 0) * Math.PI / 180) * (g.x1 - g.x0) / 2;
+    var l = g.top - t, r = g.top + t;
+    return { l: l, r: r, b: Math.max(g.top + h, Math.max(l, r) + 20) };
+  }
+  // 땅 g 의 x 에서 윗면 y
+  function topOf(g, x) {
+    if (!g.angle) return g.top;
+    var s = groundShape(g), u = (x - g.x0) / ((g.x1 - g.x0) || 1);
+    return s.l + (s.r - s.l) * Math.max(0, Math.min(1, u));
+  }
+
   function groundTopAt(lv, x) {
     for (var i = 0; i < lv.ground.length; i++) {
       var g = lv.ground[i];
-      if (x >= g.x0 && x <= g.x1) return g.top;
+      if (x >= g.x0 && x <= g.x1) return topOf(g, x);
     }
     return null;
   }
 
   // (x, y) 바로 아래(같은 높이 포함)에 땅이 있는가
   function groundBelow(lv, x, y) {
-    return lv.ground.some(function (g) { return x >= g.x0 && x <= g.x1 && g.top >= y - 2; });
+    return lv.ground.some(function (g) { return x >= g.x0 && x <= g.x1 && topOf(g, x) >= y - 2; });
   }
 
   // 시작~도착 사이의 틈 목록 (땅 조각 사이 빈 곳). dy: 건너편이 높으면 음수
@@ -68,9 +82,9 @@ G.LevelCheck = (function () {
     var reach = null, reachTop = 0;               // 지금까지 땅이 이어진 오른쪽 끝 (겹친 조각 고려)
     segs.forEach(function (s) {
       if (reach !== null && s.x0 > reach && s.x0 >= lv.start.x && reach <= lv.goal.x) {
-        out.push({ x0: reach, x1: s.x0, w: s.x0 - reach, dy: s.top - reachTop });
+        out.push({ x0: reach, x1: s.x0, w: s.x0 - reach, dy: Math.round(groundShape(s).l - reachTop) });
       }
-      if (reach === null || s.x1 > reach) { reach = s.x1; reachTop = s.top; }
+      if (reach === null || s.x1 > reach) { reach = s.x1; reachTop = groundShape(s).r; }
     });
     return out;
   }
@@ -158,5 +172,8 @@ G.LevelCheck = (function () {
     return out;
   }
 
-  return { normalize: normalize, groundTopAt: groundTopAt, groundBelow: groundBelow, gaps: gaps, blockingWalls: blockingWalls, estimateInk: estimateInk, dropCount: dropCount, check: check };
+  // 가장 낮은 땅 윗면 (비탈이면 낮은 쪽 끝). 땅이 없으면 600
+  function lowestTop(lv) { return lv.ground.reduce(function (m, g) { var s = groundShape(g); return Math.max(m, s.l, s.r); }, 600); }
+
+  return { normalize: normalize, groundShape: groundShape, topOf: topOf, lowestTop: lowestTop, groundTopAt: groundTopAt, groundBelow: groundBelow, gaps: gaps, blockingWalls: blockingWalls, estimateInk: estimateInk, dropCount: dropCount, check: check };
 })();

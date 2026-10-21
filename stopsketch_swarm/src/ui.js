@@ -141,7 +141,7 @@ G.UI = (function () {
     ctx.save();
     ctx.beginPath();
     if (ctx.roundRect) ctx.roundRect(bx, by, bw, bh, 26); else ctx.rect(bx, by, bw, bh);
-    var t = G.Game.jarMix(purity);
+    var t = G.Rules.jarMix(purity, G.DATA.goalEnter.jarCurve);
     ctx.fillStyle = mix(C.jarDark, C.jarClear, t);
     ctx.fill();
     ctx.fillStyle = 'rgba(255,255,255,0.25)'; ctx.fillRect(bx + 12, by + 14, 8, bh * 0.55);
@@ -364,7 +364,7 @@ G.UI = (function () {
       if (it.owned) { ctx.save(); ctx.globalAlpha = 0.2; G.Props.draw(ctx, it.prop); ctx.restore(); return; }
       if (!it.got) G.Props.draw(ctx, it.prop);
     });
-    game.level.sleepers.forEach(function (sl) { if (sl.state === 'sleep') G.Props.drawSleeper(ctx, sl.x, sl.y, G.DATA.drop.smallRadius); });
+    game.level.sleepers.forEach(function (sl) { if (sl.state === 'sleep') G.Props.draw(ctx, sl.prop); });   // 돌려 놓았으면 돌려서
 
     game.lines.forEach(function (ln) {
       ctx.globalAlpha = ln.active ? 1 : 0.5;
@@ -644,8 +644,8 @@ G.UI = (function () {
     ctx.fillRect(0, 0, V.w, V.h);
     var clear = game.status === 'clear' && game.result;
     var w = 560, h = clear ? 340 : 250, x = (V.w - w) / 2, y = (V.h - h) / 2;
-    var panel = G.Assets.get('ui_panel');
-    if (panel) ctx.drawImage(panel, x - 40, y - 30, w + 80, h + 60);
+    var panel = G.Assets.get('ui_panel'), pr = panelRect(game);   // 바탕 그림 크기는 uitext.js (사용자 요청 2026-10-21)
+    if (panel) ctx.drawImage(panel, pr.x, pr.y, pr.w, pr.h);
     else { ctx.fillStyle = C.paper; ctx.fillRect(x, y, w, h); ctx.strokeStyle = C.outline; ctx.lineWidth = 4; ctx.strokeRect(x, y, w, h); }
     var face = G.Assets.get(game.status === 'fail' ? 'char_erased' : 'char_goal');
     if (face && !clear) ctx.drawImage(face, x + 28, y + 6, 136, 136);
@@ -666,7 +666,7 @@ G.UI = (function () {
       if (face) ctx.drawImage(face, bx - fs / 2 + 4, by - fs * 0.93, fs, fs);
       say(ctx, G.T('result.purity', { purity: Math.round(r.purity * 100), inJar: r.inJar, all: r.all }), bx + 80 + (bw - 80) / 2, by - 8);
       ctx.fillStyle = 'rgba(43,33,24,0.12)'; ctx.fillRect(bx, by, bw, 14);
-      ctx.fillStyle = mix(C.jarDark, C.jarClear, G.Game.jarMix(r.purity)); ctx.fillRect(bx, by, bw * r.purity, 14);
+      ctx.fillStyle = mix(C.jarDark, C.jarClear, G.Rules.jarMix(r.purity, G.DATA.goalEnter.jarCurve)); ctx.fillRect(bx, by, bw * r.purity, 14);
       ctx.lineWidth = 2; ctx.strokeStyle = C.outline; ctx.strokeRect(bx, by, bw, 14);
       ctx.fillStyle = ink; ctx.font = G.TF('resultSize');
       say(ctx, G.T('result.time', { time: (r.timeMs / 1000).toFixed(1) }) + (best ? G.T('result.best', { stars: best.stars || 0, total: r.starsTotal,
@@ -680,13 +680,23 @@ G.UI = (function () {
     ctx.textAlign = 'left';
   }
 
+  // 결과 창 바탕 그림(ui_panel) 자리: 화면 가운데, 크기는 클리어·실패 따로 (사용자 요청 2026-10-21)
+  function panelRect(game) {
+    var f = game.status === 'fail', w = G.TS(f ? 'failPanelW' : 'resultPanelW'), h = G.TS(f ? 'failPanelH' : 'resultPanelH');
+    return { x: (V.w - w) / 2, y: (V.h - h) / 2, w: w, h: h };
+  }
+
   // 결과 창 버튼 (사용자 요청 2026-10-21): 다시 하기 · 다음 스테이지(클리어 + 다음이 있을 때). 위치·크기는 uitext.js (UI 툴)
-  //   다음 스테이지가 없으면 다시 하기는 retryAloneX 에
+  //   다시 하기 자리는 세 가지 따로: 클리어(retryBtn) · 클리어인데 다음 스테이지 없음(retryAlone) · 실패(failRetry)
   var resultShown = false, hoverPt = null;
+  function retryKeys(game) {
+    if (game.status === 'fail') return ['failRetryX', 'failRetryY'];
+    return game.hasNext ? ['retryBtnX', 'retryBtnY'] : ['retryAloneX', 'retryAloneY'];
+  }
   function resultBtns(game) {
-    var S = G.TS, w = S('resultBtnW'), h = S('resultBtnH'), next = game.status === 'clear' && game.hasNext, out = [];
-    out.push({ act: 'retry', x: next ? S('retryBtnX') : S('retryAloneX'), y: S('retryBtnY'), w: w, h: h, label: G.T('result.retry') });
-    if (next) out.push({ act: 'next', x: S('nextBtnX'), y: S('nextBtnY'), w: w, h: h, label: G.T('result.next') });
+    var S = G.TS, w = S('resultBtnW'), h = S('resultBtnH'), next = game.status === 'clear' && game.hasNext, rk = retryKeys(game), out = [];
+    out.push({ act: 'retry', x: S(rk[0]), y: S(rk[1]), w: w, h: h, label: G.T('result.retry'), keys: rk });
+    if (next) out.push({ act: 'next', x: S('nextBtnX'), y: S('nextBtnY'), w: w, h: h, label: G.T('result.next'), keys: ['nextBtnX', 'nextBtnY'] });
     return out;
   }
   function drawButton(ctx, b) {
@@ -708,6 +718,8 @@ G.UI = (function () {
     return hit;
   }
   function hover(sx, sy) { hoverPt = { x: sx, y: sy }; }
+  // UI 툴: 결과 창이 보일 때 버튼 목록·바탕 자리
+  function resultLayout(game) { return resultShown ? { btns: resultBtns(game), panel: panelRect(game) } : null; }
 
   // 잉크병 밝기: 들어간 물방울 수(정화)를 향해 서서히 (사용자 요청 2026-10-20: 갑자기 밝아지지 않게). 새 시도면 바로 어둡게
   var jarShown = 0;
@@ -736,5 +748,5 @@ G.UI = (function () {
 
   return { render: render, toWorld: toWorld, toScreen: toScreen, cam: cam, wheel: wheel, resetCamera: resetCamera,
            drawBackground: drawBackground, drawGoal: drawGoal, drawStart: drawStart,
-           inkAt: inkAt, skipAt: skipAt, resultAt: resultAt, hover: hover, drawInkLine: drawInkLine };
+           inkAt: inkAt, skipAt: skipAt, resultAt: resultAt, hover: hover, resultLayout: resultLayout, drawInkLine: drawInkLine };
 })();

@@ -197,6 +197,9 @@ G.Rules = (function () {
     return Math.max(cam.minZoom, Math.min(cam.maxZoom, z));
   }
 
+  // 잉크병 색 비율 0~1 = 정화 정도 ^ curve (사용자 요청 2026-10-21: 더 빨리 밝아지게). 레벨 툴도 쓰므로 여기에
+  function jarMix(p, curve) { return Math.pow(Math.max(0, Math.min(1, p || 0)), curve); }
+
   // ---- 시간 배율 ----
   function timeScale(mode, stopped) { return stopped ? mode.scale : 1; }
   function shouldAutoResume(mode, stopped, stoppedMs) {
@@ -208,7 +211,7 @@ G.Rules = (function () {
     newStroke: newStroke, addSample: addSample, smooth: smooth, finishStroke: finishStroke,
     lineAlpha: lineAlpha, lineExpired: lineExpired,
     refundInk: refundInk, drainInk: drainInk,
-    segHit: segHit, crystalAxis: crystalAxis, eraseCrystal: eraseCrystal, fitZoom: fitZoom, clearResult: clearResult, mergeRecord: mergeRecord,
+    segHit: segHit, crystalAxis: crystalAxis, eraseCrystal: eraseCrystal, fitZoom: fitZoom, jarMix: jarMix, clearResult: clearResult, mergeRecord: mergeRecord,
     nextColor: nextColor, bounceVelocity: bounceVelocity, pointSegDist: pointSegDist, simplify: simplify,
     newStops: newStops, canStop: canStop, useStop: useStop, rechargeStops: rechargeStops,
     timeScale: timeScale, shouldAutoResume: shouldAutoResume

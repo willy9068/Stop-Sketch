@@ -350,3 +350,20 @@ G.LEVELS.forEach(function (lv) {
   });
   console.log('16 대열 빨강 물들기: ' + out.join(' · ') + ' (안 물듦 0 이어야 정상)');
 })();
+
+// 17. 비탈 땅 (사용자 요청 2026-10-21: 레벨 툴에서 땅 경사). 오르막·내리막 30도까지 주인공·대열이 넘어가는가
+(function () {
+  var out = [];
+  [-30, -15, 15, 30].forEach(function (a) {
+    var lv = { id: 't', name: '시험', ink: 3000, stops: 9, start: { x: 0 }, goal: { x: 2400 }, inks: ['black'],
+      drops: { heroSpeed: 3, smallSpeed: 3 }, eraser: { pct: 1, delayMs: 600000 },
+      ground: [{ x0: -400, x1: 600, top: 600 }, { x0: 600, x1: 1400, top: 600, angle: a }, { x0: 1400, x1: 3000, top: 600 }], props: [] };
+    var s = G.LevelCheck.groundShape(lv.ground[1]);
+    lv.ground[0].top = s.l; lv.ground[2].top = s.r; lv.start.y = s.l;
+    lv.props = [100, 140].map(function (x) { return { type: 'drop', x: x, y: s.l - 13 }; });
+    var g = G.Game.create('A', lv); G.Game.start(g);
+    for (var i = 0; i < 60 * 40 && g.status === 'run'; i++) G.Game.update(g, STEP);
+    out.push(a + '도 ' + g.status + ' ' + g.rescued + '/' + g.total);
+  });
+  console.log('17 비탈 땅: ' + out.join(' · ') + ' (모두 clear 2/2 이어야 정상)');
+})();

@@ -50,7 +50,10 @@ var G = G || {};
     ['resultBtnW', '결과 버튼 폭', 'clear'], ['resultBtnH', '결과 버튼 높이', 'clear'],
     ['retryBtnX', '다시 하기 버튼 x (왼쪽)', 'clear'], ['retryBtnY', '다시 하기 버튼 y (위)', 'clear'],
     ['nextBtnX', '다음 스테이지 버튼 x (왼쪽)', 'clear'], ['nextBtnY', '다음 스테이지 버튼 y (위)', 'clear'],
-    ['retryAloneX', '다시 하기만 있을 때 x (실패·마지막 스테이지)', 'fail'],
+    ['retryAloneX', '마지막 스테이지 클리어: 다시 하기 x', 'clear'], ['retryAloneY', '마지막 스테이지 클리어: 다시 하기 y', 'clear'],
+    ['failRetryX', '실패: 다시 하기 x', 'fail'], ['failRetryY', '실패: 다시 하기 y', 'fail'],
+    ['resultPanelW', '클리어 결과 창 바탕 폭', 'clear'], ['resultPanelH', '클리어 결과 창 바탕 높이', 'clear'],
+    ['failPanelW', '실패 결과 창 바탕 폭', 'fail'], ['failPanelH', '실패 결과 창 바탕 높이', 'fail'],
     ['resultBtnBg', '결과 버튼 바탕색', 'clear'], ['resultBtnHot', '결과 버튼 마우스 올렸을 때 색', 'clear']
   ];
 
@@ -247,12 +250,18 @@ var G = G || {};
 
   // 미리보기에서 결과 창 버튼을 끌어 옮기기 (사용자 요청 2026-10-21: 다시 하기·다음 스테이지 위치 조절). 마우스를 올리면 강조색
   function viewPt(e) { var r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) * 1280 / r.width, y: (e.clientY - r.top) * 720 / r.height }; }
+  //   버튼마다 자기 칸에 저장 (클리어·마지막 스테이지·실패의 다시 하기는 따로). 버튼 밖 바탕을 끌면 바탕 크기 (가운데 기준)
   cv.addEventListener('mousedown', function (e) {
-    var p = viewPt(e), act = S.game && G.UI.resultAt(S.game, p.x, p.y);
-    if (!act) return;
-    var next = S.game.status === 'clear' && S.game.hasNext;
-    var kx = act === 'next' ? 'nextBtnX' : next ? 'retryBtnX' : 'retryAloneX', ky = act === 'next' ? 'nextBtnY' : 'retryBtnY';
-    S.btnDrag = { kx: kx, ky: ky, p: p, x: G.UITEXT.style[kx], y: G.UITEXT.style[ky] };
+    var p = viewPt(e), lay = S.game && G.UI.resultLayout(S.game);
+    if (!lay) return;
+    var b = lay.btns.filter(function (q) { return p.x >= q.x && p.x <= q.x + q.w && p.y >= q.y && p.y <= q.y + q.h; })[0], st = G.UITEXT.style;
+    if (b) S.btnDrag = { kx: b.keys[0], ky: b.keys[1], p: p, x: st[b.keys[0]], y: st[b.keys[1]] };
+    else {
+      var r = lay.panel;
+      if (p.x < r.x || p.x > r.x + r.w || p.y < r.y || p.y > r.y + r.h) return;
+      var f = S.game.status === 'fail', kw = f ? 'failPanelW' : 'resultPanelW', kh = f ? 'failPanelH' : 'resultPanelH';
+      S.btnDrag = { size: true, kx: kw, ky: kh, p: p, x: st[kw], y: st[kh], sx: p.x < 640 ? -1 : 1, sy: p.y < 360 ? -1 : 1 };
+    }
     e.preventDefault();
   });
   window.addEventListener('mousemove', function (e) {
@@ -260,8 +269,13 @@ var G = G || {};
     G.UI.hover(p.x, p.y);
     var d = S.btnDrag;
     if (!d) return;
-    G.UITEXT.style[d.kx] = Math.round(d.x + p.x - d.p.x);
-    G.UITEXT.style[d.ky] = Math.round(d.y + p.y - d.p.y);
+    if (d.size) {                                   // 바탕 크기: 가운데에서 멀어지는 쪽으로 끌면 커짐
+      G.UITEXT.style[d.kx] = Math.max(100, Math.round(d.x + (p.x - d.p.x) * 2 * d.sx));
+      G.UITEXT.style[d.ky] = Math.max(100, Math.round(d.y + (p.y - d.p.y) * 2 * d.sy));
+    } else {
+      G.UITEXT.style[d.kx] = Math.round(d.x + p.x - d.p.x);
+      G.UITEXT.style[d.ky] = Math.round(d.y + p.y - d.p.y);
+    }
     S.dirty = true; status();
   });
   window.addEventListener('mouseup', function () { if (S.btnDrag) { S.btnDrag = null; buildSide(); } });
