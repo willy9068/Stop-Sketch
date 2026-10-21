@@ -45,7 +45,7 @@ G.Draw = {
     line.body = G.Physics.add(game.engine, body);
     line.rising = green;
     // 초록을 벽·발판·땅에 겹쳐 그렸으면 그 몸체는 빠져나갈 때까지 무시 (사용자 요청 2026-10-20: 겹쳐 그려도 떠오르게)
-    if (green) line.ignore = G.Physics.overlapping(body, this.riseBlockers(game, line));
+    if (green) line.ignore = G.Physics.overlapping(body, this.riseBlockers(game, line).concat(this.carryables(game, line)));
   },
 
   activateAll: function (game) {
@@ -129,27 +129,44 @@ G.Draw = {
     else game.toast(G.T('toast.noCrystal'));
   },
 
-  // 초록이 닿으면 멈추는 것들: 벽·발판·땅, 배치된 선, 떨어진 조각, 다른 선
+  // 초록이 닿으면 멈추는 것들: 벽·발판·땅, 배치된 선, 고정된 선(멈춘 초록)
   riseBlockers: function (game, ln) {
     return game.level.statics.concat(game.level.crystals.map(function (c) { return c.body; }),
-      game.fallen.map(function (f) { return f.body; }),
-      game.lines.filter(function (o) { return o !== ln && o.body; }).map(function (o) { return o.body; }));
+      game.lines.filter(function (o) { return o !== ln && o.body && o.body.isStatic; }).map(function (o) { return o.body; }));
+  },
+  // 초록이 같이 들어 올리는 것들: 떨어지는 다른 선, 잘려 떨어진 배치된 선 조각 (사용자 요청 2026-10-21: 위에 그린 선도 같이 올라가게)
+  carryables: function (game, ln) {
+    return game.lines.filter(function (o) { return o !== ln && o.body && !o.body.isStatic; }).map(function (o) { return o.body; })
+      .concat(game.fallen.map(function (f) { return f.body; }));
   },
 
   // 초록: 떠오르다 무언가에 닿거나 꼭대기에 이르면 고정 (사용자 결정 2026-10-20)
+  //   위에 얹힌 선·조각은 같이 들어 올림(쌓인 것도 차례로). 들어 올린 것이 막혀도 멈춤 (사용자 요청 2026-10-21)
   //   처음부터 겹쳐 있던 몸체(ln.ignore)는 빠져나갈 때까지 무시
   rise: function (game, scale, fx) {
     var M = G.Physics.M, top = G.DATA.greenTopY;
     for (var i = 0; i < game.lines.length; i++) {
       var ln = game.lines[i];
       if (!ln.rising || !ln.body) continue;
-      var b = ln.body, dy = fx.riseSpeed * scale;
+      var b = ln.body, dy = fx.riseSpeed * scale, ign = ln.ignore || [], movers = this.carryables(game, ln), walls = this.riseBlockers(game, ln);
+      var moved = [b];
       M.Body.setPosition(b, { x: b.position.x, y: b.position.y - dy });
-      var hit = G.Physics.overlapping(b, this.riseBlockers(game, ln)), ign = ln.ignore || [];
+      for (var q = 0; q < moved.length; q++) {     // 올린 것과 새로 겹친 것 = 위에 얹힌 것 → 같이 올림
+        G.Physics.overlapping(moved[q], movers).forEach(function (o) {
+          if (moved.indexOf(o) >= 0 || ign.indexOf(o) >= 0) return;
+          M.Body.setPosition(o, { x: o.position.x, y: o.position.y - dy });
+          M.Body.setVelocity(o, { x: o.velocity.x, y: Math.min(o.velocity.y, 0) });
+          moved.push(o);
+        });
+      }
+      var hit = G.Physics.overlapping(b, walls.concat(movers));
       ln.ignore = ign.filter(function (o) { return hit.indexOf(o) >= 0; });   // 빠져나간 몸체는 다시 막음
-      var blocked = hit.some(function (o) { return ign.indexOf(o) < 0; });
-      if (blocked || b.bounds.min.y <= top) {
-        M.Body.setPosition(b, { x: b.position.x, y: b.position.y + dy });
+      var blocked = moved.some(function (m) {
+        return G.Physics.overlapping(m, walls).some(function (o) { return m !== b || ign.indexOf(o) < 0; });
+      });
+      var high = moved.some(function (m) { return m.bounds.min.y <= top; });
+      if (blocked || high) {
+        moved.forEach(function (m) { M.Body.setPosition(m, { x: m.position.x, y: m.position.y + dy }); });
         ln.rising = false;
       }
     }

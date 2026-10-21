@@ -395,3 +395,22 @@ G.LEVELS.forEach(function (lv) {
   var help = [[35, 120], [45, 100], [60, 80]].map(function (c) { return c[0] + '° ' + slope(c[0], c[1], true); });
   console.log('18 오르막 (길이 300, 평지 대비 속도): ' + out.join(' · ') + '\n   파랑 가속 (짧은 비탈): ' + help.join(' · ') + ' (30도까지 넘고 31도부터 못 넘고 되돌아섬, 가속하면 45도까지 넘고 60도는 못 넘어야 정상)');
 })();
+
+// 19. 초록 위에 그린 선도 같이 떠오름 (사용자 요청 2026-10-21: 초록 위에 다른 색 선을 그리면 멈추던 문제). 위에 발판이 있으면 거기서 같이 멈춤
+(function () {
+  function run(ceiling) {
+    var lv = { id: 't', name: '시험', ink: 3000, stops: 9, start: { x: -300 }, goal: { x: 2600 }, inks: ['black', 'green', 'red'], eraser: { pct: 1, delayMs: 600000 },
+      ground: [{ x0: -400, x1: 3000, top: 600 }], props: ceiling ? [{ type: 'platform', x: 300, y: 300, w: 400, h: 28 }] : [] };
+    var g = G.Game.create('A', lv); G.Game.start(g);
+    G.Game.toggleStop(g);                          // 정지 중에 초록 → 그 위에 빨강 → 그 위에 검정 (쌓기)
+    [['green', 560], ['red', 548], ['black', 536]].forEach(function (c) {
+      g.color = c[0]; G.Draw.begin(g, { x: 400, y: c[1] });
+      for (var x = 404; x <= 600; x += 4) G.Draw.move(g, { x: x, y: c[1] });
+      G.Draw.end(g);
+    });
+    G.Game.toggleStop(g);
+    for (var i = 0; i < 60 * 6; i++) G.Game.update(g, STEP);
+    return g.lines.map(function (l) { return l.color[0] + Math.round(l.body.position.y); }).join(' ');
+  }
+  console.log('19 초록 위에 쌓은 선: 막힘 없음 ' + run(false) + ' · 위에 발판(y 300~328) ' + run(true) + ' (셋 다 함께 올라가야 정상, 발판이면 그 밑에서 멈춤)');
+})();
