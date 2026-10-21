@@ -127,12 +127,15 @@ G.Game = {
     var free = walk.filter(function (d) { return d.mode === 'hero' || d.mode === 'free'; });
     var liners = walk.filter(function (d) { return d.mode === 'line'; });
     var joiners = walk.filter(function (d) { return d.mode === 'join'; });
+    var fallers = walk.filter(function (d) { return d.mode === 'fall' || d.mode === 'wait'; });
 
     var vyBefore = free.map(function (d) { return { g: d.grounded, vy: d.body.velocity.y }; });
     free.forEach(function (d) { G.Drop.control(d, s, fx); });
     liners.forEach(function (d) { self.placeLine(game, d); });
+    fallers.forEach(function (d) { self.beforeFall(game, d); });
     G.Physics.step(game.engine, s);
     liners.forEach(function (d) { self.checkLine(game, d); });
+    fallers.forEach(function (d) { self.afterFall(game, d, realMs, s, fx); });
     free.forEach(function (d, k) {
       G.Drop.sense(d, game.engine, realMs, s, fx);
       d.events.forEach(function (e) { game.fx.push({ type: e, x: d.body.position.x, y: d.body.position.y + d.r, dir: d.dir, t: game.timeMs }); });
@@ -256,9 +259,71 @@ G.Game = {
     if (Math.abs(d.vel.x) > 0.05) d.dir = d.vel.x > 0 ? 1 : -1;
     d.nudge = disp > F.nudgeDist ? (d.nudge || 0) + 1 : 0;
     d.unsup = e.g && !sup.ground ? (d.unsup || 0) + 1 : 0;
-    if (disp > F.breakDist || d.nudge > F.nudgeSteps || d.unsup > F.unsupportedSteps) { this.detach(game, d); return; }
+    if (disp > F.breakDist || d.nudge > F.nudgeSteps) { this.detach(game, d); return; }
+    if (d.unsup > F.unsupportedSteps) { this.startFall(game, d); return; }   // 발밑이 사라짐 → 대열에 남은 채 떨어짐 (사용자 결정 2026-10-21)
     M.Body.setPosition(b, { x: e.x, y: e.y });     // 중력으로 살짝 내려간 만큼 되돌림
     d.grounded = e.g;
+  },
+
+  // ── 대열에 남은 채 떨어지기 (사용자 결정 2026-10-21, grill me) ──
+  //   fall: 실제 물리로 낙하 (걷던 옆 속도 유지, 걷기 조작 없음) / wait: 착지해서 제자리에 서서 자기 자리가 바닥 있는 곳이 되길 기다림
+  startFall: function (game, d) {
+    d.mode = 'fall';
+    G.Drop.setFilter(d, 'fall');
+    var v = d.vel || { x: 0, y: 0 }, vx = Math.max(-d.speed, Math.min(d.speed, v.x));   // 옆 속도는 걷는 속도까지 (대열 따라붙기로 빨라진 만큼은 뺌)
+    G.Physics.M.Body.setVelocity(d.body, { x: vx, y: Math.max(0, v.y) });
+    d.nudge = d.unsup = 0;
+  },
+
+  beforeFall: function (game, d) {
+    var M = G.Physics.M, v = d.body.velocity;
+    if (d.mode === 'wait') M.Body.setVelocity(d.body, { x: 0, y: v.y });   // 서서 기다림 (걷지 않음)
+    d.prev = { x: d.body.position.x, y: d.body.position.y };
+    d.vBefore = { x: d.body.velocity.x, y: d.body.velocity.y };
+  },
+
+  afterFall: function (game, d, realMs, s, fx) {
+    var F = G.DATA.drop.follow, b = d.body, v = b.velocity, vb = d.vBefore;
+    if (d.mode === 'wait') {                       // 서 있는 동안은 걷기 판정(턱 올라타기 등) 없이 발밑만 봄
+      var sup = G.Drop.support(d, game.engine);
+      if (sup.spike) { d.dead = 'spike'; return; }
+      d.grounded = sup.ground; d.under = sup.color; d.events.length = 0;
+    } else G.Drop.sense(d, game.engine, realMs, s, fx);
+    if (d.dead) return;
+    d.events.forEach(function (e) { game.fx.push({ type: e, x: b.position.x, y: b.position.y + d.r, dir: d.dir, t: game.timeMs }); });
+    d.vel = { x: v.x, y: v.y };
+    if (d.mode === 'fall') {
+      // 외부 영향 = 빨강에 튕김, 공중에서 옆으로 부딪힘(옆 속도가 확 바뀜), 위로 밀림. 위에서 내려서는 착지는 아님
+      if (d.events.indexOf('bounce') >= 0 || (!d.grounded && (Math.abs(v.x - vb.x) > F.fallPush || v.y - vb.y < -F.fallUp))) { this.detach(game, d); return; }
+      if (d.grounded) { d.mode = 'wait'; d.unsup = 0; G.Physics.M.Body.setVelocity(b, { x: 0, y: v.y }); }
+      return;
+    }
+    // wait: 밀리면 평소처럼 이탈, 발밑이 다시 사라지면 다시 떨어짐
+    var dx = Math.abs(b.position.x - d.prev.x);
+    d.nudge = dx > F.nudgeDist ? (d.nudge || 0) + 1 : 0;
+    if (dx > F.breakDist || d.nudge > F.nudgeSteps) { this.detach(game, d); return; }
+    d.unsup = d.grounded ? 0 : (d.unsup || 0) + 1;
+    if (d.unsup > F.unsupportedSteps) { d.mode = 'fall'; d.unsup = 0; return; }
+    var slot = this.slotS(game, d), tp = this.trailAt(game, slot, d.r);
+    if (tp.g && this.groundAt(game, tp, d.r)) this.startReturn(game, d);
+  },
+
+  // 대열 자리(발자국 위 점)에 지금 바닥이 있는가 (주인공이 지나간 뒤 지워진 선 위면 없음)
+  groundAt: function (game, p, r) {
+    var M = G.Physics.M, reach = r + G.DATA.drop.follow.supportTol;
+    var bodies = G.Physics.allBodies(game.engine).filter(function (q) { return q.label !== 'drop'; });
+    return M.Query.ray(bodies, { x: p.x, y: p.y }, { x: p.x, y: p.y + reach }, r * 1.2).length > 0;
+  },
+
+  // 자기 자리로 통 튀어 복귀 (순서 그대로). 멀수록 길고 높게
+  startReturn: function (game, d) {
+    var F = G.DATA.drop.follow, H = F.returnHop, tp = this.trailAt(game, this.slotS(game, d), d.r);
+    var dist = Math.sqrt(Math.pow(tp.x - d.body.position.x, 2) + Math.pow(tp.y - d.body.position.y, 2));
+    d.mode = 'join';
+    G.Drop.setFilter(d, 'join');
+    d.join = { t: 0, wake: 0, from: { x: d.body.position.x, y: d.body.position.y },
+      ms: Math.min(H.maxMs, Math.max(F.hopMs, dist * H.msPerPx)), h: Math.min(H.maxH, Math.max(F.hopHeight, dist * H.hPerPx)) };
+    d.s = null;
   },
 
   detach: function (game, d) {
@@ -287,8 +352,8 @@ G.Game = {
     j.t += ms;
     if (j.t < j.wake) p = j.from;
     else {
-      var u = Math.min(1, (j.t - j.wake) / F.hopMs), slot = this.slotS(game, d), tp = this.trailAt(game, slot, d.r);
-      p = { x: j.from.x + (tp.x - j.from.x) * u, y: j.from.y + (tp.y - j.from.y) * u - F.hopHeight * 4 * u * (1 - u) };
+      var u = Math.min(1, (j.t - j.wake) / (j.ms || F.hopMs)), slot = this.slotS(game, d), tp = this.trailAt(game, slot, d.r);
+      p = { x: j.from.x + (tp.x - j.from.x) * u, y: j.from.y + (tp.y - j.from.y) * u - (j.h || F.hopHeight) * 4 * u * (1 - u) };
       if (u >= 1) {
         d.mode = 'line'; d.s = slot; d.join = null; d.nudge = d.unsup = 0;
         G.Drop.setFilter(d, 'line');

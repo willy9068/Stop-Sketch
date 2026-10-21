@@ -91,7 +91,12 @@ G.DATA = {
       hopMs: 400,          // 대열 끝자리로 통 튀어 붙는 시간
       hopHeight: 70,
       rejoinReach: 1.15,   // 혼자 걷는 물방울과 주인공 중심 거리가 (두 반지름 합 × 이 값) 안이면 다시 합류
-      rejoinCdMs: 600      //   단, 바닥에 선 채로, 이탈하고 이만큼 지난 뒤에만 (사용자 요청 2026-10-20: 다리를 지우면 공중에서 다시 붙어 따라가던 문제)
+      rejoinCdMs: 600,     //   단, 바닥에 선 채로, 이탈하고 이만큼 지난 뒤에만 (사용자 요청 2026-10-20: 다리를 지우면 공중에서 다시 붙어 따라가던 문제)
+      // 발밑 바닥이 사라지면 이탈하지 않고 대열에 남은 채 떨어짐 (사용자 결정 2026-10-21, grill me): 실제 물리로 낙하(옆 속도 유지) →
+      //   착지하면 그 자리에서 기다리다, 대열 자기 자리가 바닥 있는 곳이 되면 통 튀어 복귀. 떨어지는 도중 옆으로 부딪히거나 빨강에 튕기면 이탈
+      fallPush: 1.2,       // 떨어지는 중 한 스텝에 옆 속도가 이만큼 바뀌면 = 옆으로 부딪힘 → 이탈
+      fallUp: 0.6,         // 떨어지는 중 한 스텝에 위로 이만큼 밀리면(중력 반대) → 이탈
+      returnHop: { msPerPx: 1.5, maxMs: 1000, hPerPx: 0.3, maxH: 260 }   // 자리로 복귀 폴짝: 가까우면 hopMs·hopHeight, 멀수록 길고 높게
     }
   },
 
@@ -426,7 +431,7 @@ G.LEVELS = [
       {"type":"text","x":400,"y":400,"size":20,"text":"검정 물감으로 다리를 만드세요."},
       {"type":"text","x":2300,"y":450,"size":20,"text":"빨간 물감은 물방울들을 튕겨내요."},
       {"type":"text","x":4200,"y":280,"size":20,"text":"가시에 닿으면 물방울이 사라져요."},
-      {"type":"text","x":3300,"y":460,"size":20,"text":"파랑 물감은 밟으면 빨라져요."},
+      {"type":"text","x":3300,"y":460,"size":20,"text":"파란 물감은 밟으면 빨라져요."},
       {"type":"deco","x":300,"y":150,"size":180,"img":"deco_cloud_1"},
       {"type":"deco","x":1000,"y":300,"size":180,"img":"deco_cloud_1"},
       {"type":"deco","x":2800,"y":160,"size":180,"img":"deco_cloud_3"},
@@ -449,7 +454,8 @@ G.LEVELS = [
       {"type":"drop","x":5340,"y":410},
       {"type":"text","x":4200,"y":310,"size":20,"text":"스페이스 바로 화면을 정지하고 안전하게 그려요."},
       {"type":"text","x":900,"y":420,"size":20,"text":"우클릭으로 물감을 회수하세요."},
-      {"type":"text","x":1600,"y":520,"size":20,"text":"우클릭으로 물감을 회수하세요."}
+      {"type":"text","x":4800,"y":190,"size":20,"text":"우클릭으로 물감을 회수하세요."},
+      {"type":"text","x":3300,"y":490,"size":20,"text":"빨라지면 가파른 비탈길도 오를 수 있어요."}
     ]
   },
   {
@@ -464,40 +470,45 @@ G.LEVELS = [
     "eraser": {"pct":20,"delayMs":3000},
     "camera": {"zoom":0.68,"bottom":1220,"top":-130},
     "segments": [],
-    "start": {"x":-390,"y":470},
+    "start": {"x":-1020,"y":470},
     "goal": {"x":5220,"y":708},
     "ground": [
-      {"x0":-700,"x1":180,"top":600,"h":540},
+      {"x0":-140,"x1":180,"top":600,"h":540},
       {"x0":360,"x1":540,"top":912,"h":300},
       {"x0":540,"x1":620,"top":866,"h":346,"angle":-50},
       {"x0":620,"x1":1150,"top":818,"h":393},
       {"x0":180,"x1":361,"top":756.134,"h":383.866,"angle":60},
-      {"x0":1310,"x1":2500,"top":818,"h":393},
-      {"x0":2700,"x1":3890,"top":750,"h":463},
+      {"x0":1310,"x1":1630,"top":818,"h":393},
+      {"x0":2700,"x1":3000,"top":780,"h":433},
       {"x0":4260,"x1":5450,"top":700,"h":513},
-      {"x0":3890,"x1":4260,"top":993,"h":220}
+      {"x0":3890,"x1":4260,"top":1050,"h":163},
+      {"x0":1630,"x1":2500,"top":880,"h":333},
+      {"x0":3000,"x1":3890,"top":830,"h":383},
+      {"x0":-1270,"x1":-600,"top":600,"h":540},
+      {"x0":-600,"x1":-140,"top":700,"h":440}
     ],
     "props": [
-      {"type":"wall","x":-660,"y":10,"w":40,"h":590},
+      {"type":"wall","x":-1270,"y":20,"w":40,"h":590},
       {"type":"wall","x":4260,"y":400,"w":40,"h":300},
-      {"type":"crystal","x":1820,"y":750,"w":130,"h":10,"angle":90,"pin":"end"},
-      {"type":"crystal","x":2020,"y":750,"w":130,"h":10,"angle":90,"pin":"end"},
-      {"type":"drop","x":1950,"y":800},
-      {"type":"drop","x":2020,"y":800},
+      {"type":"crystal","x":1820,"y":810,"w":130,"h":10,"angle":90,"pin":"end"},
+      {"type":"crystal","x":2020,"y":810,"w":130,"h":10,"angle":90,"pin":"end"},
+      {"type":"drop","x":1950,"y":860},
+      {"type":"drop","x":2020,"y":860},
       {"type":"drop","x":450,"y":890},
       {"type":"drop","x":1230,"y":790},
       {"type":"drop","x":3440,"y":518},
-      {"type":"star","x":4080,"y":875,"size":56},
+      {"type":"star","x":4080,"y":920,"size":56},
       {"type":"star","x":450,"y":300,"size":56},
       {"type":"star","x":3440,"y":228,"size":56},
       {"type":"platform","x":3300,"y":538,"w":270,"h":28},
-      {"type":"text","x":1530,"y":620,"size":20,"text":"노란 물감은 배치된 선을 지울 수 있어요."},
-      {"type":"text","x":370,"y":650,"size":20,"text":"초록 물감은 천천히 떠올라요."},
+      {"type":"text","x":1700,"y":620,"size":20,"text":"노란 물감은 배치된 선을 지울 수 있어요."},
+      {"type":"text","x":-700,"y":420,"size":20,"text":"초록 물감은 천천히 떠올라요."},
       {"type":"crystal","x":3240,"y":468,"w":130,"h":10,"angle":90,"pin":"end"},
       {"type":"crystal","x":3500,"y":468,"w":130,"h":10,"angle":90,"pin":"end"},
-      {"type":"spike","x":3890,"y":944,"w":370,"h":50},
-      {"type":"crystal","x":3890,"y":824,"w":370,"h":10,"angle":180,"pin":"end"},
-      {"type":"wall","x":5411,"y":-10,"w":40,"h":716}
+      {"type":"spike","x":3890,"y":1000,"w":370,"h":50},
+      {"type":"crystal","x":3890,"y":860,"w":370,"h":10,"angle":180,"pin":"end"},
+      {"type":"wall","x":5411,"y":-10,"w":40,"h":716},
+      {"type":"drop","x":-370,"y":680}
     ]
   },
   {
@@ -1368,6 +1379,7 @@ G.Drop = {
     return {
       body: body, r: r, hero: !!hero, dir: dir || 1, state: 'walk', grounded: false,
       mode: hero ? 'hero' : 'free',                // 작은 물방울: free 혼자 걷기 / join 깨어나 대열로 튀는 중 / line 대열 (사용자 결정 2026-10-20)
+                                                   //   / fall 대열에 남은 채 떨어지는 중 / wait 착지해 복귀 기다림 (사용자 결정 2026-10-21)
       speed: (hero ? cfg.heroSpeed : cfg.smallSpeed) || D.runSpeed,
       turnCdMs: 0, turns: 0, boostMs: 0, bounceCdMs: 0, bounces: 0, pinchMs: 0, onInk: null,
       events: [], dead: null
@@ -1500,7 +1512,7 @@ G.Drop = {
     return { ground: hit.length > 0, spike: false, color: color };
   },
 
-  // 대열에 붙는 동안은 아무것과도 안 부딪힘 (통 튀어 날아가는 중), 대열에선 물방울끼리 통과, 혼자 걸을 땐 스테이지 설정대로
+  // 대열에 붙는 동안은 아무것과도 안 부딪힘 (통 튀어 날아가는 중), 대열에선 물방울끼리 통과(떨어지는 중·기다리는 중 포함), 혼자 걸을 땐 스테이지 설정대로
   setFilter: function (d, mode, collide) {
     var f = d.body.collisionFilter;
     f.mask = mode === 'join' ? 0 : 0xFFFFFFFF;
@@ -1896,12 +1908,15 @@ G.Game = {
     var free = walk.filter(function (d) { return d.mode === 'hero' || d.mode === 'free'; });
     var liners = walk.filter(function (d) { return d.mode === 'line'; });
     var joiners = walk.filter(function (d) { return d.mode === 'join'; });
+    var fallers = walk.filter(function (d) { return d.mode === 'fall' || d.mode === 'wait'; });
 
     var vyBefore = free.map(function (d) { return { g: d.grounded, vy: d.body.velocity.y }; });
     free.forEach(function (d) { G.Drop.control(d, s, fx); });
     liners.forEach(function (d) { self.placeLine(game, d); });
+    fallers.forEach(function (d) { self.beforeFall(game, d); });
     G.Physics.step(game.engine, s);
     liners.forEach(function (d) { self.checkLine(game, d); });
+    fallers.forEach(function (d) { self.afterFall(game, d, realMs, s, fx); });
     free.forEach(function (d, k) {
       G.Drop.sense(d, game.engine, realMs, s, fx);
       d.events.forEach(function (e) { game.fx.push({ type: e, x: d.body.position.x, y: d.body.position.y + d.r, dir: d.dir, t: game.timeMs }); });
@@ -2025,9 +2040,71 @@ G.Game = {
     if (Math.abs(d.vel.x) > 0.05) d.dir = d.vel.x > 0 ? 1 : -1;
     d.nudge = disp > F.nudgeDist ? (d.nudge || 0) + 1 : 0;
     d.unsup = e.g && !sup.ground ? (d.unsup || 0) + 1 : 0;
-    if (disp > F.breakDist || d.nudge > F.nudgeSteps || d.unsup > F.unsupportedSteps) { this.detach(game, d); return; }
+    if (disp > F.breakDist || d.nudge > F.nudgeSteps) { this.detach(game, d); return; }
+    if (d.unsup > F.unsupportedSteps) { this.startFall(game, d); return; }   // 발밑이 사라짐 → 대열에 남은 채 떨어짐 (사용자 결정 2026-10-21)
     M.Body.setPosition(b, { x: e.x, y: e.y });     // 중력으로 살짝 내려간 만큼 되돌림
     d.grounded = e.g;
+  },
+
+  // ── 대열에 남은 채 떨어지기 (사용자 결정 2026-10-21, grill me) ──
+  //   fall: 실제 물리로 낙하 (걷던 옆 속도 유지, 걷기 조작 없음) / wait: 착지해서 제자리에 서서 자기 자리가 바닥 있는 곳이 되길 기다림
+  startFall: function (game, d) {
+    d.mode = 'fall';
+    G.Drop.setFilter(d, 'fall');
+    var v = d.vel || { x: 0, y: 0 }, vx = Math.max(-d.speed, Math.min(d.speed, v.x));   // 옆 속도는 걷는 속도까지 (대열 따라붙기로 빨라진 만큼은 뺌)
+    G.Physics.M.Body.setVelocity(d.body, { x: vx, y: Math.max(0, v.y) });
+    d.nudge = d.unsup = 0;
+  },
+
+  beforeFall: function (game, d) {
+    var M = G.Physics.M, v = d.body.velocity;
+    if (d.mode === 'wait') M.Body.setVelocity(d.body, { x: 0, y: v.y });   // 서서 기다림 (걷지 않음)
+    d.prev = { x: d.body.position.x, y: d.body.position.y };
+    d.vBefore = { x: d.body.velocity.x, y: d.body.velocity.y };
+  },
+
+  afterFall: function (game, d, realMs, s, fx) {
+    var F = G.DATA.drop.follow, b = d.body, v = b.velocity, vb = d.vBefore;
+    if (d.mode === 'wait') {                       // 서 있는 동안은 걷기 판정(턱 올라타기 등) 없이 발밑만 봄
+      var sup = G.Drop.support(d, game.engine);
+      if (sup.spike) { d.dead = 'spike'; return; }
+      d.grounded = sup.ground; d.under = sup.color; d.events.length = 0;
+    } else G.Drop.sense(d, game.engine, realMs, s, fx);
+    if (d.dead) return;
+    d.events.forEach(function (e) { game.fx.push({ type: e, x: b.position.x, y: b.position.y + d.r, dir: d.dir, t: game.timeMs }); });
+    d.vel = { x: v.x, y: v.y };
+    if (d.mode === 'fall') {
+      // 외부 영향 = 빨강에 튕김, 공중에서 옆으로 부딪힘(옆 속도가 확 바뀜), 위로 밀림. 위에서 내려서는 착지는 아님
+      if (d.events.indexOf('bounce') >= 0 || (!d.grounded && (Math.abs(v.x - vb.x) > F.fallPush || v.y - vb.y < -F.fallUp))) { this.detach(game, d); return; }
+      if (d.grounded) { d.mode = 'wait'; d.unsup = 0; G.Physics.M.Body.setVelocity(b, { x: 0, y: v.y }); }
+      return;
+    }
+    // wait: 밀리면 평소처럼 이탈, 발밑이 다시 사라지면 다시 떨어짐
+    var dx = Math.abs(b.position.x - d.prev.x);
+    d.nudge = dx > F.nudgeDist ? (d.nudge || 0) + 1 : 0;
+    if (dx > F.breakDist || d.nudge > F.nudgeSteps) { this.detach(game, d); return; }
+    d.unsup = d.grounded ? 0 : (d.unsup || 0) + 1;
+    if (d.unsup > F.unsupportedSteps) { d.mode = 'fall'; d.unsup = 0; return; }
+    var slot = this.slotS(game, d), tp = this.trailAt(game, slot, d.r);
+    if (tp.g && this.groundAt(game, tp, d.r)) this.startReturn(game, d);
+  },
+
+  // 대열 자리(발자국 위 점)에 지금 바닥이 있는가 (주인공이 지나간 뒤 지워진 선 위면 없음)
+  groundAt: function (game, p, r) {
+    var M = G.Physics.M, reach = r + G.DATA.drop.follow.supportTol;
+    var bodies = G.Physics.allBodies(game.engine).filter(function (q) { return q.label !== 'drop'; });
+    return M.Query.ray(bodies, { x: p.x, y: p.y }, { x: p.x, y: p.y + reach }, r * 1.2).length > 0;
+  },
+
+  // 자기 자리로 통 튀어 복귀 (순서 그대로). 멀수록 길고 높게
+  startReturn: function (game, d) {
+    var F = G.DATA.drop.follow, H = F.returnHop, tp = this.trailAt(game, this.slotS(game, d), d.r);
+    var dist = Math.sqrt(Math.pow(tp.x - d.body.position.x, 2) + Math.pow(tp.y - d.body.position.y, 2));
+    d.mode = 'join';
+    G.Drop.setFilter(d, 'join');
+    d.join = { t: 0, wake: 0, from: { x: d.body.position.x, y: d.body.position.y },
+      ms: Math.min(H.maxMs, Math.max(F.hopMs, dist * H.msPerPx)), h: Math.min(H.maxH, Math.max(F.hopHeight, dist * H.hPerPx)) };
+    d.s = null;
   },
 
   detach: function (game, d) {
@@ -2056,8 +2133,8 @@ G.Game = {
     j.t += ms;
     if (j.t < j.wake) p = j.from;
     else {
-      var u = Math.min(1, (j.t - j.wake) / F.hopMs), slot = this.slotS(game, d), tp = this.trailAt(game, slot, d.r);
-      p = { x: j.from.x + (tp.x - j.from.x) * u, y: j.from.y + (tp.y - j.from.y) * u - F.hopHeight * 4 * u * (1 - u) };
+      var u = Math.min(1, (j.t - j.wake) / (j.ms || F.hopMs)), slot = this.slotS(game, d), tp = this.trailAt(game, slot, d.r);
+      p = { x: j.from.x + (tp.x - j.from.x) * u, y: j.from.y + (tp.y - j.from.y) * u - (j.h || F.hopHeight) * 4 * u * (1 - u) };
       if (u >= 1) {
         d.mode = 'line'; d.s = slot; d.join = null; d.nudge = d.unsup = 0;
         G.Drop.setFilter(d, 'line');

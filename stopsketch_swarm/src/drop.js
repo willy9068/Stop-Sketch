@@ -21,6 +21,7 @@ G.Drop = {
     return {
       body: body, r: r, hero: !!hero, dir: dir || 1, state: 'walk', grounded: false,
       mode: hero ? 'hero' : 'free',                // 작은 물방울: free 혼자 걷기 / join 깨어나 대열로 튀는 중 / line 대열 (사용자 결정 2026-10-20)
+                                                   //   / fall 대열에 남은 채 떨어지는 중 / wait 착지해 복귀 기다림 (사용자 결정 2026-10-21)
       speed: (hero ? cfg.heroSpeed : cfg.smallSpeed) || D.runSpeed,
       turnCdMs: 0, turns: 0, boostMs: 0, bounceCdMs: 0, bounces: 0, pinchMs: 0, onInk: null,
       events: [], dead: null
@@ -153,7 +154,7 @@ G.Drop = {
     return { ground: hit.length > 0, spike: false, color: color };
   },
 
-  // 대열에 붙는 동안은 아무것과도 안 부딪힘 (통 튀어 날아가는 중), 대열에선 물방울끼리 통과, 혼자 걸을 땐 스테이지 설정대로
+  // 대열에 붙는 동안은 아무것과도 안 부딪힘 (통 튀어 날아가는 중), 대열에선 물방울끼리 통과(떨어지는 중·기다리는 중 포함), 혼자 걸을 땐 스테이지 설정대로
   setFilter: function (d, mode, collide) {
     var f = d.body.collisionFilter;
     f.mask = mode === 'join' ? 0 : 0xFFFFFFFF;

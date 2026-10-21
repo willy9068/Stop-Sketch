@@ -475,3 +475,27 @@ G.LEVELS.forEach(function (lv) {
   var pieces = g.level.crystals.length;           // 가운데를 지우면 배치된 선 하나가 양 끝 두 조각으로 (양쪽 못 박힘)
   console.log('22 노랑 여러 번: 기다리던 노랑 ' + pending + '개 → 재생 뒤 남은 노랑 ' + g.lines.length + ' · 배치된 선 ' + before + '개 → 조각 ' + pieces + '개 (노랑 0 · 조각 6 이어야 정상)');
 })();
+
+// 23. 발밑이 사라지면 대열에 남은 채 떨어짐 (사용자 결정 2026-10-21, grill me): 초록 엘리베이터를 타고 오르다 우클릭으로 회수 →
+//     그냥 떨어지면 이탈 0 · 착지 뒤 자기 자리로 복귀해 대열 3. 떨어지는 곳에 빨강이 있으면 튕겨서 이탈
+(function () {
+  function well(red, w) {
+    var lv = { id: 't', name: '시험', ink: 5000, stops: 9, start: { x: 800, y: 600 }, goal: { x: 3000, y: 760 }, inks: ['black', 'green', 'red'],
+      drops: { heroSpeed: 2.5, smallSpeed: 2.5, follow: true, gap: 32 }, eraser: { pct: 1, delayMs: 600000 },
+      ground: [{ x0: -700, x1: 1150, top: 600, h: 400 }, { x0: 1150, x1: 1150 + w, top: 900, h: 400 }, { x0: 1150 + w, x1: 3910, top: 760, h: 440 }],
+      props: [{ type: 'drop', x: 900, y: 587 }, { type: 'drop', x: 940, y: 587 }, { type: 'drop', x: 980, y: 587 }] };
+    var g = G.Game.create('A', lv); G.Game.start(g);
+    for (var i = 0; i < 60 * 6; i++) G.Game.update(g, STEP);
+    var gp = []; for (var x = 1110; x <= 1190 + w; x += 4) gp.push({ x: x, y: 897 });
+    drawLine(g, gp, 'green');
+    for (i = 0; i < 60 * 2 || (i < 60 * 8 && Math.abs(g.hero.body.position.x - 1150 - w / 2) > 20); i++) G.Game.update(g, STEP);   // 140px 넘게 오른 뒤 주인공이 우물 가운데일 때
+    if (red) drawLine(g, [{ x: 1150, y: 897 }, { x: 1150 + w, y: 897 }], 'red');
+    var gl = g.lines[0], fell = 0;
+    G.Draw.suck(g, { x: gl.body.position.x, y: gl.body.position.y }, 200);
+    for (i = 0; i < 60 * 4; i++) { G.Game.update(g, STEP); fell = Math.max(fell, g.line.filter(function (d) { return d.mode === 'fall'; }).length); }
+    var det = g.drops.reduce(function (n, d) { return n + (d.detaches || 0); }, 0);
+    return '떨어진 대열 ' + fell + ' · 이탈 ' + det + ' · 대열 ' + g.line.filter(function (d) { return d.mode === 'line'; }).length;
+  }
+  console.log('23 대열에 남은 채 떨어짐: 넓은 우물 ' + well(false, 700) + ' / 좁은 우물(벽 옆면에 부딪힘) ' + well(false, 160) + ' / 빨강 위로 ' + well(true, 700) +
+    '\n   (넓은 우물: 이탈 0 · 대열 3, 좁은 우물·빨강: 이탈 1 이상이어야 정상. 이탈한 물방울도 주인공에 닿으면 다시 붙음)');
+})();
