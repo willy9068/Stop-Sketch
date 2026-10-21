@@ -420,7 +420,7 @@ G.UI = (function () {
       }
       if (f.type === 'absorb') {
         var lv = game.level.data, gy = lv.goal.y;
-        t = (game.timeMs - f.t) / 500;
+        t = fxAge(game, f) / ABSORB_MS;
         img = G.Assets.get('fx_absorb');
         if (t < 0 || t >= 1) return;
         ctx.save(); ctx.globalAlpha = 1 - t;
@@ -616,10 +616,18 @@ G.UI = (function () {
     ctx.lineWidth = 2; ctx.strokeStyle = on ? C.outline : 'rgba(43,33,24,0.35)'; ctx.stroke();
   }
 
-  // 클리어 결과 창은 잉크병이 다 밝아진 뒤 resultDelayMs 더 기다렸다가 (사용자 요청 2026-10-20: 정화되는 모습을 1초 더)
+  // 효과가 나온 뒤 지난 시간. 게임 시간 기준이지만 판이 끝나면(게임 시간이 멈춤) 실제 시간으로 이어서 →
+  //   마지막 물방울의 흡수 효과가 클리어 순간 굳지 않고 끝까지 재생됨 (사용자 요청 2026-10-21)
+  var ABSORB_MS = 500;
+  function fxAge(game, f) { return game.timeMs - f.t + (game.status === 'run' ? 0 : Math.max(0, Date.now() - game.finishedAt)); }
+  function absorbPlaying(game) { return game.fx.some(function (f) { return f.type === 'absorb' && fxAge(game, f) < ABSORB_MS; }); }
+
+  // 클리어 결과 창은 잉크병이 다 밝아지고 흡수 효과(fx_absorb)가 다 끝난 뒤 resultDelayMs 더 기다렸다가
+  //   (사용자 요청 2026-10-20: 정화되는 모습을 1초 더 / 2026-10-21: 흡수 효과가 다 나왔다 사라진 다음)
   var jarDoneAt = 0;
   function resultReady(game) {
     if (game.status !== 'clear') return true;
+    if (absorbPlaying(game)) { jarDoneAt = 0; return false; }
     if (jarShown < G.Game.purity(game) - 1e-6) { jarDoneAt = 0; return false; }
     if (!jarDoneAt) jarDoneAt = Date.now();
     return Date.now() - jarDoneAt >= G.DATA.goalEnter.resultDelayMs;
