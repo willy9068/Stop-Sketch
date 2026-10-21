@@ -386,9 +386,9 @@ G.LEVELS.forEach(function (lv) {
       if (t0 === null && x > 600) t0 = i;
       if (t1 === null && x > 600 + w) t1 = i;
     }
-    return t1 === null ? '못 넘음' : '속도 ' + (len / 3 / (t1 - t0) * 100).toFixed(0) + '%';
+    return t1 === null ? '못 넘음' + (g.hero.dir < 0 ? '→되돌아섬' : '') : '속도 ' + (len / 3 / (t1 - t0) * 100).toFixed(0) + '%';
   }
   var out = [0, 10, 20, 30, 31, 45].map(function (a) { return a + '° ' + slope(a, 300); });
   var help = [[35, 120], [45, 100], [60, 80]].map(function (c) { return c[0] + '° ' + slope(c[0], c[1], true); });
-  console.log('18 오르막 (길이 300, 평지 대비 속도): ' + out.join(' · ') + '\n   파랑 가속 (짧은 비탈): ' + help.join(' · ') + ' (30도까지 넘고 31도부터 못 넘음, 가속하면 45도까지 넘고 60도는 못 넘어야 정상)');
+  console.log('18 오르막 (길이 300, 평지 대비 속도): ' + out.join(' · ') + '\n   파랑 가속 (짧은 비탈): ' + help.join(' · ') + ' (30도까지 넘고 31도부터 못 넘고 되돌아섬, 가속하면 45도까지 넘고 60도는 못 넘어야 정상)');
 })();

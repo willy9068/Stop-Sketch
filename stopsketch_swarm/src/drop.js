@@ -46,6 +46,10 @@ G.Drop = {
         if (along > 0) {
           var drag = Math.min(along, D.slope.steepDrag * (deg - D.slope.steps[D.slope.steps.length - 1][0]) / 10 * scale);
           M.Body.setVelocity(d.body, { x: v.x - ux * drag, y: v.y - uy * drag });
+        } else if (d.turnCdMs === 0) {              // 다 멈추고 미끄러지기 시작하면 반대 방향으로 (사용자 결정 2026-10-21)
+          d.dir = -d.dir;
+          d.turns += 1;
+          d.turnCdMs = D.turnCooldownMs;
         }
         return;
       }
