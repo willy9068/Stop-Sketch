@@ -36,7 +36,7 @@ G.UITEXT = {
     "toast.inkLocked": "{ink}: 이 스테이지에서는 아직 못 써요",
     "toast.stopUp": "정지 +{n} (이 스테이지에서만)",
     "toast.inkUp": "잉크 최대량 +{n} (영구)",
-    "toast.heroHome": "주인공 도착! Enter: 남은 물방울을 기다리지 않고 끝내기",
+    "toast.heroHome": "주인공 도착!",
     "toast.short": "선이 너무 짧아요 (잉크 반환)",
     "toast.noCrystal": "노랑: 칠한 자리에 배치된 선이 없어요",
     "toast.noSuck": "빨아들일 선이 없어요",

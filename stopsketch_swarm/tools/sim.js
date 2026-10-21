@@ -81,17 +81,20 @@ G.LEVELS.forEach(function (lv) {
   plans.forEach(function (p, i) { report('    - ' + p.what + ' 빼면', play(lv, plans, i)); });
 });
 
-// 3. 스킵: 주인공이 도착했을 때 아직 걷는 물방울이 있으면 Enter 로 끝냄 → 그 물방울은 죽은 것 (사용자 결정 2026-10-20)
+// 3. 주인공 도착 (사용자 결정 2026-10-21: 스킵 끔): 주인공이 도착하면 이탈해 혼자 걷던 물방울은 죽은 것, 대열은 마저 들어가고 결과 창
 (function () {
-  var lv = { id: 't', name: '시험', ink: 1000, stops: 3, start: { x: 0 }, goal: { x: 600 }, inks: ['black'],
-    ground: [{ x0: -400, x1: 2000, top: 600 }],
-    props: [{ type: 'wall', x: -300, y: 400, w: 40, h: 200 }, { type: 'drop', x: -150, y: 587 }] };
+  var lv = { id: 't', name: '시험', ink: 1000, stops: 3, start: { x: 0 }, goal: { x: 600 }, inks: ['black'], drops: { follow: true },
+    ground: [{ x0: -1400, x1: 2000, top: 600 }],
+    props: [{ type: 'drop', x: 60, y: 587 }, { type: 'drop', x: 100, y: 587 },
+      { type: 'wall', x: -1300, y: 400, w: 40, h: 200 }, { type: 'wall', x: -900, y: 400, w: 40, h: 200 }] };   // 두 벽 사이에 가둔 이탈 물방울
   var g = G.Game.create('A', lv); G.Game.start(g);
-  g.hero.dir = -1;                                 // 뒤로 출발 → 잠든 물방울을 깨우고 벽에서 돌아 옴 (깨어난 물방울은 뒤따름)
-  for (var i = 0; i < 60 * 20 && g.status === 'run' && !g.heroHome; i++) G.Game.update(g, STEP);
-  var walking = G.Game.walking(g).length, can = G.Game.canSkip(g);
-  G.Game.skip(g);
-  console.log('3 스킵: 주인공 도착', g.heroHome, '· 그때 걷는 물방울', walking, '· 스킵 가능', can, '→', g.status, '도착', g.rescued + '/' + g.total, '잃음', g.lost);
+  for (var i = 0; i < 60; i++) G.Game.update(g, STEP);
+  var lone = g.line[0];                            // 1초 뒤 하나를 이탈시켜 두 벽 사이로 보냄
+  if (lone) { G.Game.detach(g, lone); lone.dir = -1; G.Physics.M.Body.setPosition(lone.body, { x: -1100, y: 580 }); }
+  for (i = 0; i < 60 * 30 && g.status === 'run' && !g.heroHome; i++) G.Game.update(g, STEP);
+  var alone = G.Game.walking(g).filter(function (d) { return d.mode === 'free'; }).length, can = G.Game.canSkip(g);
+  for (i = 0; i < 60 * 10 && g.status === 'run'; i++) G.Game.update(g, STEP);
+  console.log('3 주인공 도착:', g.heroHome, '· 도착 직후 남은 이탈 물방울', alone, '· 스킵 가능', can, '→', g.status, '도착', g.rescued + '/' + g.total, '잃음', g.lost, '(남은 이탈 0 · clear 1/2 잃음 1 · 스킵 false 이어야 정상)');
 })();
 
 // 4. 지우개: 주인공을 왼쪽 벽 쪽에 세워 두면 지우개에 지워져 실패

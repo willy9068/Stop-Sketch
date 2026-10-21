@@ -84,7 +84,7 @@ var G = G || {};
       if (g.status === 'ready') G.Game.start(g); else G.Game.toggleStop(g);
       return;
     }
-    if (e.code === 'Enter') { e.preventDefault(); if (g.status === 'ready') G.Game.start(g); else G.Game.skip(g); return; }
+    if (e.code === 'Enter') { e.preventDefault(); if (g.status === 'ready') G.Game.start(g); else G.Game.skip(g); return; }   // 스킵은 data.js goalEnter.skip 이 켜졌을 때만
     if (e.code === 'KeyR') app.restart();
     else if (e.code === 'KeyN') { if (g.status === 'clear' && g.hasNext) app.goLevel(app.levelIndex + 1); }
     else if (e.code === 'KeyD') G.Debug.toggle(app);

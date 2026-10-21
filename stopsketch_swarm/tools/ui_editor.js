@@ -13,12 +13,12 @@ var G = G || {};
   // 장면: 어떤 글자가 어디서 나오는지 보기 위한 게임 상태
   var SCENES = [
     ['ready', '출발 전'], ['run', '달리는 중'], ['stop', '정지 중'], ['toast', '알림 문구'],
-    ['skip', '주인공 도착(스킵)'], ['clear', '클리어 결과'], ['fail', '실패 결과']
+    ['clear', '클리어 결과'], ['fail', '실패 결과']
   ];
   // 글자 묶음: 이름 앞부분 → [제목, 장면]
   var GROUPS = [
     ['hud', '위 막대', 'run'], ['shelf', '아래 물감 선반', 'run'], ['ink', '물감 이름', 'run'], ['stop', '정지 화면', 'stop'],
-    ['ready', '출발 전 화면', 'ready'], ['skip', '스킵 버튼', 'skip'], ['result', '결과 창', 'clear'], ['fail', '실패 이유 (결과 창 제목)', 'fail'],
+    ['ready', '출발 전 화면', 'ready'], ['skip', '스킵 버튼 (지금 꺼짐: data.js goalEnter.skip)', 'run'], ['result', '결과 창', 'clear'], ['fail', '실패 이유 (결과 창 제목)', 'fail'],
     ['toast', '알림 문구 (화면 가운데 빨간 글자)', 'toast']
   ];
   var LABEL = {
@@ -40,7 +40,7 @@ var G = G || {};
     ['hudH', '위 막대 높이', 'run'], ['hudBg', '위 막대 바탕색', 'run'], ['hudLabelSize', '위 막대 "잉크·정지" 크기', 'run'],
     ['hudValueSize', '잉크 숫자 크기', 'run'], ['hudHomeSize', '도착 물방울 크기', 'run'], ['hudSmallSize', '위 막대 작은 글자 크기', 'run'],
     ['inkX', '잉크 x 위치', 'run'], ['inkGaugeW', '잉크 막대 길이', 'run'], ['stopX', '정지 x 위치', 'run'], ['lineLenSize', '머리 위 대열 수 크기', 'run'],
-    ['skipY', '스킵 버튼 y', 'skip'], ['skipW', '스킵 버튼 폭', 'skip'], ['skipSize', '스킵 버튼 글자 크기', 'skip'],
+    ['skipY', '스킵 버튼 y (꺼짐)', 'run'], ['skipW', '스킵 버튼 폭 (꺼짐)', 'run'], ['skipSize', '스킵 버튼 글자 크기 (꺼짐)', 'run'],
     ['shelfNameSize', '선반 옆 색 이름 크기', 'run'], ['shelfHelpSize', '선반 옆 안내 크기', 'run'],
     ['stopBannerY', '정지 안내 y', 'stop'], ['stopBannerSize', '정지 안내 크기', 'stop'], ['stopColor', '정지 테두리·안내 색', 'stop'],
     ['msgY', '알림 문구 y', 'toast'], ['msgSize', '알림 문구 크기', 'toast'], ['msgColor', '알림 문구 색', 'toast'],

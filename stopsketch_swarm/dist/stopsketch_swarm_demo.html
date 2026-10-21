@@ -98,7 +98,8 @@ G.DATA = {
   // 잉크병에 들어가기 (사용자 요청 2026-10-20): 닿은 순서대로 병 앞에 줄 서고, 맨 앞부터 gapMs 마다 하나씩 enterMs 동안 입구로 뛰어듦.
   //   병은 들어간 만큼 jarFadePerSec 속도로 서서히 밝아짐
   goalEnter: { gapMs: 420, enterMs: 650, hopHeight: 70, endScale: 0.35, spacing: 26, slide: 0.15, jarFadePerSec: 0.35, resultDelayMs: 1000,   // resultDelayMs: 병이 다 밝아진 뒤 결과 창까지 (사용자 요청 2026-10-20)
-    jarCurve: 0.5 },   // 정화 색 비율 = 정화 정도 ^ jarCurve (1 이면 그대로, 작을수록 적게 들어가도 많이 밝아짐. 사용자 요청 2026-10-21: 0.5 → 정화 50% 면 색 71%)
+    jarCurve: 0.5,
+    skip: false },     // 주인공 도착 뒤 Enter·버튼으로 끝내기 (사용자 결정 2026-10-21: 끔. 대신 주인공이 도착하면 이탈한 물방울은 죽은 것으로 → 대열이 다 들어가면 결과 창)   // 정화 색 비율 = 정화 정도 ^ jarCurve (1 이면 그대로, 작을수록 적게 들어가도 많이 밝아짐. 사용자 요청 2026-10-21: 0.5 → 정화 50% 면 색 71%)
 
   // 물들기 (사용자 결정 2026-10-20): 색 선(노랑 제외, 검정 포함)을 밟고 있으면 물방울이 그 색으로 점차 물듦(다른 색이면 섞이며 넘어감).
   //   내려와도 holdMs 동안 유지, 그 뒤 fadeMs 에 걸쳐 원래 하늘색으로. 잉크병 색에는 섞이지 않음 (사용자 요청 2026-10-21: 섞는 기능 뺌)
@@ -275,7 +276,7 @@ G.UITEXT = {
     "toast.inkLocked": "{ink}: 이 스테이지에서는 아직 못 써요",
     "toast.stopUp": "정지 +{n} (이 스테이지에서만)",
     "toast.inkUp": "잉크 최대량 +{n} (영구)",
-    "toast.heroHome": "주인공 도착! Enter: 남은 물방울을 기다리지 않고 끝내기",
+    "toast.heroHome": "주인공 도착!",
     "toast.short": "선이 너무 짧아요 (잉크 반환)",
     "toast.noCrystal": "노랑: 칠한 자리에 배치된 선이 없어요",
     "toast.noSuck": "빨아들일 선이 없어요",
@@ -382,47 +383,57 @@ G.LEVELS = [
     "stops": 3,
     "inks": ["black","red","blue"],
     "fx": {"bounce":15,"boostPct":190,"boostMs":1200,"riseSpeed":1.2},
-    "drops": {"heroSpeed":2.5,"smallSpeed":3.5,"collide":false,"follow":true,"gap":32},
+    "drops": {"heroSpeed":2.5,"smallSpeed":2.5,"collide":false,"follow":true,"gap":28},
     "eraser": {"pct":10,"delayMs":3000},
-    "camera": {"zoom":0.9,"bottom":790,"top":-410},
+    "camera": {"zoom":0.9,"bottom":1000,"top":-470},
     "segments": [{"x":-700,"name":"이동 구간"}],
     "start": {"x":-420,"y":420},
-    "goal": {"x":5760,"y":440},
+    "goal": {"x":6400,"y":447},
     "ground": [
       {"x0":-700,"x1":-150,"top":500,"h":500},
       {"x0":750,"x1":1400,"top":550,"h":450},
-      {"x0":2390,"x1":2790,"top":670,"h":330},
-      {"x0":3700,"x1":6090,"top":430,"h":570},
-      {"x0":1600,"x1":2390,"top":600,"h":400},
+      {"x0":2390,"x1":2790,"top":700,"h":300},
+      {"x0":4810,"x1":6630,"top":440,"h":560},
+      {"x0":1600,"x1":2390,"top":650,"h":350},
       {"x0":-150,"x1":600,"top":550,"h":450},
-      {"x0":2790,"x1":3480,"top":600,"h":400}
+      {"x0":2790,"x1":3600,"top":650,"h":350},
+      {"x0":3600,"x1":3900,"top":546,"h":454,"angle":-35},
+      {"x0":3900,"x1":4410,"top":441,"h":559},
+      {"x0":4410,"x1":4810,"top":650,"h":350}
     ],
     "props": [
       {"type":"wall","x":-670,"y":200,"w":40,"h":300},
-      {"type":"wall","x":4690,"y":240,"w":40,"h":190},
-      {"type":"drop","x":0,"y":530},
+      {"type":"wall","x":5400,"y":290,"w":40,"h":150},
       {"type":"drop","x":200,"y":530},
-      {"type":"drop","x":400,"y":530},
-      {"type":"drop","x":950,"y":530},
-      {"type":"drop","x":1150,"y":530},
-      {"type":"drop","x":1840,"y":580},
-      {"type":"drop","x":2150,"y":580},
-      {"type":"drop","x":4000,"y":410},
-      {"type":"drop","x":3280,"y":580},
-      {"type":"star","x":1520,"y":520,"size":56},
-      {"type":"star","x":2600,"y":260,"size":56},
-      {"type":"star","x":4710,"y":160,"size":56},
+      {"type":"drop","x":680,"y":530},
+      {"type":"drop","x":1520,"y":550},
+      {"type":"drop","x":4100,"y":410},
+      {"type":"star","x":5900,"y":100,"size":56},
+      {"type":"star","x":2600,"y":300,"size":56},
+      {"type":"star","x":4610,"y":510,"size":56},
       {"type":"text","x":-690,"y":190,"size":20,"text":"스페이스: 시간 정지 · 드래그: 선 그리기 · 우클릭: 잉크 돌려받기"},
       {"type":"text","x":600,"y":470,"size":20,"text":"1 검정 — 틈에 걸쳐 다리"},
       {"type":"text","x":1370,"y":230,"size":20,"text":"2 빨강 — 밟으면 튕겨요 "},
       {"type":"text","x":3020,"y":300,"size":20,"text":"턱은 빨강으로 튕기거나 검정 비탈로"},
       {"type":"text","x":3300,"y":210,"size":20,"text":"3 파랑 — 밟으면 빨라져 멀리 뛰어요"},
       {"type":"deco","x":300,"y":150,"size":180,"img":"deco_cloud_1"},
-      {"type":"deco","x":1500,"y":120,"size":180,"img":"deco_cloud_2"},
+      {"type":"deco","x":1000,"y":300,"size":180,"img":"deco_cloud_1"},
       {"type":"deco","x":2800,"y":160,"size":180,"img":"deco_cloud_3"},
-      {"type":"wall","x":6020,"y":130,"w":40,"h":300},
-      {"type":"drop","x":3000,"y":580},
-      {"type":"drop","x":4300,"y":410,"size":null}
+      {"type":"wall","x":6590,"y":-460,"w":40,"h":910},
+      {"type":"spike","x":4410,"y":600,"w":400,"h":50},
+      {"type":"deco","x":-210,"y":10,"size":180,"img":"deco_cloud_2"},
+      {"type":"deco","x":1800,"y":20,"size":180,"img":"deco_cloud_1"},
+      {"type":"deco","x":1660,"y":340,"size":180,"img":"deco_cloud_2"},
+      {"type":"deco","x":1160,"y":-110,"size":180,"img":"deco_cloud_3"},
+      {"type":"deco","x":2300,"y":240,"size":180,"img":"deco_cloud_2"},
+      {"type":"deco","x":5730,"y":170,"size":180,"img":"deco_cloud_3"},
+      {"type":"deco","x":3600,"y":160,"size":180,"img":"deco_cloud_2"},
+      {"type":"deco","x":3260,"y":390,"size":180,"img":"deco_cloud_1"},
+      {"type":"deco","x":4090,"y":-10,"size":180,"img":"deco_cloud_3"},
+      {"type":"deco","x":4600,"y":210,"size":180,"img":"deco_cloud_2"},
+      {"type":"deco","x":5140,"y":40,"size":180,"img":"deco_cloud_1"},
+      {"type":"deco","x":6400,"y":10,"size":180,"img":"deco_cloud_2"},
+      {"type":"deco","x":5970,"y":-100,"size":180,"img":"deco_cloud_1"}
     ]
   },
   {
@@ -626,6 +637,30 @@ G.LEVELS = [
       {"type":"text","x":1650,"y":560,"size":20,"text":"우물 속 물방울은 초록으로 들어 올리고, 그 뒤 검정 다리"},
       {"type":"text","x":3350,"y":420,"size":20,"text":"파랑으로 빨라진 뒤 빨강으로 튕기면 멀리"},
       {"type":"deco","x":1300,"y":150,"size":180,"img":"deco_cloud_3"}
+    ]
+  },
+  {
+    "id": "w6",
+    "name": "스테이지 6",
+    "bg": "bg_a",
+    "ink": 2000,
+    "stops": 3,
+    "inks": ["black","red","blue","green","yellow"],
+    "fx": {"bounce":15,"boostPct":190,"boostMs":1200,"riseSpeed":1.2},
+    "drops": {"heroSpeed":2.5,"smallSpeed":5.2,"collide":false,"follow":true,"gap":32},
+    "eraser": {"pct":20,"delayMs":3000},
+    "camera": {"zoom":1,"bottom":730,"top":-880},
+    "segments": [],
+    "start": {"x":200,"y":600},
+    "goal": {"x":2200,"y":600},
+    "ground": [
+      {"x0":-170,"x1":780,"top":600,"h":400},
+      {"x0":780,"x1":1490,"top":250,"h":1232,"angle":-45},
+      {"x0":-310,"x1":920,"top":1150,"h":400}
+    ],
+    "props": [
+      {"type":"wall","x":-160,"y":300,"w":40,"h":300},
+      {"type":"drop","x":490,"y":580}
     ]
   }
 ];
@@ -1683,7 +1718,7 @@ G.Game = {
     game.total = game.level.sleepers.length;       // 배치된 작은 물방울 수 (평가 기준)
     game.rescued = 0;                              // 도착한 작은 물방울
     game.lost = 0;                                 // 죽은 작은 물방울
-    game.heroHome = false;                         // 주인공이 잉크병에 닿음 (스킵 가능)
+    game.heroHome = false;                         // 주인공이 잉크병에 닿음 (이탈한 물방울은 죽은 것으로, 대열은 마저 들어감)
     game.heroIn = false;                           // 주인공이 잉크병 안에 들어감 (정화에 셈)
     game.goalQueue = [];                           // 잉크병 앞에 줄 선 물방울 (닿은 순서)
     game.entering = [];                            // 잉크병 입구로 뛰어드는 중
@@ -1786,6 +1821,7 @@ G.Game = {
       if (d.dead) return self.kill(game, d, d.dead);
       if (p.y > game.failY) return self.kill(game, d, 'fall');
       if (p.x - d.r < game.eraserX) return self.kill(game, d, 'erased');
+      if (game.heroHome && d.mode === 'free' && !self.inGoal(game, p)) return self.kill(game, d, 'home');   // 주인공 도착 뒤 이탈한 물방울은 죽은 것 (사용자 결정 2026-10-21)
       self.collect(game, d);
       if (d.hero || !game.level.data.drops.follow) self.wake(game, d);
       if (d.mode === 'free' && game.level.data.drops.follow) self.rejoin(game, d);
@@ -2048,7 +2084,7 @@ G.Game = {
 
   // reason: 실패 이유 이름 fall / erased / spike (글자는 uitext.js fail.*). 스킵으로 지울 때는 ''
   kill: function (game, d, reason) {
-    if (reason === 'erased' && d.body) {   // 지워지는 순간: 가루 효과 + 지워진 얼굴 (화면 시간으로, 실패 뒤에도 재생)
+    if ((reason === 'erased' || reason === 'home') && d.body) {   // 지워지는 순간: 가루 효과 + 지워진 얼굴 (화면 시간으로, 실패 뒤에도 재생)
       game.fx.push({ type: 'erasePuff', x: d.body.position.x, y: d.body.position.y, r: d.r, real: Date.now(), t: game.timeMs });
     }
     d.state = 'dead';
@@ -2064,7 +2100,7 @@ G.Game = {
 
   purity: function (game) { return (game.rescued + (game.heroIn ? 1 : 0)) / (game.total + 1); },
 
-  canSkip: function (game) { return game.status === 'run' && game.heroHome; },
+  canSkip: function (game) { return G.DATA.goalEnter.skip && game.status === 'run' && game.heroHome; },   // 지금은 꺼짐 (사용자 결정 2026-10-21)
   skip: function (game) {
     if (!this.canSkip(game)) return;
     var self = this;
@@ -3378,7 +3414,7 @@ var G = G || {};
       if (g.status === 'ready') G.Game.start(g); else G.Game.toggleStop(g);
       return;
     }
-    if (e.code === 'Enter') { e.preventDefault(); if (g.status === 'ready') G.Game.start(g); else G.Game.skip(g); return; }
+    if (e.code === 'Enter') { e.preventDefault(); if (g.status === 'ready') G.Game.start(g); else G.Game.skip(g); return; }   // 스킵은 data.js goalEnter.skip 이 켜졌을 때만
     if (e.code === 'KeyR') app.restart();
     else if (e.code === 'KeyN') { if (g.status === 'clear' && g.hasNext) app.goLevel(app.levelIndex + 1); }
     else if (e.code === 'KeyD') G.Debug.toggle(app);

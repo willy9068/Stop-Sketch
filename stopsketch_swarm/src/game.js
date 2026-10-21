@@ -38,7 +38,7 @@ G.Game = {
     game.total = game.level.sleepers.length;       // 배치된 작은 물방울 수 (평가 기준)
     game.rescued = 0;                              // 도착한 작은 물방울
     game.lost = 0;                                 // 죽은 작은 물방울
-    game.heroHome = false;                         // 주인공이 잉크병에 닿음 (스킵 가능)
+    game.heroHome = false;                         // 주인공이 잉크병에 닿음 (이탈한 물방울은 죽은 것으로, 대열은 마저 들어감)
     game.heroIn = false;                           // 주인공이 잉크병 안에 들어감 (정화에 셈)
     game.goalQueue = [];                           // 잉크병 앞에 줄 선 물방울 (닿은 순서)
     game.entering = [];                            // 잉크병 입구로 뛰어드는 중
@@ -141,6 +141,7 @@ G.Game = {
       if (d.dead) return self.kill(game, d, d.dead);
       if (p.y > game.failY) return self.kill(game, d, 'fall');
       if (p.x - d.r < game.eraserX) return self.kill(game, d, 'erased');
+      if (game.heroHome && d.mode === 'free' && !self.inGoal(game, p)) return self.kill(game, d, 'home');   // 주인공 도착 뒤 이탈한 물방울은 죽은 것 (사용자 결정 2026-10-21)
       self.collect(game, d);
       if (d.hero || !game.level.data.drops.follow) self.wake(game, d);
       if (d.mode === 'free' && game.level.data.drops.follow) self.rejoin(game, d);
@@ -403,7 +404,7 @@ G.Game = {
 
   // reason: 실패 이유 이름 fall / erased / spike (글자는 uitext.js fail.*). 스킵으로 지울 때는 ''
   kill: function (game, d, reason) {
-    if (reason === 'erased' && d.body) {   // 지워지는 순간: 가루 효과 + 지워진 얼굴 (화면 시간으로, 실패 뒤에도 재생)
+    if ((reason === 'erased' || reason === 'home') && d.body) {   // 지워지는 순간: 가루 효과 + 지워진 얼굴 (화면 시간으로, 실패 뒤에도 재생)
       game.fx.push({ type: 'erasePuff', x: d.body.position.x, y: d.body.position.y, r: d.r, real: Date.now(), t: game.timeMs });
     }
     d.state = 'dead';
@@ -419,7 +420,7 @@ G.Game = {
 
   purity: function (game) { return (game.rescued + (game.heroIn ? 1 : 0)) / (game.total + 1); },
 
-  canSkip: function (game) { return game.status === 'run' && game.heroHome; },
+  canSkip: function (game) { return G.DATA.goalEnter.skip && game.status === 'run' && game.heroHome; },   // 지금은 꺼짐 (사용자 결정 2026-10-21)
   skip: function (game) {
     if (!this.canSkip(game)) return;
     var self = this;
