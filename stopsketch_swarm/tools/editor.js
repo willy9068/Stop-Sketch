@@ -563,8 +563,9 @@ var G = G || {};
     if (S.sel.kind === 'ground') {
       if (h === 'rot') { setAngle(o, { x: (q.x0 + q.x1) / 2, y: q.top }, true); return; }   // 경사 (사용자 요청 2026-10-21)
       var qs = LC.groundShape(q), tn = Math.tan((q.angle || 0) * Math.PI / 180);
-      if (h === 'w') { o.x0 = Math.min(snap(q.x0 + dx), o.x1 - 20); if (tn) o.top = Math.round(qs.r - tn * (o.x1 - o.x0) / 2); }   // 비탈이면 반대쪽 끝 높이는 그대로
-      if (h === 'e') { o.x1 = Math.max(snap(q.x1 + dx), o.x0 + 20); if (tn) o.top = Math.round(qs.l + tn * (o.x1 - o.x0) / 2); }
+      // 비탈이면 반대쪽 끝 높이는 그대로, 아랫면도 그대로 (사용자 결정 2026-10-21: 아랫면 항상 고정 — 높이가 대신 바뀜)
+      if (h === 'w') { o.x0 = Math.min(snap(q.x0 + dx), o.x1 - 20); if (tn) { o.top = r1(qs.r - tn * (o.x1 - o.x0) / 2); o.h = r1(q.top + (q.h || D.level.groundDepth) - o.top); } }
+      if (h === 'e') { o.x1 = Math.max(snap(q.x1 + dx), o.x0 + 20); if (tn) { o.top = r1(qs.l + tn * (o.x1 - o.x0) / 2); o.h = r1(q.top + (q.h || D.level.groundDepth) - o.top); } }
       var qh = q.h || D.level.groundDepth;           // 위 손잡이: 아랫면은 그대로 두고 윗면만 / 아래 손잡이: 높이 (사용자 요청 2026-10-20)
       if (h === 'n') { o.top = Math.min(snap(q.top + dy), q.top + qh - 20); o.h = q.top + qh - o.top; }
       if (h === 's') o.h = Math.max(20, snap(q.top + qh + dy) - q.top);
@@ -757,7 +758,10 @@ var G = G || {};
 
   // ---------- 오른쪽 패널 ----------
   function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
-  function num(id, label, v) { return '<div class="f"><label>' + label + '</label><input type="number" id="' + id + '" value="' + v + '"></div>'; }
+  function num(id, label, v, step) {               // step: 0.1 이면 소수 첫째 자리까지 (땅, 사용자 결정 2026-10-21)
+    return '<div class="f"><label>' + label + '</label><input type="number" id="' + id + '" value="' + (step ? r1(v) : v) + '"' + (step ? ' step="' + step + '"' : '') + '></div>';
+  }
+  function r1(v) { return Math.round(v * 10) / 10; }
   function opts(list, cur) {
     return list.map(function (o) { return '<option value="' + o[0] + '"' + (o[0] === cur ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('');
   }
@@ -831,9 +835,12 @@ var G = G || {};
       h = '<b>' + (s.kind === 'start' ? '시작 위치' : '도착 위치') + '</b>' + num('f_x', 'x', o.x) + num('f_y', s.kind === 'start' ? 'y (발밑)' : 'y (병 바닥)', o.y) +
           '<div class="hint">끌어서 옮기기 (위아래도). 놓은 자리 그대로 — 공중이면 ' + (s.kind === 'start' ? '주인공이 떨어져요' : '잉크병이 떠 있어요') + '</div>';
     } else if (s.kind === 'ground') {
-      h = '<b>땅</b>' + num('f_x0', '왼쪽 x', o.x0) + num('f_x1', '오른쪽 x', o.x1) + num('f_top', '윗면 y (가운데)', o.top) + num('f_h', '높이', o.h || D.level.groundDepth) +
-          num('f_angle', '경사 (도)', o.angle || 0) + '<div class="hint">+ = 오른쪽이 낮음(내리막), − = 오른쪽이 높음(오르막). 윗면 가운데 기준, 아랫면은 평평. 동그란 위 손잡이를 끌어도 됨 (5도씩, Alt = 1도), Q/E 키</div>' +
-          '<div>폭 ' + (o.x1 - o.x0) + '</div>';
+      var gsh = LC.groundShape(o);                   // 땅 칸은 소수 첫째 자리까지, 아랫면·양 끝 윗면 칸 (사용자 결정 2026-10-21)
+      h = '<b>땅</b>' + num('f_x0', '왼쪽 x', o.x0, 0.1) + num('f_x1', '오른쪽 x', o.x1, 0.1) + num('f_top', '윗면 y (가운데)', o.top, 0.1) +
+          num('f_gl', '왼쪽 끝 윗면 y', gsh.l, 0.1) + num('f_gr', '오른쪽 끝 윗면 y', gsh.r, 0.1) +
+          num('f_bottom', '아랫면 y', gsh.b, 0.1) + num('f_h', '높이', o.h || D.level.groundDepth, 0.1) +
+          num('f_angle', '경사 (도)', o.angle || 0, 0.1) + '<div class="hint">+ = 오른쪽이 낮음(내리막), − = 오른쪽이 높음(오르막). 윗면 가운데 기준. 폭·경사·윗면을 바꿔도 아랫면은 그대로(높이가 바뀜). 끝 윗면 y 를 넣으면 반대쪽 끝은 그대로 두고 경사가 바뀜. 동그란 위 손잡이(5도씩, Alt = 1도)·Q/E 키</div>' +
+          '<div>폭 ' + r1(o.x1 - o.x0) + '</div>';
     } else {
       var d = P.def(o.type);
       h = '<b>' + d.name + '</b>';
@@ -871,6 +878,26 @@ var G = G || {};
   document.addEventListener('change', function (e) { applyInput(e.target, true); });
   document.addEventListener('input', function (e) { if (e.target.id === 'f_text' || e.target.id === 'l_name' || e.target.id === 'f_name') applyInput(e.target, false); });
 
+  // 땅 칸 입력 (사용자 결정 2026-10-21): 소수 첫째 자리, 폭·윗면·경사·끝 윗면을 바꿔도 아랫면은 그대로(높이가 바뀜)
+  function setGround(o, f, v) {
+    var sh = LC.groundShape(o), bot = sh.b, tn = Math.tan((o.angle || 0) * Math.PI / 180);
+    function r4(x) { return Math.round(x * 10000) / 10000; }       // 안쪽 값은 정확히 (끝 높이·아랫면이 칸에 넣은 값과 딱 맞게)
+    function keepBottom() { o.h = r4(Math.max(20, bot - o.top)); }
+    if (f === 'x0') { o.x0 = Math.min(v, o.x1 - 20); if (tn) o.top = r4(sh.r - tn * (o.x1 - o.x0) / 2); keepBottom(); }   // 오른쪽 끝 높이 그대로 (손잡이와 같음)
+    else if (f === 'x1') { o.x1 = Math.max(v, o.x0 + 20); if (tn) o.top = r4(sh.l + tn * (o.x1 - o.x0) / 2); keepBottom(); }   // 왼쪽 끝 높이 그대로
+    else if (f === 'top') { o.top = v; keepBottom(); }
+    else if (f === 'h') o.h = Math.max(20, v);
+    else if (f === 'bottom') o.h = r4(Math.max(20, v - o.top));
+    else if (f === 'angle') { var av = Math.max(-60, Math.min(60, v)); if (av) o.angle = av; else delete o.angle; keepBottom(); }
+    else if (f === 'gl' || f === 'gr') {            // 한쪽 끝 윗면 y: 반대쪽 끝은 그대로, 경사·가운데 윗면을 다시 계산
+      var l = f === 'gl' ? v : sh.l, r = f === 'gr' ? v : sh.r, deg = Math.atan2(r - l, o.x1 - o.x0) * 180 / Math.PI;
+      if (Math.abs(deg) > 60) return;                // 60도 넘는 경사는 안 됨
+      o.top = r4((l + r) / 2);
+      if (Math.abs(deg) > 1e-6) o.angle = r4(deg); else delete o.angle;
+      keepBottom();
+    }
+  }
+
   var inputUndoArmed = true;
   function applyInput(t, isChange) {
     var id = t.id, v = t.type === 'number' ? Math.round(+t.value) : t.value, l = lv(), o = selObj();
@@ -907,6 +934,7 @@ var G = G || {};
     else if (id.indexOf('fx_') === 0) l.fx[id.slice(3)] = id === 'fx_riseSpeed' ? Math.round(+t.value * 10) / 10 : v;
     else if (o) {
       var f = id.slice(2);
+      if (S.sel.kind === 'ground' && t.type === 'number') { setGround(o, f, r1(+t.value)); changed(false); return; }
       if (f === 'type') { o.type = v; }
       else if (f === 'img' || f === 'text' || f === 'pin') o[f] = v;
       else if (f === 'h' && S.sel.kind === 'ground') o.h = Math.max(20, v);
@@ -1119,8 +1147,14 @@ var G = G || {};
     if (!o) return;
     ['x', 'y', 'w', 'h', 'size', 'x0', 'x1', 'top', 'angle'].forEach(function (k) {
       var el = $('f_' + k);
-      if (el && document.activeElement !== el && o[k] != null) el.value = o[k];
+      if (el && document.activeElement !== el && o[k] != null) el.value = S.sel.kind === 'ground' ? r1(o[k]) : o[k];
     });
+    if (S.sel && S.sel.kind === 'ground') {          // 땅: 끝 윗면·아랫면 칸
+      var gs2 = LC.groundShape(o);
+      [['f_gl', gs2.l], ['f_gr', gs2.r], ['f_bottom', gs2.b], ['f_h', o.h || D.level.groundDepth]].forEach(function (q) {
+        var el2 = $(q[0]); if (el2 && document.activeElement !== el2) el2.value = r1(q[1]);
+      });
+    }
     ['c_top', 'c_bottom'].forEach(function (id) {   // 화면 끝 선을 끄는 중
       var el = $(id);
       if (el && document.activeElement !== el) el.value = lv().camera[id.slice(2)];
