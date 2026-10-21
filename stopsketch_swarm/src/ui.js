@@ -640,44 +640,60 @@ G.UI = (function () {
     }
     if (!resultReady(game)) return;
     resultShown = true;
+    resultParts = [];
     ctx.fillStyle = 'rgba(43,33,24,0.35)';
     ctx.fillRect(0, 0, V.w, V.h);
-    var clear = game.status === 'clear' && game.result;
-    var w = 560, h = clear ? 340 : 250, x = (V.w - w) / 2, y = (V.h - h) / 2;
+    var S = G.TS, clear = game.status === 'clear' && game.result;
     var panel = G.Assets.get('ui_panel'), pr = panelRect(game);   // 바탕 그림 크기는 uitext.js (사용자 요청 2026-10-21)
     if (panel) ctx.drawImage(panel, pr.x, pr.y, pr.w, pr.h);
-    else { ctx.fillStyle = C.paper; ctx.fillRect(x, y, w, h); ctx.strokeStyle = C.outline; ctx.lineWidth = 4; ctx.strokeRect(x, y, w, h); }
-    var face = G.Assets.get(game.status === 'fail' ? 'char_erased' : 'char_goal');
-    if (face && !clear) ctx.drawImage(face, x + 28, y + 6, 136, 136);
-    ctx.textAlign = 'center'; ctx.fillStyle = game.status === 'clear' ? G.TS('clearColor') : G.TS('failColor');
+    else { ctx.fillStyle = C.paper; ctx.fillRect(pr.x + 40, pr.y + 30, pr.w - 80, pr.h - 60); ctx.strokeStyle = C.outline; ctx.lineWidth = 4; ctx.strokeRect(pr.x + 40, pr.y + 30, pr.w - 80, pr.h - 60); }
+    // 결과 창 안의 것은 모두 uitext.js 위치(게임 화면 px)에 그림 (사용자 요청 2026-10-21: UI 툴에서 끌어 옮기기). c = 클리어, f = 실패
+    var face = G.Assets.get(game.status === 'fail' ? 'char_erased' : 'char_goal'), p = clear ? 'c' : 'f', fs = S(p + 'FaceSize');
+    if (face) {
+      ctx.drawImage(face, S(p + 'FaceX'), S(p + 'FaceY'), fs, fs);
+      part(p + 'FaceX', p + 'FaceY', S(p + 'FaceX'), S(p + 'FaceY'), fs, fs);
+    }
+    ctx.textAlign = 'center'; ctx.fillStyle = game.status === 'clear' ? S('clearColor') : S('failColor');
     ctx.font = G.TF('resultTitleSize', true);
-    say(ctx, game.status === 'clear' ? G.T('result.clear') : game.failReason, V.w / 2, y + 70);
+    sayPart(ctx, game.status === 'clear' ? G.T('result.clear') : game.failReason, p + 'TitleX', p + 'TitleY');
     ctx.fillStyle = ink;
     if (clear) {                                   // 별 n/3 과 정화 % 를 따로 (사용자 결정 2026-10-20)
       var r = game.result, best = game.best;
-      ctx.font = G.TF('resultSize', true); ctx.fillStyle = ink;
-      say(ctx, G.T('result.stars', { stars: r.stars, total: r.starsTotal }), V.w / 2, y + 102);
-      for (var k = 0; k < r.starsTotal; k++) drawStarIcon(ctx, V.w / 2 + (k - (r.starsTotal - 1) / 2) * 56, y + 136, 25, k < r.stars);
-      // 정화 막대
-      var bw = 300, bx = V.w / 2 - bw / 2, by = y + 186;
-      ctx.font = G.TF('resultSize', true); ctx.fillStyle = ink;
-      // 캐릭터: 정화 막대 왼쪽 위 꼭지점 위에 앉음 (사용자 요청 2026-10-20: 136 → 170). 정화 글자는 캐릭터를 비켜 오른쪽으로
-      var fs = 170;
-      if (face) ctx.drawImage(face, bx - fs / 2 + 4, by - fs * 0.93, fs, fs);
-      say(ctx, G.T('result.purity', { purity: Math.round(r.purity * 100), inJar: r.inJar, all: r.all }), bx + 80 + (bw - 80) / 2, by - 8);
-      ctx.fillStyle = 'rgba(43,33,24,0.12)'; ctx.fillRect(bx, by, bw, 14);
-      ctx.fillStyle = mix(C.jarDark, C.jarClear, G.Rules.jarMix(r.purity, G.DATA.goalEnter.jarCurve)); ctx.fillRect(bx, by, bw * r.purity, 14);
-      ctx.lineWidth = 2; ctx.strokeStyle = C.outline; ctx.strokeRect(bx, by, bw, 14);
-      ctx.fillStyle = ink; ctx.font = G.TF('resultSize');
-      say(ctx, G.T('result.time', { time: (r.timeMs / 1000).toFixed(1) }) + (best ? G.T('result.best', { stars: best.stars || 0, total: r.starsTotal,
-        purity: Math.round((best.bestPurity || 0) * 100) }) : ''), V.w / 2, y + 236);
+      ctx.font = G.TF('resultSize', true);
+      sayPart(ctx, G.T('result.stars', { stars: r.stars, total: r.starsTotal }), 'cStarsTextX', 'cStarsTextY');
+      var sr = S('cStarSize') / 2, gap = S('cStarGap'), sx = S('cStarsX'), sy = S('cStarsY');   // 별 줄: 가운데 x, y
+      for (var k = 0; k < r.starsTotal; k++) drawStarIcon(ctx, sx + (k - (r.starsTotal - 1) / 2) * gap, sy, sr, k < r.stars);
+      var rowW = (r.starsTotal - 1) * gap + sr * 2;
+      part('cStarsX', 'cStarsY', sx - rowW / 2, sy - sr, rowW, sr * 2);
+      // 정화 막대 (왼쪽 위 x, y)
+      var bw = S('cBarW'), bh = S('cBarH'), bx = S('cBarX'), by = S('cBarY');
+      ctx.fillStyle = 'rgba(43,33,24,0.12)'; ctx.fillRect(bx, by, bw, bh);
+      ctx.fillStyle = mix(C.jarDark, C.jarClear, G.Rules.jarMix(r.purity, G.DATA.goalEnter.jarCurve)); ctx.fillRect(bx, by, bw * r.purity, bh);
+      ctx.lineWidth = 2; ctx.strokeStyle = C.outline; ctx.strokeRect(bx, by, bw, bh);
+      part('cBarX', 'cBarY', bx, by, bw, bh);
+      ctx.fillStyle = ink; ctx.font = G.TF('resultSize', true);
+      sayPart(ctx, G.T('result.purity', { purity: Math.round(r.purity * 100), inJar: r.inJar, all: r.all }), 'cPurityX', 'cPurityY');
+      ctx.font = G.TF('resultSize');
+      sayPart(ctx, G.T('result.time', { time: (r.timeMs / 1000).toFixed(1) }) + (best ? G.T('result.best', { stars: best.stars || 0, total: r.starsTotal,
+        purity: Math.round((best.bestPurity || 0) * 100) }) : ''), 'cTimeX', 'cTimeY');
     } else {
       ctx.font = G.TF('resultRetrySize');
-      say(ctx, G.T('result.failInfo', { rescued: game.rescued, total: game.total, attempt: game.attempt }), V.w / 2, y + 125);
-      say(ctx, G.T('result.time', { time: (game.timeMs / 1000).toFixed(1) }), V.w / 2, y + 158);
+      sayPart(ctx, G.T('result.failInfo', { rescued: game.rescued, total: game.total, attempt: game.attempt }), 'fInfoX', 'fInfoY');
+      sayPart(ctx, G.T('result.time', { time: (game.timeMs / 1000).toFixed(1) }), 'fTimeX', 'fTimeY');
     }
     resultBtns(game).forEach(function (b) { drawButton(ctx, b); });
     ctx.textAlign = 'left';
+  }
+
+  // 결과 창 안에 그린 것들의 자리 (UI 툴에서 끌어 옮기기용): { keys: [x 이름, y 이름], x, y, w, h }
+  var resultParts = [];
+  function part(kx, ky, x, y, w, h) { resultParts.push({ keys: [kx, ky], x: x, y: y, w: w, h: h }); }
+  // 가운데 맞춤 글자를 (x 이름, y 이름) 자리에 쓰고 자리 기록
+  function sayPart(ctx, text, kx, ky) {
+    var x = G.TS(kx), y = G.TS(ky), lh = lineH(ctx), w = 0;
+    say(ctx, text, x, y);
+    String(text).split('\n').forEach(function (l) { w = Math.max(w, ctx.measureText(l).width); });
+    part(kx, ky, x - w / 2, y - lh * 0.8, w, lh * nLines(text));
   }
 
   // 결과 창 바탕 그림(ui_panel) 자리: 화면 가운데, 크기는 클리어·실패 따로 (사용자 요청 2026-10-21)
@@ -719,7 +735,7 @@ G.UI = (function () {
   }
   function hover(sx, sy) { hoverPt = { x: sx, y: sy }; }
   // UI 툴: 결과 창이 보일 때 버튼 목록·바탕 자리
-  function resultLayout(game) { return resultShown ? { btns: resultBtns(game), panel: panelRect(game) } : null; }
+  function resultLayout(game) { return resultShown ? { btns: resultBtns(game), panel: panelRect(game), parts: resultParts.slice() } : null; }
 
   // 잉크병 밝기: 들어간 물방울 수(정화)를 향해 서서히 (사용자 요청 2026-10-20: 갑자기 밝아지지 않게). 새 시도면 바로 어둡게
   var jarShown = 0;

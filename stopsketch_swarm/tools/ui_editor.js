@@ -54,6 +54,20 @@ var G = G || {};
     ['failRetryX', '실패: 다시 하기 x', 'fail'], ['failRetryY', '실패: 다시 하기 y', 'fail'],
     ['resultPanelW', '클리어 결과 창 바탕 폭', 'clear'], ['resultPanelH', '클리어 결과 창 바탕 높이', 'clear'],
     ['failPanelW', '실패 결과 창 바탕 폭', 'fail'], ['failPanelH', '실패 결과 창 바탕 높이', 'fail'],
+    // 결과 창 안 (사용자 요청 2026-10-21: 미리보기에서 끌어 옮기기). 글자 x = 가운데, y = 글자 바닥선 / 그림·막대 = 왼쪽 위 / 별 줄 = 가운데
+    ['cTitleX', '클리어: 제목 x', 'clear'], ['cTitleY', '클리어: 제목 y', 'clear'],
+    ['cStarsTextX', '클리어: "별 n/3" x', 'clear'], ['cStarsTextY', '클리어: "별 n/3" y', 'clear'],
+    ['cStarsX', '클리어: 별 그림 줄 가운데 x', 'clear'], ['cStarsY', '클리어: 별 그림 줄 가운데 y', 'clear'],
+    ['cStarSize', '클리어: 별 그림 크기', 'clear'], ['cStarGap', '클리어: 별 간격', 'clear'],
+    ['cFaceX', '클리어: 물방울 그림 x (왼쪽)', 'clear'], ['cFaceY', '클리어: 물방울 그림 y (위)', 'clear'], ['cFaceSize', '클리어: 물방울 그림 크기', 'clear'],
+    ['cBarX', '클리어: 정화 막대 x (왼쪽)', 'clear'], ['cBarY', '클리어: 정화 막대 y (위)', 'clear'],
+    ['cBarW', '클리어: 정화 막대 길이', 'clear'], ['cBarH', '클리어: 정화 막대 두께', 'clear'],
+    ['cPurityX', '클리어: 정화 글자 x', 'clear'], ['cPurityY', '클리어: 정화 글자 y', 'clear'],
+    ['cTimeX', '클리어: 시간·최고 기록 x', 'clear'], ['cTimeY', '클리어: 시간·최고 기록 y', 'clear'],
+    ['fTitleX', '실패: 제목(이유) x', 'fail'], ['fTitleY', '실패: 제목(이유) y', 'fail'],
+    ['fFaceX', '실패: 물방울 그림 x (왼쪽)', 'fail'], ['fFaceY', '실패: 물방울 그림 y (위)', 'fail'], ['fFaceSize', '실패: 물방울 그림 크기', 'fail'],
+    ['fInfoX', '실패: 물방울 도착 글자 x', 'fail'], ['fInfoY', '실패: 물방울 도착 글자 y', 'fail'],
+    ['fTimeX', '실패: 시간 x', 'fail'], ['fTimeY', '실패: 시간 y', 'fail'],
     ['resultBtnBg', '결과 버튼 바탕색', 'clear'], ['resultBtnHot', '결과 버튼 마우스 올렸을 때 색', 'clear']
   ];
 
@@ -90,6 +104,7 @@ var G = G || {};
       liveText(S.game);
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       G.UI.render(ctx, S.game, { showBoxes: false });
+      drawHover();
     }
     requestAnimationFrame(frame);
   }
@@ -254,7 +269,7 @@ var G = G || {};
   cv.addEventListener('mousedown', function (e) {
     var p = viewPt(e), lay = S.game && G.UI.resultLayout(S.game);
     if (!lay) return;
-    var b = lay.btns.filter(function (q) { return p.x >= q.x && p.x <= q.x + q.w && p.y >= q.y && p.y <= q.y + q.h; })[0], st = G.UITEXT.style;
+    var b = hitPart(lay, p), st = G.UITEXT.style;   // 버튼 → 결과 창 안의 것(물방울 그림·별·글자·막대) 순서로
     if (b) S.btnDrag = { kx: b.keys[0], ky: b.keys[1], p: p, x: st[b.keys[0]], y: st[b.keys[1]] };
     else {
       var r = lay.panel;
@@ -266,7 +281,7 @@ var G = G || {};
   });
   window.addEventListener('mousemove', function (e) {
     var p = viewPt(e);
-    G.UI.hover(p.x, p.y);
+    G.UI.hover(p.x, p.y); S.hoverPt = p;
     var d = S.btnDrag;
     if (!d) return;
     if (d.size) {                                   // 바탕 크기: 가운데에서 멀어지는 쪽으로 끌면 커짐
@@ -279,6 +294,22 @@ var G = G || {};
     S.dirty = true; status();
   });
   window.addEventListener('mouseup', function () { if (S.btnDrag) { S.btnDrag = null; buildSide(); } });
+  function inR(p, q) { return p.x >= q.x && p.x <= q.x + q.w && p.y >= q.y && p.y <= q.y + q.h; }
+  function hitPart(lay, p) {
+    var b = lay.btns.filter(function (q) { return inR(p, q); })[0];
+    if (b) return b;
+    var parts = lay.parts.filter(function (q) { return inR(p, q); });
+    return parts[parts.length - 1] || null;          // 나중에 그린(위에 있는) 것 먼저
+  }
+  // 미리보기: 마우스를 올린 것에 점선 상자 (끌 수 있는 것 표시)
+  function drawHover() {
+    var lay = S.game && G.UI.resultLayout(S.game), hp = S.hoverPt;
+    if (!lay || !hp) return;
+    var q = S.btnDrag && !S.btnDrag.size ? null : hitPart(lay, hp);
+    if (!q) return;
+    ctx.save(); ctx.setLineDash([6, 4]); ctx.lineWidth = 2; ctx.strokeStyle = '#1F6FE0';
+    ctx.strokeRect(q.x - 3, q.y - 3, q.w + 6, q.h + 6); ctx.restore();
+  }
 
   G.UIEditor = S; S.fileText = fileText;   // 디버그용
   showLastSave();
