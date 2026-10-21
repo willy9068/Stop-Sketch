@@ -440,3 +440,18 @@ G.LEVELS.forEach(function (lv) {
   console.log('20 초록 엘리베이터: 바닥 높이 ' + well(897) + ' / 바닥 밑 ' + well(930) + ' / 아치 얹음 ' + well(930, true) +
     ' (오른 높이 약 288, 앞 둘은 이탈 0 · 대열 3. 아치는 우물 안에 다리가 서서 처음에 밀려 이탈할 수 있음)');
 })();
+
+// 21. 가파른 비탈 아래 끝에서 되돌아섬 (사용자 요청 2026-10-21: 데모 2 계곡, 60도 비탈 아래에서 한쪽으로만 가려던 문제)
+//     원 접점이 다각형이라 60도 면이 약 65도로 읽혀 "낮은 턱" 판정 → 바닥과 같이 밟으면 턱 올라타기 보조가 끝없이 반복됐음. 긴 면이면 벽처럼 되돌아섬
+(function () {
+  var lv = { id: 't', name: '시험', ink: 3000, stops: 9, start: { x: 450, y: 912 }, goal: { x: 3000, y: 818 }, inks: ['black'], drops: { heroSpeed: 2.5 }, eraser: { pct: 1, delayMs: 600000 },
+    ground: [{ x0: -700, x1: 180, top: 600, h: 540 }, { x0: 180, x1: 361, top: 756.134, h: 383.866, angle: 60 }, { x0: 360, x1: 540, top: 912, h: 300 },
+      { x0: 540, x1: 620, top: 866, h: 346, angle: -50 }, { x0: 620, x1: 3400, top: 818, h: 393 }], props: [] };
+  var g = G.Game.create('A', lv); G.Game.start(g); g.hero.dir = -1;
+  var minX = 1e9, maxX = -1e9, turns0 = 0;
+  for (var i = 0; i < 60 * 20 && g.status === 'run'; i++) {
+    G.Game.update(g, STEP);
+    if (i > 60 * 2) { minX = Math.min(minX, g.hero.body.position.x); maxX = Math.max(maxX, g.hero.body.position.x); }
+  }
+  console.log('21 계곡 (왼쪽 60도·오른쪽 50도): 되돌기 ' + g.hero.turns + '번 · 오간 범위 x ' + Math.round(minX) + '~' + Math.round(maxX) + ' (양쪽 비탈 아래에서 되돌아 오가야 정상, 되돌기 여러 번)');
+})();

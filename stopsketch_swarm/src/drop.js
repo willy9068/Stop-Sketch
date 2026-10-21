@@ -40,7 +40,8 @@ G.Drop = {
     if (sn && sn.x * d.dir < -0.01) {
       var deg = Math.acos(Math.max(-1, Math.min(1, -sn.y))) * 180 / Math.PI, k = G.Rules.slopeFactor(deg - (boost ? D.slope.boostBonus : 0) - 0.05, D.slope.steps);   // 파랑 가속 중이면 그만큼 완만하게 침 (외부 도움)
       d.slopeDeg = deg;
-      if (k <= 0 && d.flat) k = 1;                 // 아직 평평한 바닥에 서 있음 = 턱·선 끝 모서리 (턱 올라타기로 넘음). 비탈에 완전히 올라서야 못 오름
+      // (2026-10-21 뺌: "평평한 바닥에 서 있으면 턱으로 보고 계속 오름" — 비탈 아래 끝에서 바닥과 비탈을 같이 밟으면 60도 비탈을 계속 오르려다
+      //   튀어 오르고 떨어지기를 반복하며 되돌아서지 못했음. 턱·선 끝은 이제 "밟은 모서리가 짧으면 비탈 아님"(minEdge)으로 가림)
       if (k <= 0) {
         var ux = tx * d.dir, uy = ty * d.dir, along = v.x * ux + v.y * uy;   // 오르는 쪽 속도
         if (along > 0) {
@@ -70,6 +71,7 @@ G.Drop = {
     var touch = G.Physics.touching(engine, b);
     var under = null, ground = false, wall = false, red = null, blue = false, above = null, below = false, low = false, front = null, flat = false;
     d.events.length = 0;
+    function face(part, p) { var e = G.Physics.edgeAt(part, p, b.position); return !!e && e.len >= D.slope.minEdge; }   // 닿은 곳이 긴 면(비탈·벽 면)인가
     for (var t = 0; t < touch.length; t++) {
       var pts = touch[t].pts, other = touch[t].other, root = touch[t].root, color = other.inkColor || root.inkColor;
       if (root.label === 'spike' || other.label === 'spike') { d.dead = 'spike'; return; }
@@ -79,13 +81,15 @@ G.Drop = {
           ground = true; below = true;
           if (dy > r * 0.94) flat = true;          // 거의 평평한 바닥(20도 이하)을 밟고 있음 — 턱 올라타기 판정용
           if (!front || dx * d.dir > front.f) front = { f: dx * d.dir, dx: dx, dy: dy, part: other, p: pts[i] };   // 가는 쪽으로 가장 앞선 바닥 접점
-          if (dx * d.dir > r * 0.75) low = true;   // 발 앞쪽 모서리에 걸침 → 올라타기
+          if (dx * d.dir > r * 0.75 && !face(other, pts[i])) low = true;   // 발 앞쪽 모서리에 걸침 → 올라타기 (긴 비탈 면이면 아님)
           if (color && color !== 'yellow' && !under) under = color;   // 밟고 있는 색 (물들기)
           if (color === 'red') red = other;
           if (color === 'blue') blue = true;
         } else if (dy < -r * D.groundCheck) above = root;
         else if (dx * d.dir > r * 0.5 && dy < r - stepUp) wall = true;
-        else if (dx * d.dir > 0 && dy >= r - stepUp) low = true;   // 가는 쪽 발치의 낮은 턱 (쓰러진 선 조각 등)
+        else if (dx * d.dir > 0 && dy >= r - stepUp) {   // 가는 쪽 발치: 짧은 모서리면 낮은 턱(쓰러진 선 조각 등), 긴 면이면 가파른 비탈 = 벽처럼 되돌아섬
+          if (face(other, pts[i])) wall = true; else low = true;   // (사용자 요청 2026-10-21: 60도 비탈 아래에서 턱 올라타기를 반복하며 못 돌아서던 문제)
+        }
       }
     }
     d.grounded = ground;

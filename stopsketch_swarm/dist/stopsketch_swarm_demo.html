@@ -450,37 +450,41 @@ G.LEVELS = [
     "fx": {"bounce":15,"boostPct":190,"boostMs":1200,"riseSpeed":1.2},
     "drops": {"heroSpeed":2.5,"smallSpeed":2.5,"collide":false,"follow":true,"gap":32},
     "eraser": {"pct":20,"delayMs":3000},
-    "camera": {"zoom":0.9,"bottom":1200,"top":-130},
+    "camera": {"zoom":0.9,"bottom":1220,"top":-130},
     "segments": [],
     "start": {"x":-390,"y":470},
-    "goal": {"x":4000,"y":800},
+    "goal": {"x":4890,"y":680},
     "ground": [
-      {"x0":-700,"x1":880,"top":600,"h":340},
-      {"x0":1080,"x1":1260,"top":887,"h":300},
-      {"x0":1260,"x1":1340,"top":839,"h":351,"angle":-50},
-      {"x0":1340,"x1":1960,"top":790,"h":400},
-      {"x0":880,"x1":1080,"top":744,"h":36,"angle":55}
+      {"x0":-700,"x1":180,"top":600,"h":540},
+      {"x0":360,"x1":540,"top":912,"h":300},
+      {"x0":540,"x1":620,"top":866,"h":346,"angle":-50},
+      {"x0":620,"x1":1150,"top":818,"h":393},
+      {"x0":180,"x1":361,"top":756.134,"h":383.866,"angle":60},
+      {"x0":1310,"x1":2500,"top":818,"h":393},
+      {"x0":2700,"x1":3890,"top":700,"h":513},
+      {"x0":4260,"x1":5450,"top":700,"h":513},
+      {"x0":3890,"x1":4260,"top":993,"h":220}
     ],
     "props": [
-      {"type":"wall","x":-660,"y":300,"w":40,"h":300},
-      {"type":"wall","x":4360,"y":500,"w":40,"h":300},
-      {"type":"crystal","x":180,"y":530,"w":130,"h":10,"angle":90,"pin":"end"},
-      {"type":"crystal","x":380,"y":530,"w":130,"h":10,"angle":90,"pin":"end"},
-      {"type":"drop","x":310,"y":580},
-      {"type":"drop","x":380,"y":580},
-      {"type":"drop","x":1170,"y":870},
-      {"type":"drop","x":1780,"y":740},
-      {"type":"drop","x":3300,"y":787},
-      {"type":"star","x":2650,"y":340,"size":56},
-      {"type":"star","x":1160,"y":370,"size":56},
-      {"type":"star","x":2680,"y":635,"size":56},
-      {"type":"platform","x":2410,"y":430,"w":220,"h":28},
-      {"type":"text","x":-180,"y":420,"size":20,"text":"노란 물감은 배치된 선을 지울 수 있어요."},
-      {"type":"text","x":1570,"y":300,"size":20,"text":"우리 벽 아래를 노랑으로 칠해서"},
-      {"type":"text","x":1040,"y":620,"size":20,"text":"초록 물감은 천천히 떠올라요."},
-      {"type":"text","x":2380,"y":590,"size":20,"text":"선반 위 별은 검정 비탈로"},
-      {"type":"deco","x":3300,"y":140,"size":180,"img":"deco_cloud_3"},
-      {"type":"platform","x":2120,"y":640,"w":220,"h":28,"angle":90}
+      {"type":"wall","x":-660,"y":10,"w":40,"h":590},
+      {"type":"wall","x":4260,"y":400,"w":40,"h":300},
+      {"type":"crystal","x":1820,"y":750,"w":130,"h":10,"angle":90,"pin":"end"},
+      {"type":"crystal","x":2020,"y":750,"w":130,"h":10,"angle":90,"pin":"end"},
+      {"type":"drop","x":1950,"y":800},
+      {"type":"drop","x":2020,"y":800},
+      {"type":"drop","x":450,"y":890},
+      {"type":"drop","x":1230,"y":790},
+      {"type":"drop","x":3440,"y":480},
+      {"type":"star","x":4080,"y":875,"size":56},
+      {"type":"star","x":450,"y":300,"size":56},
+      {"type":"star","x":3440,"y":190,"size":56},
+      {"type":"platform","x":3300,"y":500,"w":270,"h":28},
+      {"type":"text","x":1530,"y":620,"size":20,"text":"노란 물감은 배치된 선을 지울 수 있어요."},
+      {"type":"text","x":370,"y":650,"size":20,"text":"초록 물감은 천천히 떠올라요."},
+      {"type":"crystal","x":3240,"y":430,"w":130,"h":10,"angle":90,"pin":"end"},
+      {"type":"crystal","x":3500,"y":430,"w":130,"h":10,"angle":90,"pin":"end"},
+      {"type":"spike","x":3890,"y":944,"w":370,"h":50},
+      {"type":"crystal","x":3890,"y":824,"w":370,"h":10,"angle":180,"pin":"end"}
     ]
   },
   {
@@ -1370,7 +1374,8 @@ G.Drop = {
     if (sn && sn.x * d.dir < -0.01) {
       var deg = Math.acos(Math.max(-1, Math.min(1, -sn.y))) * 180 / Math.PI, k = G.Rules.slopeFactor(deg - (boost ? D.slope.boostBonus : 0) - 0.05, D.slope.steps);   // 파랑 가속 중이면 그만큼 완만하게 침 (외부 도움)
       d.slopeDeg = deg;
-      if (k <= 0 && d.flat) k = 1;                 // 아직 평평한 바닥에 서 있음 = 턱·선 끝 모서리 (턱 올라타기로 넘음). 비탈에 완전히 올라서야 못 오름
+      // (2026-10-21 뺌: "평평한 바닥에 서 있으면 턱으로 보고 계속 오름" — 비탈 아래 끝에서 바닥과 비탈을 같이 밟으면 60도 비탈을 계속 오르려다
+      //   튀어 오르고 떨어지기를 반복하며 되돌아서지 못했음. 턱·선 끝은 이제 "밟은 모서리가 짧으면 비탈 아님"(minEdge)으로 가림)
       if (k <= 0) {
         var ux = tx * d.dir, uy = ty * d.dir, along = v.x * ux + v.y * uy;   // 오르는 쪽 속도
         if (along > 0) {
@@ -1400,6 +1405,7 @@ G.Drop = {
     var touch = G.Physics.touching(engine, b);
     var under = null, ground = false, wall = false, red = null, blue = false, above = null, below = false, low = false, front = null, flat = false;
     d.events.length = 0;
+    function face(part, p) { var e = G.Physics.edgeAt(part, p, b.position); return !!e && e.len >= D.slope.minEdge; }   // 닿은 곳이 긴 면(비탈·벽 면)인가
     for (var t = 0; t < touch.length; t++) {
       var pts = touch[t].pts, other = touch[t].other, root = touch[t].root, color = other.inkColor || root.inkColor;
       if (root.label === 'spike' || other.label === 'spike') { d.dead = 'spike'; return; }
@@ -1409,13 +1415,15 @@ G.Drop = {
           ground = true; below = true;
           if (dy > r * 0.94) flat = true;          // 거의 평평한 바닥(20도 이하)을 밟고 있음 — 턱 올라타기 판정용
           if (!front || dx * d.dir > front.f) front = { f: dx * d.dir, dx: dx, dy: dy, part: other, p: pts[i] };   // 가는 쪽으로 가장 앞선 바닥 접점
-          if (dx * d.dir > r * 0.75) low = true;   // 발 앞쪽 모서리에 걸침 → 올라타기
+          if (dx * d.dir > r * 0.75 && !face(other, pts[i])) low = true;   // 발 앞쪽 모서리에 걸침 → 올라타기 (긴 비탈 면이면 아님)
           if (color && color !== 'yellow' && !under) under = color;   // 밟고 있는 색 (물들기)
           if (color === 'red') red = other;
           if (color === 'blue') blue = true;
         } else if (dy < -r * D.groundCheck) above = root;
         else if (dx * d.dir > r * 0.5 && dy < r - stepUp) wall = true;
-        else if (dx * d.dir > 0 && dy >= r - stepUp) low = true;   // 가는 쪽 발치의 낮은 턱 (쓰러진 선 조각 등)
+        else if (dx * d.dir > 0 && dy >= r - stepUp) {   // 가는 쪽 발치: 짧은 모서리면 낮은 턱(쓰러진 선 조각 등), 긴 면이면 가파른 비탈 = 벽처럼 되돌아섬
+          if (face(other, pts[i])) wall = true; else low = true;   // (사용자 요청 2026-10-21: 60도 비탈 아래에서 턱 올라타기를 반복하며 못 돌아서던 문제)
+        }
       }
     }
     d.grounded = ground;
