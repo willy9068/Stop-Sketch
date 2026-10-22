@@ -87,7 +87,7 @@ G.DATA = {
   // 잉크 (사용자 결정 2026-10-20): 선은 사라지지 않고, 우클릭으로 빨아들이면 전부 돌려받음. 웅덩이 없음
   ink: {
     max: 2000,             // 스테이지 기본 잉크 (levels.js ink 로 바꿈)
-    upAmount: 300,         // 잉크 병(설계에는 남김, 시험판엔 배치 안 함)
+    upAmount: 300,         // 잉크 병 하나당 기본값 (병마다 amount 로 바꿈, 레벨 툴). 이 스테이지에서만 최대량·남은 양이 늘어남 (사용자 결정 2026-10-22: 영구 → 스테이지 한정)
     sampleDist: 8,
     minStrokeLen: 30,
     maxStrokeLen: 700,
@@ -115,6 +115,12 @@ G.DATA = {
   inkFx: { bounce: 15, boostPct: 190, boostMs: 1200, riseSpeed: 1.2 },
   bounceCdMs: 250,
   greenTopY: -300,         // 초록이 아무것에도 안 닿으면 여기(월드 y)에서 멈춤
+
+  // 발사기 투사체 (사용자 결정 2026-10-22): 발사기마다 색(검정·빨강·파랑·초록)이 있고, 같은 색으로 그린 선에 닿으면 막혀 사라짐.
+  //   다른 색 선은 통과. 땅·벽·발판·가시·배치된 선에도 막힘. 선은 그대로 (투사체만 사라짐)
+  //   주인공이 맞으면 실패, 작은 물방울이 맞으면 그 물방울을 잃음. 직선으로 날고(중력 없음) 게임 시간으로 움직여 정지 중엔 멈춤
+  projectile: { radius: 13, lifeMs: 7000, hitK: 0.8 },   // hitK: 물방울과 맞았다고 보는 거리 = 물방울 반지름 + 투사체 반지름 × 이 값
+  shooterColors: ['black', 'red', 'blue', 'green'],
 
   // 지우개 (사용자 결정 2026-10-20): 출발 delay 뒤 화면 밖 왼쪽에서 주인공 속도의 pct% 로 따라옴. 정지 중엔 멈춤
   eraser: { pct: 20, delayMs: 3000, startBack: 700 },
@@ -152,6 +158,10 @@ G.DATA = {
     drop:     { name: '잠든 물방울', size: 30 },                                  // 닿으면 합류
     stopup:   { name: '정지 +1', collect: true, size: 56, imgs: [['item_stop', 'fit']] },
     inkup:    { name: '잉크 병', collect: true, size: 60, imgs: [['item_ink', 'fit']] },
+    // 발사기 (사용자 결정 2026-10-22): 단단한 상자. aim = 쏘는 방향(도, 0 = 오른쪽, 90 = 아래, 180 = 왼쪽), periodMs 간격, speed 스텝당 px,
+    //   firstMs 첫 발(출발 뒤 게임 시간), color 투사체 색. 상자는 돌리지 않음 (그림만 쏘는 방향으로 돌림)
+    shooter:  { name: '발사기', solid: true, box: true, w: 70, h: 70, color: '#5B5560', aim: 180, periodMs: 2000, speed: 5, firstMs: 1000, shot: 'black',
+                imgs: [['obs_shooter', 'fit']] },
     deco:     { name: '장식', size: 180, img: 'deco_cloud_1' },
     text:     { name: '글자', size: 20, text: '안내 문구' }
   },
@@ -167,7 +177,8 @@ G.DATA = {
       'ui_stop_on', 'ui_gauge_frame', 'ui_panel', 'fx_star_pop', 'fx_land', 'star_full', 'star_empty',
       'start_hole', 'goal_jar_empty', 'ink_black', 'ink_red', 'ink_blue', 'ink_yellow', 'ink_green', 'ink_select', 'ui_shelf',
       'fx_bounce', 'fx_boost', 'fx_absorb', 'eraser_edge', 'ui_arrow', 'goal_jar_dark',
-      'eraser_body', 'eraser_crumb_1', 'eraser_crumb_2', 'eraser_crumb_3', 'eraser_smudge', 'fx_erase_puff'
+      'eraser_body', 'eraser_crumb_1', 'eraser_crumb_2', 'eraser_crumb_3', 'eraser_smudge', 'fx_erase_puff',
+      'obs_shooter', 'proj', 'fx_block', 'proj_white', 'fx_proj_pop'   // proj_white·fx_proj_pop: 7차 이미지 요청 (흰색으로 그려 코드가 투사체 색을 입힘)
     ],
     backgrounds: { bg_a: '종이 + 구름', bg_b: '줄 노트', bg_plain: '빈 종이', none: '단색 종이' },
     decos: ['deco_cloud_1', 'deco_cloud_2', 'deco_cloud_3'],

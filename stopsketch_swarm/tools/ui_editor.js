@@ -30,7 +30,7 @@ var G = G || {};
     'result.clear': '클리어 제목', 'result.stars': '별', 'result.purity': '정화', 'result.time': '시간', 'result.best': '최고 기록 (시간 뒤에 붙음)',
     'result.failInfo': '실패 때 물방울', 'result.retry': '다시 하기 버튼', 'result.next': '다음 스테이지 버튼',
     'pause.title': '일시 정지 제목', 'pause.resume': '계속하기 버튼', 'pause.retry': '다시 하기 버튼',
-    'fail.fall': '떨어짐', 'fail.erased': '지우개에 지워짐', 'fail.spike': '가시',
+    'fail.fall': '떨어짐', 'fail.erased': '지우개에 지워짐', 'fail.spike': '가시', 'fail.shot': '투사체에 맞음',
     'toast.noStops': '정지 횟수 없음', 'toast.inkLocked': '못 쓰는 색을 고름', 'toast.stopUp': '정지 +1 획득', 'toast.inkUp': '잉크 병 획득',
     'toast.heroHome': '주인공 도착', 'toast.short': '선이 너무 짧음', 'toast.noCrystal': '노랑: 지울 선 없음', 'toast.noSuck': '빨아들일 선 없음',
     'toast.noInk': '잉크 없음', 'toast.test': '레벨 툴 테스트 시작',

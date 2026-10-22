@@ -130,8 +130,34 @@ G.Props = (function () {
     return (d && d.box) || p.type === 'text' ? { x: r.x + r.w / 2, y: r.y + r.h / 2 } : { x: p.x, y: p.y };
   }
 
+  // 발사기 (사용자 결정 2026-10-22): 그림(obs_shooter, 포구가 왼쪽)을 쏘는 방향(aim)으로 돌림. 오른쪽 반이면 좌우를 뒤집어 바퀴가 아래로.
+  //   몸통 가운데에 투사체 색 동그라미. 그림이 없으면 회색 상자 + 포구
+  function drawShooter(ctx, p) {
+    var d = def('shooter'), C = G.DATA.colors, img = G.Assets.get('obs_shooter'), a = (p.aim != null ? p.aim : d.aim) * Math.PI / 180;
+    var cx = p.x + p.w / 2, cy = p.y + p.h / 2, col = C[p.shot || d.shot] || C.ink, right = Math.cos(a) > 1e-6;
+    ctx.save();
+    ctx.translate(cx, cy);
+    if (img) {
+      if (right) { ctx.rotate(a); ctx.scale(-1, 1); } else ctx.rotate(a - Math.PI);
+      var k = Math.min(p.w / img.width, p.h / img.height) * 1.25, iw = img.width * k, ih = img.height * k;
+      ctx.drawImage(img, -iw / 2, -ih / 2, iw, ih);
+      ctx.beginPath(); ctx.arc(iw * 0.1, -ih * 0.06, Math.min(iw, ih) * 0.13, 0, 6.283);
+    } else {
+      ctx.fillStyle = d.color; ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      ctx.lineWidth = 4; ctx.strokeStyle = C.outline; ctx.strokeRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      ctx.rotate(a);
+      var mr = Math.min(p.w, p.h) * 0.22;
+      ctx.fillStyle = '#1E1A22'; ctx.fillRect(0, -mr, Math.max(p.w, p.h) * 0.55, mr * 2); ctx.strokeRect(0, -mr, Math.max(p.w, p.h) * 0.55, mr * 2);
+      ctx.beginPath(); ctx.arc(0, 0, Math.min(p.w, p.h) * 0.16, 0, 6.283);
+    }
+    ctx.fillStyle = col; ctx.fill();
+    ctx.lineWidth = 2.5; ctx.strokeStyle = C.outline; ctx.stroke();
+    ctx.restore();
+  }
+
   // opts: { editor: true } 이면 그림이 없는 장식도 자리 표시. angle(도)이 있으면 돌려서 그림 (배치된 선은 자기 방식)
   function draw(ctx, p, opts) {
+    if (p.type === 'shooter') { drawShooter(ctx, p); return; }   // 상자는 안 돌리고 그림만 쏘는 방향으로
     if (!p.angle || p.type === 'crystal') { drawRaw(ctx, p, opts); return; }
     var c = pivot(p);
     ctx.save(); ctx.translate(c.x, c.y); ctx.rotate(p.angle * Math.PI / 180); ctx.translate(-c.x, -c.y);
@@ -194,15 +220,6 @@ G.Props = (function () {
       ctx.lineWidth = 3; ctx.strokeStyle = C.outline; ctx.stroke();
       ctx.fillStyle = C.outline; ctx.font = 'bold ' + Math.round(rr * 0.9) + 'px sans-serif'; ctx.textAlign = 'center';
       ctx.fillText('+1', p.x, p.y + rr * 0.32); ctx.textAlign = 'left';
-      return;
-    }
-    if (p.type === 'shooter') {                  // 그림이 없을 때: 회색 상자 + 쏘는 방향의 포구
-      var a = (p.angle != null ? p.angle : d.angle) * Math.PI / 180, cx = p.x + p.w / 2, cy = p.y + p.h / 2, mr = Math.min(p.w, p.h) * 0.22;
-      ctx.fillStyle = d.color; ctx.fillRect(r.x, r.y, r.w, r.h);
-      ctx.lineWidth = 4; ctx.strokeStyle = C.outline; ctx.strokeRect(r.x, r.y, r.w, r.h);
-      var mx = cx + Math.cos(a) * (p.w / 2 - mr * 0.4), my = cy + Math.sin(a) * (p.h / 2 - mr * 0.4);
-      ctx.beginPath(); ctx.arc(mx, my, mr, 0, 6.283); ctx.fillStyle = '#1E1A22'; ctx.fill(); ctx.stroke();
-      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(cx - Math.cos(a) * mr, cy - Math.sin(a) * mr - 4, 4, 0, 6.283); ctx.fill();
       return;
     }
     if (p.type === 'star') {
@@ -303,9 +320,10 @@ G.Props = (function () {
     var d = def(p.type);
     if (!d || !d.solid) return null;
     if (p.type === 'crystal') return null;          // 배치된 선은 level.js 가 따로 만듦 (자를 수 있게)
-    return G.Physics.add(engine, G.Physics.staticRect(p.x + p.w / 2, p.y + p.h / 2, p.w, p.h, { label: p.type, angle: (p.angle || 0) * Math.PI / 180 }));   // 가운데 기준 회전
+    var ang = p.type === 'shooter' ? 0 : (p.angle || 0) * Math.PI / 180;   // 발사기는 상자를 돌리지 않음 (쏘는 방향은 aim)
+    return G.Physics.add(engine, G.Physics.staticRect(p.x + p.w / 2, p.y + p.h / 2, p.w, p.h, { label: p.type, angle: ang }));   // 가운데 기준 회전
   }
 
   return { def: def, rect: rect, pivot: pivot, draw: draw, drawGround: drawGround, drawGrounds: drawGrounds, build: build, drawStarShape: drawStarShape,
-           drawCrystal: drawCrystal, drawSleeper: drawSleeper };
+           drawCrystal: drawCrystal, drawSleeper: drawSleeper, drawShooter: drawShooter };
 })();

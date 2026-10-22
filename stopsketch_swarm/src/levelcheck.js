@@ -163,6 +163,12 @@ G.LevelCheck = (function () {
       ' · 튕김 ' + lv.fx.bounce + ' · 가속 ' + lv.fx.boostPct + '% ' + (lv.fx.boostMs / 1000) + '초 · 떠오름 ' + lv.fx.riseSpeed);
     var crystals = lv.props.filter(function (p) { return p.type === 'crystal'; });
     if (crystals.length && lv.inks.indexOf('yellow') < 0) add('warn', '배치된 선이 있는데 노랑(지우기)을 쓸 수 없어요');
+    lv.props.filter(function (p) { return p.type === 'shooter'; }).forEach(function (p) {   // 같은 색 선으로만 막음 (사용자 결정 2026-10-22)
+      var c = p.shot || D.props.shooter.shot;
+      if (lv.inks.indexOf(c) < 0) add('warn', '발사기(x ' + p.x + ') 투사체가 ' + D.inks[c].name + '인데 그 색을 쓸 수 없어요 (막을 수 없음)');
+    });
+    var bottles = lv.props.filter(function (p) { return p.type === 'inkup'; });
+    if (bottles.length) add('info', '잉크 병 ' + bottles.length + '개 · 모두 먹으면 +' + bottles.reduce(function (n, p) { return n + (p.amount || D.ink.upAmount); }, 0) + ' (이 스테이지에서만)');
     add('info', '물방울 속도: 주인공 ' + lv.drops.heroSpeed + ' · 작은 물방울 ' + lv.drops.smallSpeed + ' · 서로 충돌 ' + (lv.drops.collide ? '켬' : '끔') +
       ' · 대열 ' + (lv.drops.follow ? '켬 (간격 ' + lv.drops.gap + ', 작은 물방울 속도는 이탈해 혼자 걸을 때만)' : '끔'));
     if (lv.drops.follow && lv.drops.gap <= 0) add('error', '대열 간격은 0보다 커야 해요');

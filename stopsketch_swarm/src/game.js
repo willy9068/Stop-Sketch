@@ -27,7 +27,7 @@ G.Game = {
   reset: function (game) {
     var D = G.DATA;
     game.engine = G.Physics.create();
-    game.level = G.Level.build(game.engine, game.levelData, game.account);
+    game.level = G.Level.build(game.engine, game.levelData);
     var lv = game.level.data;
     game.hero = G.Drop.create(game.engine, lv.start.x, lv.start.y - D.drop.heroRadius - 1, true, 1, lv.drops);   // 시작 y = 발밑
     game.drops = [game.hero];                      // 깨어난 물방울 (주인공 포함)
@@ -46,7 +46,7 @@ G.Game = {
     game.lastReachMs = 0;
     var lowest = G.LevelCheck.lowestTop(lv);           // 비탈이면 낮은 쪽 끝 (사용자 요청 2026-10-21)
     game.failY = lowest + D.physics.failY - 600;
-    game.inkMax = lv.ink + (game.account.inkBonus || 0);
+    game.inkMax = lv.ink;                          // 잉크 병은 이 스테이지에서만 늘림 (사용자 결정 2026-10-22: 계정 영구 성장 안 씀)
     game.ink = game.inkMax;
     game.stops = G.Rules.newStops(lv.stops);
     game.stopped = false;
@@ -55,6 +55,8 @@ G.Game = {
     game.stroke = null;
     game.lines = [];
     game.fallen = [];                              // 노랑으로 잘려 떨어진 배치된 선 조각
+    game.projs = [];                               // 날아가는 투사체 {x, y, vx, vy, ms, color, from} (사용자 결정 2026-10-22)
+    game.blocked = 0;                              // 같은 색 선에 막힌 투사체 수
     game.fx = [];
     game.eraserX = lv.start.x - D.eraser.startBack;
     game.status = 'ready';
@@ -134,6 +136,9 @@ G.Game = {
     liners.forEach(function (d) { self.placeLine(game, d); });
     fallers.forEach(function (d) { self.beforeFall(game, d); });
     G.Physics.step(game.engine, s);
+    this.shoot(game);
+    this.moveProjectiles(game, s);
+    if (game.status !== 'run') return;
     liners.forEach(function (d) { self.checkLine(game, d); });
     fallers.forEach(function (d) { self.afterFall(game, d, realMs, s, fx); });
     free.forEach(function (d, k) {
@@ -180,6 +185,60 @@ G.Game = {
         game.fx.push({ type: 'erasePuff', x: lp.x, y: lp.y, r: 14, line: true, real: Date.now(), t: game.timeMs });
         G.Draw.drop(game, ln, false);
       }
+    }
+  },
+
+  // ── 발사기 (사용자 결정 2026-10-22) ──
+  // firstMs 뒤 periodMs 마다 aim 방향으로 투사체. 게임 시간(runMs)이라 정지 중에는 안 쏨
+  shoot: function (game) {
+    var D = G.DATA, def = D.props.shooter;
+    game.level.shooters.forEach(function (sh) {
+      var p = sh.prop, period = Math.max(100, p.periodMs || def.periodMs);
+      while (game.runMs >= sh.next) {
+        sh.next += period;
+        var a = (p.aim != null ? p.aim : def.aim) * Math.PI / 180, sp = p.speed || def.speed;
+        var cx = p.x + p.w / 2, cy = p.y + p.h / 2, reach = Math.max(p.w, p.h) / 2 + D.projectile.radius + 2;
+        game.projs.push({ x: cx + Math.cos(a) * reach, y: cy + Math.sin(a) * reach, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, ms: 0,
+                          color: p.shot || def.shot, from: sh.body });
+      }
+    });
+  },
+
+  // 투사체 이동: 같은 색 선에 닿으면 막힘, 땅·벽·발판·가시·배치된 선(조각 포함)에 닿으면 사라짐 (다른 색 선은 통과, 선은 그대로).
+  //   주인공이 맞으면 실패, 작은 물방울은 잃음 (가시와 같은 규칙)
+  moveProjectiles: function (game, s) {
+    var D = G.DATA, pr = D.projectile.radius, th = D.ink.thickness / 2, M = G.Physics.M;
+    var solids = game.level.statics.concat(game.level.crystals.map(function (c) { return c.body; }), game.fallen.map(function (f) { return f.body; }));
+    for (var i = game.projs.length - 1; i >= 0; i--) {
+      var q = game.projs[i], gone = false;
+      q.x += q.vx * s; q.y += q.vy * s; q.ms += D.loop.stepMs * s;
+      for (var k = 0; k < game.lines.length && !gone; k++) {
+        var ln = game.lines[k];
+        if (!ln.body || ln.color !== q.color) continue;
+        var pts = G.Draw.worldPts(ln);
+        for (var j = 1; j < pts.length; j++) {
+          if (G.Rules.pointSegDist(q, pts[j - 1], pts[j]) <= pr + th) { gone = 'block'; break; }
+        }
+      }
+      if (!gone && M.Query.point(solids.filter(function (b) { return b !== q.from; }), { x: q.x, y: q.y }).length) gone = 'hit';
+      if (!gone && (q.ms > D.projectile.lifeMs || q.y > game.failY)) gone = 'old';
+      if (!gone) {
+        var hit = null;
+        this.walking(game).forEach(function (d) {
+          if (hit || !d.body) return;
+          var r = d.r + pr * D.projectile.hitK, dx = q.x - d.body.position.x, dy = q.y - d.body.position.y;
+          if (dx * dx + dy * dy < r * r) hit = d;
+        });
+        if (!hit) continue;
+        game.projs.splice(i, 1);
+        game.fx.push({ type: 'block', x: q.x, y: q.y, color: q.color, t: game.timeMs });
+        this.kill(game, hit, 'shot');
+        if (game.status !== 'run') return;
+        continue;
+      }
+      if (gone !== 'old') game.fx.push({ type: 'block', x: q.x, y: q.y, color: q.color, t: game.timeMs });
+      if (gone === 'block') game.blocked += 1;
+      game.projs.splice(i, 1);
     }
   },
 
@@ -392,9 +451,9 @@ G.Game = {
     });
   },
 
-  // 아이템: 아무 물방울이나 닿으면 획득, 별은 주인공만 (사용자 결정 2026-10-20). 정지 +1 은 이 스테이지에서만
+  // 아이템: 아무 물방울이나 닿으면 획득, 별은 주인공만 (사용자 결정 2026-10-20). 정지 +1·잉크 병은 이 스테이지에서만 (잉크 병: 사용자 결정 2026-10-22)
   collect: function (game, d) {
-    var D = G.DATA, p = d.body.position, acc = game.account;
+    var D = G.DATA, p = d.body.position;
     game.level.items.forEach(function (it) {
       if (it.got) return;
       if (it.kind === 'star' && !d.hero) return;   // 별은 주인공만 (사용자 결정 2026-10-20)
@@ -408,11 +467,9 @@ G.Game = {
         game.stops.left += D.stopUp; game.stops.max += D.stopUp;
         game.toast(G.T('toast.stopUp', { n: D.stopUp }));
       } else if (it.kind === 'inkup') {
-        acc.bottles[it.key] = true;
-        acc.inkBonus = (acc.inkBonus || 0) + D.ink.upAmount;
-        game.inkMax += D.ink.upAmount; game.ink += D.ink.upAmount;
-        game.toast(G.T('toast.inkUp', { n: D.ink.upAmount }));
-        if (game.onAccountChange) game.onAccountChange(game);
+        var up = q.amount || D.ink.upAmount;       // 병마다 양을 바꿀 수 있음 (레벨 툴)
+        game.inkMax += up; game.ink += up;
+        game.toast(G.T('toast.inkUp', { n: up }));
       }
     });
   },
@@ -479,7 +536,7 @@ G.Game = {
     if (d.hero) game.heroIn = true; else game.rescued += 1;
   },
 
-  // reason: 실패 이유 이름 fall / erased / spike (글자는 uitext.js fail.*). 스킵으로 지울 때는 ''
+  // reason: 실패 이유 이름 fall / erased / spike / shot (글자는 uitext.js fail.*). 스킵으로 지울 때는 ''
   kill: function (game, d, reason) {
     if ((reason === 'erased' || reason === 'home') && d.body) {   // 지워지는 순간: 가루 효과 + 지워진 얼굴 (화면 시간으로, 실패 뒤에도 재생)
       game.fx.push({ type: 'erasePuff', x: d.body.position.x, y: d.body.position.y, r: d.r, real: Date.now(), t: game.timeMs });

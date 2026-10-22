@@ -721,3 +721,36 @@ spikes around the border, thick dark brown line, empty inside, plain white backg
 | 61 | 지워지는 순간 효과 | fx_erase_puff.png | 256×256 | 투명 | ○ 지우개 연출 ✅ |
 
 > 6차 이미지 6장 적용 완료 (2026-10-20). 문지르는 속도·크기는 `stopsketch_swarm/src/data.js` 의 `art.eraser`
+
+## 15. 7차 이미지 요청 — 색 투사체 발사기 (2026-10-22)
+
+> 무리 데모에 **발사기**를 넣었습니다 (사용자 결정 2026-10-22). 투사체에 **색(검정·빨강·파랑·초록)** 이 있고 같은 색으로 그린 선에만 막힙니다.
+> 지금은 예전 그림으로 동작합니다: `obs_shooter`(대포) 그대로, `proj`(보라 가시 공)는 코드가 회색으로 바꾼 뒤 색을 입히고, 터질 때는 `fx_block`(예전 "초록 방패" 그림).
+> 아래 그림은 **흰색·연회색으로** 그리면 코드가 투사체 색을 곱해서 입힙니다. 파일을 `stopsketch/assets/` 에 넣으면 바로 바뀝니다(코드 연결 완료). 모든 프롬프트 앞에 2장 스타일 블록을 붙입니다.
+
+| 우선 | 파일 | 크기 | 쓰이는 곳 | 만들 때 주의 |
+|---|---|---|---|---|
+| ★ | `proj_white.png` | 128×128, 투명 | **투사체** (코드가 검정·빨강·파랑·초록으로 물들임) | 기존 `proj`와 같은 **둥근 가시 공 + 찡그린 얼굴**, 몸은 **흰색~아주 연한 회색**(색을 곱하므로 밝을수록 색이 선명), 외곽선·얼굴만 진하게. 아래 그림자 없이 공만 |
+| ★ | `fx_proj_pop.png` | 256×256, 투명 | 투사체가 **선·벽에 막히거나 물방울에 맞아 터질 때** (코드가 투사체 색으로 물들임) | 흰색 물감 방울이 사방으로 **튀며 터지는** 모양, 작은 가시 조각 몇 개. 가운데 비어 있게. **방패·격자 없음** (예전 fx_block 은 초록이 막던 시절 그림) |
+| ○ | `obs_shooter.png` (선택, 다시 그리기) | 256×256, 투명 | 발사기 몸통. 지금 그림을 그대로 써도 됨 | **포구가 왼쪽**(코드가 쏘는 방향으로 돌리고, 오른쪽을 볼 땐 좌우를 뒤집음). 몸통 가운데에 **둥근 빈 자리**(코드가 투사체 색 동그라미를 그림)가 있으면 더 자연스러움 |
+
+```
+(proj_white)   [proj 참조] the same round spiky doodle ball with a small grumpy face, body
+               colored pure white to very light gray, dark thick outline and dark face only,
+               no shadow, centered, plain background
+(fx_proj_pop)  a small burst of white paint splashes and a few tiny spike fragments flying
+               outward in all directions, empty center, no shield, no grid, thick dark doodle
+               outline, plain background
+(obs_shooter)  [obs_shooter 참조] the same small round doodle cannon on two wheels, barrel
+               pointing left, a plain empty round badge on the side of the body, thick dark
+               outline, flat 2D side view, plain white background
+```
+- 네거티브에 `colored, purple, green, shield, grid, text` 추가 (흰색이어야 코드가 네 가지 색을 깨끗하게 입힘)
+- 배경 제거 때 **흰 몸이 같이 지워지지 않게** 주의 (배경을 연한 단색으로 뽑고 지우는 것을 권장)
+- `item_ink.png`(보라 잉크 병 + 위 화살표)는 지금 그대로 씀. 잉크 병은 이제 **이 스테이지에서만** 늘어나므로 그림은 바꿀 필요 없음
+
+| # | 구분 | 파일명 | 크기 | 배경 | 우선 |
+|---|---|---|---|---|---|
+| 62 | 투사체 (흰색, 코드가 색 입힘) | proj_white.png | 128×128 | 투명 | ★ 발사기 |
+| 63 | 투사체 터짐 (흰색, 코드가 색 입힘) | fx_proj_pop.png | 256×256 | 투명 | ★ 발사기 |
+| 64 | 발사기 다시 그리기 (선택) | obs_shooter.png | 256×256 | 투명 | ○ 발사기 |

@@ -22,7 +22,7 @@ G.Debug = {
       if (a === 'boxes') { self.state.showBoxes = !self.state.showBoxes; }
       if (a === 'reset') { app.restart(); }
       if (a === 'clear') { app.save.stats = {}; G.Save.write(app.save); }
-      if (a === 'account' && confirm('잉크 성장(먹은 잉크 병)과 구간 기록을 지울까요?')) app.resetAccount();
+      if (a === 'account' && confirm('스테이지 기록(별·정화)을 지울까요?')) app.resetAccount();
       self.refresh(app);
     });
     el.addEventListener('mousedown', function (e) { e.stopPropagation(); });
@@ -67,10 +67,9 @@ G.Debug = {
     });
     html += '</table><button data-act="clear">기록 지우기</button>';
     var acc = app.account || app.save, rec = acc.records[g.level.data.id];
-    html += '<div class="row">계정' + (app.testMode ? ' (테스트: 저장 안 됨)' : '') + ': 잉크 최대량 +' + (acc.inkBonus || 0) +
-      ' (먹은 병 ' + Object.keys(acc.bottles || {}).length + '개)' +
+    html += '<div class="row">계정' + (app.testMode ? ' (테스트: 저장 안 됨)' : '') + ': 잉크 ' + Math.round(g.ink) + '/' + g.inkMax + ' (잉크 병은 이 스테이지에서만)' +
       (rec ? ' · 이 스테이지 별 ' + (rec.stars || 0) + ' · 최고 정화 ' + Math.round((rec.bestPurity || 0) * 100) + '%, ' + rec.clears + '/' + rec.tries + '번 성공' : '') + '</div>';
-    html += '<button data-act="account">계정 초기화 (잉크 성장·구간 기록)</button>';
+    html += '<button data-act="account">계정 초기화 (스테이지 기록)</button>';
     this.el.innerHTML = html;
   }
 };

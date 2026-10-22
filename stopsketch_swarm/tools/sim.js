@@ -499,3 +499,33 @@ G.LEVELS.forEach(function (lv) {
   console.log('23 대열에 남은 채 떨어짐: 넓은 우물 ' + well(false, 700) + ' / 좁은 우물(벽 옆면에 부딪힘) ' + well(false, 160) + ' / 빨강 위로 ' + well(true, 700) +
     '\n   (넓은 우물: 이탈 0 · 대열 3, 좁은 우물·빨강: 이탈 1 이상이어야 정상. 이탈한 물방울도 주인공에 닿으면 다시 붙음)');
 })();
+
+// 24. 발사기 (사용자 결정 2026-10-22): 투사체에 색이 있고 같은 색 선에만 막힘. 주인공이 맞으면 실패
+//     위에서 아래로 쏘는 발사기 밑을 지나감. 발판 둘 위에 선을 걸쳐 지붕을 만듦 (선은 떨어지므로 받침 필요)
+(function () {
+  function run(shot, roof) {
+    var lv = { id: 't', name: '시험', ink: 3000, stops: 9, start: { x: 200 }, goal: { x: 1400 }, inks: ['black', 'red', 'green'], eraser: { pct: 1, delayMs: 600000 },
+      ground: [{ x0: -400, x1: 1800, top: 600 }],
+      props: [{ type: 'shooter', x: 600, y: 250, w: 70, h: 70, aim: 90, periodMs: 200, speed: 5, firstMs: 0, shot: shot },
+        { type: 'platform', x: 520, y: 450, w: 40, h: 28 }, { type: 'platform', x: 710, y: 450, w: 40, h: 28 }] };
+    var g = G.Game.create('A', lv); G.Game.start(g);
+    if (roof) drawLine(g, [{ x: 525, y: 440 }, { x: 745, y: 440 }], roof);
+    for (var i = 0; i < 60 * 12 && g.status === 'run'; i++) G.Game.update(g, STEP);
+    return roof ? shot + ' 투사체 + ' + roof + ' 지붕: ' + g.status + (g.failReason ? '(' + g.failReason + ')' : '') + ' 막힘 ' + g.blocked
+                : shot + ' 투사체, 지붕 없음: ' + g.status + (g.failReason ? '(' + g.failReason + ')' : '');
+  }
+  console.log('24 발사기: ' + [run('black'), run('black', 'black'), run('black', 'red'), run('green', 'green')].join(' · ') +
+    '\n   (지붕 없음·다른 색 지붕은 fail(투사체), 같은 색 지붕은 clear · 막힘 여러 개여야 정상)');
+})();
+
+// 25. 잉크 병 (사용자 결정 2026-10-22): 먹으면 이 스테이지에서만 최대량·남은 양 +300 (병마다 amount), 다시 하면 원래대로 + 병이 다시 나타남
+(function () {
+  var lv = { id: 't', name: '시험', ink: 1000, stops: 9, start: { x: 200 }, goal: { x: 1400 }, inks: ['black'], eraser: { pct: 1, delayMs: 600000 },
+    ground: [{ x0: -400, x1: 1800, top: 600 }], props: [{ type: 'inkup', x: 500, y: 570, size: 60 }, { type: 'inkup', x: 700, y: 570, size: 60, amount: 150 }] };
+  var g = G.Game.create('A', lv); G.Game.start(g);
+  for (var i = 0; i < 60 * 3; i++) G.Game.update(g, STEP);
+  var got = g.inkMax + '/' + Math.round(g.ink);
+  G.Game.reset(g);
+  console.log('25 잉크 병: 둘 먹은 뒤 최대/남은 ' + got + ' · 다시 하기 ' + g.inkMax + '/' + Math.round(g.ink) + ' · 병 ' + g.level.items.filter(function (it) { return !it.got; }).length + '개 다시 보임' +
+    ' (1450/1450 → 1000/1000 · 2개여야 정상)');
+})();

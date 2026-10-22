@@ -61,12 +61,12 @@ var G = G || {};
     persist();
     G.Debug.refresh(app);
   };
-  // 계정 초기화 (잉크 성장·먹은 병·구간 기록). 시간 정지 방식 설정과 모드별 기록은 남김
+  // 계정 초기화 (스테이지 기록, 예전 잉크 성장 값도 0으로). 시간 정지 방식 설정과 모드별 기록은 남김
   app.resetAccount = function () {
     app.account.inkBonus = 0; app.account.bottles = {}; app.account.records = {};
     persist();
     app.restart();
-    app.game.toast('계정 초기화: 잉크 성장·기록을 지웠어요');
+    app.game.toast('계정 초기화: 스테이지 기록을 지웠어요');
   };
   G.Debug.init(app);
   G.app = app;

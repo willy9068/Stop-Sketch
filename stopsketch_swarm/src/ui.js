@@ -360,10 +360,7 @@ G.UI = (function () {
     });
     drawStart(ctx, lv.start.x, lv.start.y);
     drawGoal(ctx, lv.goal.x, lv.goal.y, jarShown);
-    game.level.items.forEach(function (it) {
-      if (it.owned) { ctx.save(); ctx.globalAlpha = 0.2; G.Props.draw(ctx, it.prop); ctx.restore(); return; }
-      if (!it.got) G.Props.draw(ctx, it.prop);
-    });
+    game.level.items.forEach(function (it) { if (!it.got) G.Props.draw(ctx, it.prop); });
     game.level.sleepers.forEach(function (sl) { if (sl.state === 'sleep') G.Props.draw(ctx, sl.prop); });   // 돌려 놓았으면 돌려서
 
     game.lines.forEach(function (ln) {
@@ -374,6 +371,7 @@ G.UI = (function () {
     if (game.stroke && game.stroke.pts.length > 1) {
       ctx.globalAlpha = 0.6; drawInkLine(ctx, game.stroke.pts, game.stroke.color, true); ctx.globalAlpha = 1;
     }
+    drawProjectiles(ctx, game);
     G.Game.walking(game).forEach(function (d) { if (!d.hero) drawDrop(ctx, d); });
     if (game.hero.state === 'walk') drawDrop(ctx, game.hero, game.level.data.drops.follow ? game.line.length : 0);
     drawGoalDrops(ctx, game);
@@ -389,7 +387,40 @@ G.UI = (function () {
     ctx.restore();
   }
 
-  // 효과: 별 반짝(깨어남·아이템), 착지 먼지, 튕김·가속, 흡수, 빨아들임·자름
+  // 투사체 (사용자 결정 2026-10-22): 흰 그림(proj_white)을 투사체 색으로 물들임(곱하기). 없으면 보라색 proj 를 회색으로 바꿔 물들임,
+  //   그것도 없으면 그 색 가시 공. 그림·색마다 한 번만 만들어 둠
+  var tintCache = {};
+  function tintImage(white, fallback, color) {
+    var img = G.Assets.get(white), gray = false;
+    if (!img) { img = G.Assets.get(fallback); gray = true; }
+    if (!img || typeof document === 'undefined') return img;
+    var key = (gray ? fallback : white) + ':' + color;
+    if (tintCache[key] && tintCache[key].src === img) return tintCache[key].cv;
+    var cv = document.createElement('canvas'), x = cv.getContext('2d');
+    cv.width = img.width; cv.height = img.height;
+    if (gray) x.filter = 'grayscale(1) brightness(1.5)';   // 원래 색을 빼고 밝게 → 색을 곱함
+    x.drawImage(img, 0, 0); x.filter = 'none';
+    x.globalCompositeOperation = 'multiply'; x.fillStyle = C[color] || C.ink; x.fillRect(0, 0, cv.width, cv.height);
+    x.globalCompositeOperation = 'destination-in'; x.drawImage(img, 0, 0);
+    tintCache[key] = { src: img, cv: cv };
+    return cv;
+  }
+  function drawProjectiles(ctx, game) {
+    var r = G.DATA.projectile.radius;
+    game.projs.forEach(function (q) {
+      var img = tintImage('proj_white', 'proj', q.color);
+      if (img) { ctx.drawImage(img, q.x - r * 1.6, q.y - r * 1.6, r * 3.2, r * 3.2); return; }
+      ctx.beginPath();
+      for (var i = 0; i < 16; i++) {
+        var a = i / 16 * 6.283, rr = i % 2 ? r * 0.75 : r * 1.15;
+        ctx[i ? 'lineTo' : 'moveTo'](q.x + Math.cos(a) * rr, q.y + Math.sin(a) * rr);
+      }
+      ctx.closePath(); ctx.fillStyle = C[q.color] || C.ink; ctx.fill();
+      ctx.lineWidth = 2.5; ctx.strokeStyle = C.outline; ctx.stroke();
+    });
+  }
+
+  // 효과: 별 반짝(깨어남·아이템), 착지 먼지, 튕김·가속, 흡수, 빨아들임·자름, 투사체 터짐
   function drawFx(ctx, game) {
     var F = G.DATA.art.fx;
     game.fx.forEach(function (f) {
@@ -426,6 +457,16 @@ G.UI = (function () {
         ctx.save(); ctx.globalAlpha = 1 - t;
         if (img) { k = 90 + t * 50; ctx.drawImage(img, f.x - k / 2, gy - G.DATA.art.goalJar.h * 0.8 - k / 2, k, k); }
         else { ctx.strokeStyle = C.blue; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(f.x, gy - 120, 20 + t * 40, 0, 6.283); ctx.stroke(); }
+        ctx.restore();
+        return;
+      }
+      if (f.type === 'block') {                     // 투사체가 막히거나 맞은 자리: 투사체 색으로 물든 fx_proj_pop (없으면 fx_block), 그것도 없으면 그 색 고리
+        t = (game.timeMs - f.t) / F.inkMs;
+        if (t < 0 || t >= 1) return;
+        img = G.Assets.get('fx_proj_pop') ? tintImage('fx_proj_pop', null, f.color) : G.Assets.get('fx_block');
+        ctx.save(); ctx.globalAlpha = 1 - t * t;
+        if (img) { k = 50 + t * 40; ctx.drawImage(img, f.x - k / 2, f.y - k / 2, k, k); }
+        else { ctx.strokeStyle = C[f.color] || C.ink; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(f.x, f.y, 10 + t * 22, 0, 6.283); ctx.stroke(); }
         ctx.restore();
         return;
       }

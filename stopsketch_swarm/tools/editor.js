@@ -25,7 +25,7 @@ var G = G || {};
   };
   var TOOLS = [
     ['select', '선택', 'V'], ['ground', '땅', 'G'], ['wall', '벽', 'W'], ['platform', '발판', 'P'],
-    ['drop', '물방울', 'B'], ['spike', '가시', 'K'], ['crystal', '배치된 선', 'L'], ['star', '별', 'S'], ['stopup', '정지 +1', 'Z'], ['inkup', '잉크 병', 'I'], ['segment', '구간 경계', 'J'],
+    ['drop', '물방울', 'B'], ['spike', '가시', 'K'], ['crystal', '배치된 선', 'L'], ['star', '별', 'S'], ['stopup', '정지 +1', 'Z'], ['inkup', '잉크 병', 'I'], ['shooter', '발사기', 'O'], ['segment', '구간 경계', 'J'],
     ['deco', '장식', 'C'], ['text', '글자', 'T']
   ];
   var GRID = 10, HANDLE = 7;
@@ -135,6 +135,11 @@ var G = G || {};
       out = [['nw', r.x, r.y], ['n', mx, r.y], ['ne', r.x + r.w, r.y], ['e', r.x + r.w, my],
              ['se', r.x + r.w, r.y + r.h], ['s', mx, r.y + r.h], ['sw', r.x, r.y + r.h], ['w', r.x, my]];
     } else out = [['size', r.x + r.w, r.y + r.h]];
+    if (o.type === 'shooter') {                      // 발사기: 동그란 손잡이 = 쏘는 방향 (상자는 안 돌림, 사용자 결정 2026-10-22)
+      var aa = (o.aim != null ? o.aim : d.aim) * Math.PI / 180, ar = Math.max(r.w, r.h) / 2 + 30 / z;
+      out.push(['aim', mx + Math.cos(aa) * ar, my + Math.sin(aa) * ar]);
+      return out;
+    }
     out.push(['rot', mx, r.y - 26 / z]);
     return out.map(function (h) { var q = rotPt({ x: h[1], y: h[2] }, c, a); return [h[0], q.x, q.y]; });
   }
@@ -262,6 +267,13 @@ var G = G || {};
       ctx.fillStyle = '#E0312B';
       if (pin === 'both' || pin === 'start') ctx.fillRect(e.s.x - k, e.s.y - k, k * 2, k * 2);
       if (pin === 'both' || pin === 'end') ctx.fillRect(e.e.x - k, e.e.y - k, k * 2, k * 2);
+    });
+    l.props.forEach(function (p) {                   // 발사기: 투사체가 날아가는 길 (수명 동안, 점선)
+      if (p.type !== 'shooter') return;
+      var sd = D.props.shooter, a = (p.aim != null ? p.aim : sd.aim) * Math.PI / 180, len = (p.speed || sd.speed) * D.projectile.lifeMs / D.loop.stepMs;
+      var cx = p.x + p.w / 2, cy = p.y + p.h / 2;
+      ctx.save(); ctx.globalAlpha = 0.45; ctx.setLineDash([10 / z, 8 / z]); ctx.lineWidth = 3 / z; ctx.strokeStyle = D.colors[p.shot || sd.shot];
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(a) * len, cy + Math.sin(a) * len); ctx.stroke(); ctx.restore();
     });
     drawSegments(l);
     G.UI.drawGoal(ctx, l.goal.x, l.goal.y);
@@ -421,13 +433,6 @@ var G = G || {};
   }
 
   // 잉크 병 id: 계정에 "구간id:병id" 로 저장되므로 구간 안에서 겹치지 않게
-  function newBottleId() {
-    var used = {}, n = 1;
-    lv().props.forEach(function (p) { if (p.type === 'inkup' && p.id) used[p.id] = 1; });
-    while (used['b' + n]) n++;
-    return 'b' + n;
-  }
-
   // ---------- 놓기 ----------
   function place(tool, w) {
     var l = lv(), d = D.props[tool], p;
@@ -455,7 +460,8 @@ var G = G || {};
       setTimeout(function () { var t = $('f_name'); if (t) { t.focus(); t.select(); } }, 0);
       return;
     }
-    else if (tool === 'inkup') p = { type: 'inkup', id: newBottleId(), x: snap(w.x), y: snap(w.y), size: d.size };
+    else if (tool === 'inkup') p = { type: 'inkup', x: snap(w.x), y: snap(w.y), size: d.size };   // 잉크 양은 선택 칸에서 (기본 data.js ink.upAmount)
+    else if (tool === 'shooter') p = { type: 'shooter', x: snap(w.x - d.w / 2), y: snap(w.y - d.h / 2), w: d.w, h: d.h, aim: d.aim, periodMs: d.periodMs, speed: d.speed, firstMs: d.firstMs, shot: d.shot };
     else if (tool === 'deco') p = { type: 'deco', x: snap(w.x), y: snap(w.y), size: d.size, img: S.decoImg };
     else if (tool === 'text') p = { type: 'text', x: snap(w.x), y: snap(w.y), size: d.size, text: d.text };
     l.props.push(p);
@@ -559,6 +565,14 @@ var G = G || {};
     if (deg) o.angle = deg; else delete o.angle;
   }
 
+  function normDeg(v) { return ((v % 360) + 540) % 360 - 180; }   // -180 ~ 180
+  // 발사기 쏘는 방향 손잡이: 가운데에서 마우스 쪽 (격자 맞춤이면 15도, Alt = 1도)
+  function setAim(o, c) {
+    var m = S.mouse, deg = Math.atan2(m.y - c.y, m.x - c.x) * 180 / Math.PI;
+    deg = $('snap').checked && !S.altDown ? Math.round(deg / 15) * 15 : Math.round(deg);
+    o.aim = normDeg(deg) === -180 ? 180 : normDeg(deg);
+  }
+
   function resize(o, q, h, dx, dy) {
     if (S.sel.kind === 'ground') {
       if (h === 'rot') { setAngle(o, { x: (q.x0 + q.x1) / 2, y: q.top }, true); return; }   // 경사 (사용자 요청 2026-10-21)
@@ -573,6 +587,7 @@ var G = G || {};
     }
     if (o.type === 'crystal') { resizeCrystal(o, q, h, dx, dy); return; }
     if (h === 'rot') { setAngle(o, P.pivot(q), false); return; }   // 모든 물건 회전 (사용자 요청 2026-10-21)
+    if (h === 'aim') { setAim(o, { x: q.x + q.w / 2, y: q.y + q.h / 2 }); return; }
     if (q.angle && P.def(o.type).box) {              // 돌린 상자: 끄는 거리를 돌리기 전 방향으로 바꿔 크기를 바꾸고, 가운데를 다시 돌려 놓음
       var a = q.angle * Math.PI / 180, c0 = { x: q.x + q.w / 2, y: q.y + q.h / 2 }, lp = rotPt({ x: c0.x + dx, y: c0.y + dy }, c0, -a);
       var lx = lp.x - c0.x, ly = lp.y - c0.y, ax0 = q.x, ay0 = q.y, ax1 = q.x + q.w, ay1 = q.y + q.h;
@@ -623,7 +638,7 @@ var G = G || {};
   function updateCursor(m) {
     if (S.tool !== 'select') { cv.style.cursor = 'crosshair'; return; }
     var h = S.sel && hitHandle(m.sx, m.sy);
-    var map = { rot: 'grab', cw: 'ew-resize', ce: 'ew-resize', ct: 'ns-resize', n: 'ns-resize', s: 'ns-resize', e: 'ew-resize', w: 'ew-resize', ne: 'nesw-resize', sw: 'nesw-resize', nw: 'nwse-resize', se: 'nwse-resize', size: 'nwse-resize' };
+    var map = { rot: 'grab', aim: 'grab', cw: 'ew-resize', ce: 'ew-resize', ct: 'ns-resize', n: 'ns-resize', s: 'ns-resize', e: 'ew-resize', w: 'ew-resize', ne: 'nesw-resize', sw: 'nesw-resize', nw: 'nwse-resize', se: 'nwse-resize', size: 'nwse-resize' };
     cv.style.cursor = h ? map[h] : hitTest(m) ? 'move' : 'default';
   }
 
@@ -687,6 +702,7 @@ var G = G || {};
     pushUndo();
     list.forEach(function (sl) {
       var o = objOf(sl), ground = sl.kind === 'ground', step = fine ? 1 : ground ? 5 : 15;
+      if (o.type === 'shooter') { o.aim = normDeg((o.aim != null ? o.aim : D.props.shooter.aim) + dir * step); return; }   // 발사기는 쏘는 방향
       var v = (o.angle || 0) + dir * step;
       if (o.type === 'crystal') { o.angle = ((v % 360) + 360) % 360; return; }
       v = ground ? Math.max(-60, Math.min(60, v)) : ((v % 360) + 540) % 360 - 180;
@@ -850,6 +866,14 @@ var G = G || {};
         h += '<div class="hint">양 끝 손잡이 = 길이, 위 손잡이 = 두께, 동그란 위 손잡이 = 회전 (격자 맞춤이면 15도씩)</div>';
         h += '<div class="f"><label>못 박힌 끝</label><select id="f_pin">' + opts([['both', '양쪽'], ['start', '시작 끝 (0도일 때 왼쪽)'], ['end', '끝 (0도일 때 오른쪽)'], ['none', '없음']], o.pin || 'both') + '</select></div>';
         h += '<div class="hint">빨간 점 = 벽·땅에 박힌 끝. 노랑으로 칠해 지우면 선이 나뉘는데, 박힌 끝이 있는 조각은 제자리에 남고 나머지는 떨어져요</div>';
+      } else if (o.type === 'shooter') {             // 발사기 (사용자 결정 2026-10-22)
+        var sd = D.props.shooter;
+        h += num('f_x', 'x (왼쪽)', o.x) + num('f_y', 'y (위)', o.y) + num('f_w', '폭', o.w) + num('f_h', '높이', o.h) +
+             num('f_aim', '쏘는 방향 (도)', o.aim != null ? o.aim : sd.aim) + num('f_periodMs', '간격 (ms)', o.periodMs || sd.periodMs) +
+             num('f_speed', '속도 (스텝당 px)', o.speed || sd.speed, 0.1) + num('f_firstMs', '첫 발 (ms)', o.firstMs != null ? o.firstMs : sd.firstMs);
+        h += '<div class="f"><label>투사체 색</label><select id="f_shot">' + opts(D.shooterColors.map(function (c) { return [c, D.inks[c].name]; }), o.shot || sd.shot) + '</select></div>';
+        h += '<div class="hint">같은 색으로 그린 선에만 막혀요 (다른 색은 통과). 땅·벽·발판·가시·배치된 선에도 막힘. 주인공이 맞으면 실패, 작은 물방울은 잃음. ' +
+             '방향: 0 = 오른쪽, 90 = 아래, 180 = 왼쪽, −90 = 위 · 포구 쪽 손잡이를 끌거나 Q/E (15도, Shift = 1도). 첫 발 = 출발 뒤 게임 시간 (정지 중엔 안 흐름) · 점선 = 날아가는 길</div>';
       } else if (d.box) {
         h += '<div class="f"><label>종류</label><select id="f_type">' + opts([['wall', '벽'], ['platform', '발판'], ['spike', '가시']], o.type) + '</select></div>';
         h += num('f_x', 'x (왼쪽)', o.x) + num('f_y', 'y (위)', o.y) + num('f_w', '폭', o.w) + num('f_h', '높이', o.h) + num('f_angle', '각도 (도)', o.angle || 0);
@@ -861,6 +885,7 @@ var G = G || {};
         if (D.art.decos.indexOf(o.img) < 0) list.push([o.img, o.img]);
         h += '<div class="f"><label>그림</label><select id="f_img">' + opts(list, o.img) + '</select></div>';
       }
+      if (o.type === 'inkup') h += num('f_amount', '잉크 양', o.amount || D.ink.upAmount) + '<div class="hint">먹으면 이 스테이지에서만 최대량·남은 잉크가 이만큼 늘어요 (다시 하면 다시 나타남)</div>';
       if (o.type === 'text') h += '<div class="f"><label>문구</label><textarea id="f_text" rows="2">' + esc(o.text) + '</textarea></div>';
       h += '<div class="row"><button data-act="dup">복제 (Ctrl+D)</button><button data-act="front">맨 앞</button><button data-act="back">맨 뒤</button></div>';
     }
@@ -936,7 +961,12 @@ var G = G || {};
       var f = id.slice(2);
       if (S.sel.kind === 'ground' && t.type === 'number') { setGround(o, f, r1(+t.value)); changed(false); return; }
       if (f === 'type') { o.type = v; }
-      else if (f === 'img' || f === 'text' || f === 'pin') o[f] = v;
+      else if (f === 'img' || f === 'text' || f === 'pin' || f === 'shot') o[f] = v;
+      else if (f === 'aim') o.aim = normDeg(v) === -180 ? 180 : normDeg(v);
+      else if (f === 'speed') o.speed = Math.max(0.5, Math.round(+t.value * 10) / 10);
+      else if (f === 'periodMs') o.periodMs = Math.max(100, v);
+      else if (f === 'firstMs') o.firstMs = Math.max(0, v);
+      else if (f === 'amount') { if (v > 0 && v !== D.ink.upAmount) o.amount = v; else delete o.amount; }
       else if (f === 'h' && S.sel.kind === 'ground') o.h = Math.max(20, v);
       else if (f === 'angle' && o.type !== 'crystal') {   // 회전·경사 (사용자 요청 2026-10-21). 0 이면 저장 안 함
         var av = S.sel.kind === 'ground' ? Math.max(-60, Math.min(60, v)) : ((v % 360) + 540) % 360 - 180;
