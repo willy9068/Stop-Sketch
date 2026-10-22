@@ -1,0 +1,6 @@
+{
+  "name": "stopsketch-proposal",
+  "private": true,
+  "description": "스톱 앤 스케치 제안서 PPT 생성 (node make_proposal.js)",
+  "dependencies": { "pptxgenjs": "3.12.0" }
+}

@@ -21,6 +21,7 @@
 - `stopsketch/tools/level_editor.html` + `editor.js` 레벨 툴, `test.js` 순수 계산 테스트, `sim.js` 물리 시뮬레이션, `build_single.py` 제출본 빌드
 - `stopsketch/assets/` 게임이 쓰는 이미지(파일명 = 이미지 문서 3장 표). 없으면 코드로 그린 임시 모양
 - `stopsketch_Image/` 사용자가 만든 원본 이미지
+- `스톱앤스케치_제안서.pptx` 제안서 (2026-10-22). 다시 만들기: `stopsketch_swarm/tools/proposal/` 에서 `npm install` → `node make_proposal.js` (그림은 `데모제출/2_대표이미지/` 스크린샷)
 - `데모제출/` 제출 폴더 (필수 6가지 번호 폴더, 2026-10-22). 다시 만들기: `python stopsketch_swarm/tools/make_submission.py` (먼저 제출본 빌드). 대표 이미지(2번)·영상(6번)은 손으로 넣는 것이라 스크립트가 지우지 않음
 
 ## 고친 뒤 확인 순서 (고친 폴더에서)
