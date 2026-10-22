@@ -558,3 +558,33 @@ G.LEVELS.forEach(function (lv) {
   }
   console.log('26 지우개 끄기: ' + run(false) + ' · ' + run(true) + ' (켬은 fail(지우개), 끔은 30초 뒤에도 run 이어야 정상)');
 })();
+
+// 27. 데모 3 아래 길 (사용자가 다시 만든 구간 2026-10-22): 다리를 노랑으로 끊어 낮은 다리(공중 블록 위)로 → 정지 +1 → 가시 위 검정 다리·블록(3790)으로 오르는 검정 비탈 →
+//     빨강 삼각형으로 발사기 막기 → 낮은 다리도 끊어 내려감 → 별(3070)·정지 +1(3560) → 배치된 선(4060)을 바닥 가까이 노랑 → 나머지는 2번 모범 풀이와 같음
+(function () {
+  var lv = G.LEVELS.filter(function (l) { return l.id === 'd3'; })[0];
+  if (!lv) return;
+  function until(g, f, sec) { for (var i = 0; i < sec * 60 && g.status === 'run' && !f(g); i++) G.Game.update(g, STEP); }
+  function draws(g, list) { list.forEach(function (it) { drawLine(g, it[0], it[1], true); }); }   // 한 번 정지에 여러 선 (시험이라 정지 횟수 다시 채움)
+  var g = G.Game.create('A', lv); G.Game.start(g);
+  until(g, function (g) { return hx(g) > -330; }, 10);
+  draws(g, [[[{ x: 400, y: 666 }, { x: 440, y: 666 }], 'red'], [[{ x: 475, y: 560 }, { x: 475, y: 664 }, { x: 445, y: 664 }], 'black'], [[{ x: 530, y: 666 }, { x: 626, y: 666 }], 'red']]);
+  until(g, function (g) { return hx(g) > 1100; }, 20);
+  draws(g, [[[{ x: 1610, y: 638 }, { x: 1700, y: 638 }], 'blue'], [[{ x: 1710, y: 638 }, { x: 1768, y: 638 }], 'red']]);
+  until(g, function (g) { return hx(g) > 2450; }, 20);
+  draws(g, [[[{ x: 2915, y: 0 }, { x: 2985, y: 0 }], 'green'], [[{ x: 2815, y: 310 }, { x: 2815, y: 350 }], 'yellow']]);
+  until(g, function (g) { return hy(g) > 380 && hx(g) > 2990; }, 10);
+  var low = g.status === 'run' && hy(g) < 450;
+  draws(g, [[[{ x: 2890, y: 902 }, { x: 3410, y: 902 }], 'black'], [[{ x: 3390, y: 902 }, { x: 3796, y: 847 }], 'black'],
+    [[{ x: 2898, y: 900 }, { x: 2925, y: 850 }, { x: 2952, y: 900 }, { x: 2898, y: 900 }], 'red'], [[{ x: 3000, y: 415 }, { x: 3000, y: 455 }], 'yellow']]);
+  until(g, function (g) { return hx(g) > 3850; }, 20);
+  var lower = g.status === 'run' ? '통과' : g.failReason;
+  draws(g, [[[{ x: 4020, y: 893 }, { x: 4100, y: 893 }], 'yellow']]);
+  until(g, function (g) { return hx(g) > 4100; }, 15);
+  draws(g, [[[{ x: 4250, y: 897 }, { x: 4455, y: 897 }], 'blue']]);
+  until(g, function (g) { return hx(g) > 4700; }, 15);
+  draws(g, [[[{ x: 5140, y: 1076 }, { x: 5580, y: 1076 }], 'black'], [[{ x: 5420, y: 1068 }, { x: 5480, y: 1068 }], 'red']]);
+  until(g, function () { return false; }, 60);
+  console.log('27 데모 3 아래 길: 낮은 다리 ' + (low ? '탐' : '못 탐') + ' · 아래 통로 ' + lower + ' · 끝 ' + g.status + ' ' + (g.timeMs / 1000).toFixed(1) + 's 도착 ' + g.rescued + '/' + g.total +
+    (g.result ? ' 별 ' + g.result.stars + ' 정화 ' + Math.round(g.result.purity * 100) + '%' : '') + ' (지금 배치면 별 3 · 정화 73% — 위 길 물방울 3마리를 놓침)');
+})();
