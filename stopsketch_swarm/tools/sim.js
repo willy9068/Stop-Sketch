@@ -67,8 +67,25 @@ var PLANS = {
     }, pts: [{ x: 1560, y: 596 }, { x: 2170, y: 746 }] },
     { what: '틈 앞 파랑', color: 'blue', when: function (g) { return hx(g) > 2700 && hx(g) < 3000; }, pts: [{ x: 3050, y: 748 }, { x: 3350, y: 748 }] },
     { what: '틈 끝 빨강', color: 'red', when: function (g) { return hx(g) > 2750 && hx(g) < 3000; }, pts: [{ x: 3460, y: 748 }, { x: 3590, y: 748 }] }
+  ],
+  // 데모 3 (사용자 레벨 2026-10-22) — Claude 플레이 테스트에서 찾은 풀이: 별 2/3 (아래 통로 별 3450,880 빼고) · 정화 100% · 약 53초
+  //   선은 떨어지므로 검정 벽은 ㄴ자로 세움. 빨강은 눕혀져 제자리에서 위로만 튐 (공중 앞으로 약 150px)
+  d3: [
+    { what: '발사기 앞 빨강 1', color: 'red', when: function (g) { return hx(g) > -330; }, pts: [{ x: 400, y: 666 }, { x: 440, y: 666 }] },
+    { what: 'ㄴ자 검정 벽', color: 'black', when: function (g) { return hx(g) > -330; }, pts: [{ x: 475, y: 560 }, { x: 475, y: 664 }, { x: 445, y: 664 }] },
+    { what: '발사기 앞 빨강 2', color: 'red', when: function (g) { return hx(g) > -330; }, pts: [{ x: 530, y: 666 }, { x: 626, y: 666 }] },
+    { what: '절벽 앞 파랑', color: 'blue', when: function (g) { return hx(g) > 1100; }, pts: [{ x: 1610, y: 638 }, { x: 1700, y: 638 }] },
+    { what: '절벽 앞 빨강', color: 'red', when: function (g) { return hx(g) > 1100; }, pts: [{ x: 1710, y: 638 }, { x: 1768, y: 638 }] },
+    { what: '초록으로 발사기 막기', color: 'green', when: function (g) { return hx(g) > 2450; }, pts: [{ x: 2915, y: 0 }, { x: 2985, y: 0 }] },
+    { what: '다리 끝 빨강', color: 'red', when: function (g) { return hx(g) > 2450; }, pts: [{ x: 3020, y: 326 }, { x: 3095, y: 326 }] },
+    { what: '가시 위 검정', color: 'black', when: function (g) { return hx(g) > 3650 && hy(g) < 300; }, pts: [{ x: 3680, y: 208 }, { x: 4016, y: 212 }] },
+    { what: '벽 앞 빨강', color: 'red', when: function (g) { return hx(g) > 3650 && hy(g) < 300; }, pts: [{ x: 3930, y: 200 }, { x: 4016, y: 200 }] },
+    { what: '31도 오르막 앞 파랑', color: 'blue', when: function (g) { return hx(g) > 4060 && hy(g) > 850; }, pts: [{ x: 4250, y: 897 }, { x: 4455, y: 897 }] },
+    { what: '틈 위 검정 다리', color: 'black', when: function (g) { return hx(g) > 4700; }, pts: [{ x: 5140, y: 1076 }, { x: 5580, y: 1076 }] },
+    { what: '공중 물방울 빨강', color: 'red', when: function (g) { return hx(g) > 4700; }, pts: [{ x: 5420, y: 1068 }, { x: 5480, y: 1068 }] }
   ]
 };
+function hy(g) { return g.hero.body ? g.hero.body.position.y : -Infinity; }
 
 console.log('1 아무것도 안 함');
 G.LEVELS.forEach(function (lv) { report('  ' + lv.name, play(lv, [], -1, 60)); });
