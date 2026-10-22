@@ -186,6 +186,7 @@ G.DATA = {
     charFace: { char_run: -1 },  // 그림이 바라보는 방향 (-1 = 왼쪽). 진행 방향에 맞춰 뒤집음 (사용자 요청 2026-10-20)
     walk: { stride: 1.6, bob: 0.16, sway: 0.09, lean: 0.06, squash: 0.08 },  // 코드 걷기: 걸음 길이(반지름 배)·튀는 높이(반지름 배)·기울기(rad)·앞으로 숙임·눌림
     airVy: 1.5,
+    projTint: { black: '#6E6878' },   // 투사체 그림(proj_white)에 곱하는 색. 검정은 그대로 곱하면 얼굴이 안 보여 진한 회색 (2026-10-22)
     bgParallax: 0.5,
     groundTop: { h: 48, up: 14 },
     groundTint: null,

@@ -751,6 +751,9 @@ spikes around the border, thick dark brown line, empty inside, plain white backg
 
 | # | 구분 | 파일명 | 크기 | 배경 | 우선 |
 |---|---|---|---|---|---|
-| 62 | 투사체 (흰색, 코드가 색 입힘) | proj_white.png | 128×128 | 투명 | ★ 발사기 |
-| 63 | 투사체 터짐 (흰색, 코드가 색 입힘) | fx_proj_pop.png | 256×256 | 투명 | ★ 발사기 |
+| 62 | 투사체 (흰색, 코드가 색 입힘) | proj_white.png | 128×128 | 투명 | ★ 발사기 ✅ |
+| 63 | 투사체 터짐 (코드가 색 입힘) | fx_proj_pop.png | 256×256 | 투명 | ★ 발사기 ✅ |
 | 64 | 발사기 다시 그리기 (선택) | obs_shooter.png | 256×256 | 투명 | ○ 발사기 |
+
+> 7차 이미지 2장 적용 완료 (2026-10-22). `proj_white` 는 흰 몸에 색을 곱함 — 검정은 그대로 곱하면 얼굴이 묻혀서 진한 회색(`data.js art.projTint`)으로 곱함.
+> `fx_proj_pop` 은 속이 빈 **갈색 선 그림**이라 곱하면 색이 안 보여서, **선을 투사체 색으로 덮어 칠함**(선 그림이면 흰색이 아니어도 됨). `fx_block` 은 이제 `fx_proj_pop` 이 없을 때만 씀

@@ -389,18 +389,25 @@ G.UI = (function () {
 
   // 투사체 (사용자 결정 2026-10-22): 흰 그림(proj_white)을 투사체 색으로 물들임(곱하기). 없으면 보라색 proj 를 회색으로 바꿔 물들임,
   //   그것도 없으면 그 색 가시 공. 그림·색마다 한 번만 만들어 둠
+  //   lines: 선만 있는 그림(fx_proj_pop)은 곱하면 어두워져 색이 안 보임 → 선을 그 색으로 덮어 칠함 (2026-10-22 이미지 확인)
+  //   검정은 곱하면 얼굴이 묻혀서 진한 회색(projTint)으로 곱함
   var tintCache = {};
-  function tintImage(white, fallback, color) {
+  function tintImage(white, fallback, color, lines) {
     var img = G.Assets.get(white), gray = false;
     if (!img) { img = G.Assets.get(fallback); gray = true; }
     if (!img || typeof document === 'undefined') return img;
     var key = (gray ? fallback : white) + ':' + color;
     if (tintCache[key] && tintCache[key].src === img) return tintCache[key].cv;
-    var cv = document.createElement('canvas'), x = cv.getContext('2d');
+    var cv = document.createElement('canvas'), x = cv.getContext('2d'), col = C[color] || C.ink;
     cv.width = img.width; cv.height = img.height;
     if (gray) x.filter = 'grayscale(1) brightness(1.5)';   // 원래 색을 빼고 밝게 → 색을 곱함
     x.drawImage(img, 0, 0); x.filter = 'none';
-    x.globalCompositeOperation = 'multiply'; x.fillStyle = C[color] || C.ink; x.fillRect(0, 0, cv.width, cv.height);
+    if (lines) {
+      x.globalCompositeOperation = 'source-atop'; x.globalAlpha = 0.85; x.fillStyle = col; x.fillRect(0, 0, cv.width, cv.height);
+      tintCache[key] = { src: img, cv: cv };
+      return cv;
+    }
+    x.globalCompositeOperation = 'multiply'; x.fillStyle = G.DATA.art.projTint[color] || col; x.fillRect(0, 0, cv.width, cv.height);
     x.globalCompositeOperation = 'destination-in'; x.drawImage(img, 0, 0);
     tintCache[key] = { src: img, cv: cv };
     return cv;
@@ -463,7 +470,7 @@ G.UI = (function () {
       if (f.type === 'block') {                     // 투사체가 막히거나 맞은 자리: 투사체 색으로 물든 fx_proj_pop (없으면 fx_block), 그것도 없으면 그 색 고리
         t = (game.timeMs - f.t) / F.inkMs;
         if (t < 0 || t >= 1) return;
-        img = G.Assets.get('fx_proj_pop') ? tintImage('fx_proj_pop', null, f.color) : G.Assets.get('fx_block');
+        img = G.Assets.get('fx_proj_pop') ? tintImage('fx_proj_pop', null, f.color, true) : G.Assets.get('fx_block');
         ctx.save(); ctx.globalAlpha = 1 - t * t;
         if (img) { k = 50 + t * 40; ctx.drawImage(img, f.x - k / 2, f.y - k / 2, k, k); }
         else { ctx.strokeStyle = C[f.color] || C.ink; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(f.x, f.y, 10 + t * 22, 0, 6.283); ctx.stroke(); }
