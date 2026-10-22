@@ -79,7 +79,7 @@ var PLANS = {
     { what: '초록으로 발사기 막기', color: 'green', when: function (g) { return hx(g) > 2450; }, pts: [{ x: 2915, y: 0 }, { x: 2985, y: 0 }] },
     { what: '다리 끝 빨강', color: 'red', when: function (g) { return hx(g) > 2450; }, pts: [{ x: 3020, y: 326 }, { x: 3095, y: 326 }] },
     { what: '가시 위 검정', color: 'black', when: function (g) { return hx(g) > 3650 && hy(g) < 300; }, pts: [{ x: 3680, y: 208 }, { x: 4016, y: 212 }] },
-    { what: '벽 앞 빨강', color: 'red', when: function (g) { return hx(g) > 3650 && hy(g) < 300; }, pts: [{ x: 3930, y: 200 }, { x: 4016, y: 200 }] },
+    { what: '벽 앞 빨강', color: 'red', when: function (g) { return hx(g) > 3650 && hy(g) < 300; }, pts: [{ x: 3910, y: 200 }, { x: 4016, y: 200 }] },
     { what: '31도 오르막 앞 파랑', color: 'blue', when: function (g) { return hx(g) > 4060 && hy(g) > 850; }, pts: [{ x: 4250, y: 897 }, { x: 4455, y: 897 }] },
     { what: '틈 위 검정 다리', color: 'black', when: function (g) { return hx(g) > 4700; }, pts: [{ x: 5140, y: 1076 }, { x: 5580, y: 1076 }] },
     { what: '공중 물방울 빨강', color: 'red', when: function (g) { return hx(g) > 4700; }, pts: [{ x: 5420, y: 1068 }, { x: 5480, y: 1068 }] }
@@ -559,32 +559,31 @@ G.LEVELS.forEach(function (lv) {
   console.log('26 지우개 끄기: ' + run(false) + ' · ' + run(true) + ' (켬은 fail(지우개), 끔은 30초 뒤에도 run 이어야 정상)');
 })();
 
-// 27. 데모 3 아래 길 (사용자가 다시 만든 구간 2026-10-22): 다리를 노랑으로 끊어 낮은 다리(공중 블록 위)로 → 정지 +1 → 가시 위 검정 다리·블록(3790)으로 오르는 검정 비탈 →
-//     빨강 삼각형으로 발사기 막기 → 낮은 다리도 끊어 내려감 → 별(3070)·정지 +1(3560) → 배치된 선(4060)을 바닥 가까이 노랑 → 나머지는 2번 모범 풀이와 같음
+// 27. 데모 3 정석 루트 (사용자 설명 2026-10-22): 위 길로 초록 발사기 구간 → 기둥으로 떨어지며 정지 +1(4210,400) → 31° 오르막에서 되돌아 왼쪽 아래 통로로 →
+//     별(2950,870) → 도착. 지금 규칙(빨강에 튕겨도 걷는 방향은 그대로)에서는 빨강 ㄴ자 벽(포탄 막기) 오른쪽에 검정 ㄴ자 벽(돌아서기)을 붙여 세움
+//     블록(3787)은 양쪽 모두 걸어서 못 넘어(약 24px) 들어갈 때·나올 때 검정 비탈, 배치된 선(4060)은 위아래 전부 노랑 (일부만 지우면 윗조각이 선 채로 끼어 막음)
 (function () {
   var lv = G.LEVELS.filter(function (l) { return l.id === 'd3'; })[0];
   if (!lv) return;
   function until(g, f, sec) { for (var i = 0; i < sec * 60 && g.status === 'run' && !f(g); i++) G.Game.update(g, STEP); }
   function draws(g, list) { list.forEach(function (it) { drawLine(g, it[0], it[1], true); }); }   // 한 번 정지에 여러 선 (시험이라 정지 횟수 다시 채움)
-  var g = G.Game.create('A', lv); G.Game.start(g);
-  until(g, function (g) { return hx(g) > -330; }, 10);
-  draws(g, [[[{ x: 400, y: 666 }, { x: 440, y: 666 }], 'red'], [[{ x: 475, y: 560 }, { x: 475, y: 664 }, { x: 445, y: 664 }], 'black'], [[{ x: 530, y: 666 }, { x: 626, y: 666 }], 'red']]);
-  until(g, function (g) { return hx(g) > 1100; }, 20);
-  draws(g, [[[{ x: 1610, y: 638 }, { x: 1700, y: 638 }], 'blue'], [[{ x: 1710, y: 638 }, { x: 1768, y: 638 }], 'red']]);
-  until(g, function (g) { return hx(g) > 2450; }, 20);
-  draws(g, [[[{ x: 2915, y: 0 }, { x: 2985, y: 0 }], 'green'], [[{ x: 2815, y: 310 }, { x: 2815, y: 350 }], 'yellow']]);
-  until(g, function (g) { return hy(g) > 380 && hx(g) > 2990; }, 10);
-  var low = g.status === 'run' && hy(g) < 450;
-  draws(g, [[[{ x: 2890, y: 902 }, { x: 3410, y: 902 }], 'black'], [[{ x: 3390, y: 902 }, { x: 3796, y: 847 }], 'black'],
-    [[{ x: 2898, y: 900 }, { x: 2925, y: 850 }, { x: 2952, y: 900 }, { x: 2898, y: 900 }], 'red'], [[{ x: 3000, y: 415 }, { x: 3000, y: 455 }], 'yellow']]);
-  until(g, function (g) { return hx(g) > 3850; }, 20);
-  var lower = g.status === 'run' ? '통과' : g.failReason;
-  draws(g, [[[{ x: 4020, y: 893 }, { x: 4100, y: 893 }], 'yellow']]);
-  until(g, function (g) { return hx(g) > 4100; }, 15);
-  draws(g, [[[{ x: 4250, y: 897 }, { x: 4455, y: 897 }], 'blue']]);
-  until(g, function (g) { return hx(g) > 4700; }, 15);
-  draws(g, [[[{ x: 5140, y: 1076 }, { x: 5580, y: 1076 }], 'black'], [[{ x: 5420, y: 1068 }, { x: 5480, y: 1068 }], 'red']]);
-  until(g, function () { return false; }, 60);
-  console.log('27 데모 3 아래 길: 낮은 다리 ' + (low ? '탐' : '못 탐') + ' · 아래 통로 ' + lower + ' · 끝 ' + g.status + ' ' + (g.timeMs / 1000).toFixed(1) + 's 도착 ' + g.rescued + '/' + g.total +
-    (g.result ? ' 별 ' + g.result.stars + ' 정화 ' + Math.round(g.result.purity * 100) + '%' : '') + ' (지금 배치면 별 3 · 정화 73% — 위 길 물방울 3마리를 놓침)');
+  function run(delay) {
+    var g = G.Game.create('A', lv); G.Game.start(g);
+    PLANS.d3.slice(0, 7).forEach(function (p) { until(g, p.when, 30); drawLine(g, p.pts, p.color); });   // 2번 모범 풀이 ①~③ (첫 발사기·절벽·초록 발사기)
+    until(g, function (g) { return hx(g) > 3650 && hy(g) < 300; }, 15);
+    draws(g, [[[{ x: 3680, y: 208 }, { x: 4016, y: 212 }], 'black'], [[{ x: 3910, y: 200 }, { x: 4016, y: 200 }], 'red']]);   // 3910: 떨어지며 정지 +1·물방울 2
+    until(g, function (g) { return hx(g) < 4300 && g.hero.dir < 0 && hy(g) > 850; }, 30);
+    for (var i = 0; i < delay; i++) G.Game.update(g, STEP);
+    draws(g, [[[{ x: 4060, y: 700 }, { x: 4060, y: 900 }], 'yellow'], [[{ x: 3845, y: 873 }, { x: 3960, y: 897 }], 'black'],
+      [[{ x: 3220, y: 903 }, { x: 3790, y: 903 }], 'black'], [[{ x: 2800, y: 903 }, { x: 3228, y: 903 }], 'black'],
+      [[{ x: 2830, y: 830 }, { x: 2830, y: 900 }, { x: 2805, y: 900 }], 'red'], [[{ x: 2845, y: 830 }, { x: 2845, y: 900 }, { x: 2870, y: 900 }], 'black']]);
+    until(g, function (g) { return hx(g) < 3600 && g.hero.dir > 0; }, 40);
+    draws(g, [[[{ x: 3660, y: 897 }, { x: 3810, y: 871 }], 'black']]);   // 나올 때 블록 왼쪽 비탈 (블록 위까지 걸치게)
+    until(g, function (g) { return hx(g) > 4300; }, 25);
+    G.Draw.suck(g, { x: 3500, y: 903 }, 60); G.Draw.suck(g, { x: 3000, y: 903 }, 60);   // 잉크가 모자라 통로 다리를 빨아들임
+    PLANS.d3.slice(9).forEach(function (p) { until(g, p.when, 30); drawLine(g, p.pts, p.color); });   // 오르막 파랑·틈 다리·공중 물방울 빨강
+    until(g, function () { return false; }, 60);
+    return g.status + ' ' + (g.timeMs / 1000).toFixed(1) + 's ' + g.rescued + '/' + g.total + (g.result ? ' 별 ' + g.result.stars + ' 정화 ' + Math.round(g.result.purity * 100) + '%' : ' ' + g.failReason);
+  }
+  console.log('27 데모 3 정석 루트 (아래 통로 들어가는 때를 0·1·2초 늦춤): ' + [0, 60, 120].map(run).join(' · ') + ' (모두 clear 10/10 별 3 정화 100% 이어야 정상)');
 })();
