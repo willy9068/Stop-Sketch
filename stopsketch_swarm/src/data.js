@@ -227,7 +227,7 @@ G.DATA = {
     jingleDuck: 0.35,                                // 클리어·실패 음악이 나오는 동안 배경 음악 음량 배율
     // 이름: [음량 0~1, 음 높이 흔들림(±), 반복(loop)]. 우선순위 ★ 꼭 · ☆ 있으면 좋음 · ○ 나중 (사운드 문서 표와 같음)
     sfx: {
-      sfx_stop: [0.9, 0], sfx_resume: [0.9, 0], sfx_draw: [0.5, 0, true], sfx_bounce: [0.8, 0.05], sfx_boost: [0.7, 0.04],
+      sfx_stop: [0.9, 0], sfx_resume: [0.9, 0], sfx_draw: [0.9, 0, true], sfx_bounce: [0.8, 0.05], sfx_boost: [0.7, 0.04],
       sfx_rise: [0.7, 0], sfx_erase: [0.8, 0.03], sfx_suck: [0.8, 0.03], sfx_plop: [0.8, 0.06], sfx_lost: [0.8, 0.04],
       sfx_clear: [0.9, 0], sfx_fail: [0.9, 0],
       sfx_land: [0.6, 0.08], sfx_wake: [0.7, 0.05], sfx_join: [0.6, 0.06], sfx_star: [0.8, 0], sfx_item: [0.8, 0],

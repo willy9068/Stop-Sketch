@@ -10,7 +10,7 @@ var G = G || {};
 G.Sound = (function () {
   var S = null, ctx = null, buffers = {}, muted = false, master = null, musicBus = null, musicFilter = null, sfxBus = null;
   var music = null, loops = {}, bursts = {}, prev = null, seenFx = typeof WeakSet !== 'undefined' ? new WeakSet() : null;
-  var duckUntil = 0;
+  var duckUntil = 0, played = {};                 // played: 소리별로 낸 횟수 (확인용)
 
   // 같은 소리가 몰릴 때 언제·어떤 음으로 낼지 (화면과 무관한 계산 → test.js 에서 시험)
   //   st: {next, n, last} 그 소리의 상태. now·gap ms. 돌려줌: {at(ms), pitch} 또는 null(너무 많이 밀림)
@@ -63,15 +63,34 @@ G.Sound = (function () {
   // 브라우저는 사용자가 누르기 전에는 소리를 막음 → 첫 클릭·키에서 깨움
   function unlock() { if (ctx && ctx.state === 'suspended' && !pausedNow) ctx.resume(); }
 
+  // 반복 구간: 앞뒤의 아주 작은 부분(짧은 페이드·mp3 앞뒤 여백)을 건너뛰어 반복할 때 끊기지 않게 (2026-10-22 소리 파일 점검)
+  //   5ms 창의 크기가 전체 평균의 1/4(약 -12dB) 이상인 첫·마지막 자리
+  function loopRange(buf) {
+    var d = buf.getChannelData(0), w = Math.max(1, Math.floor(buf.sampleRate * 0.005)), all = 0, i;
+    for (i = 0; i < d.length; i++) all += d[i] * d[i];
+    var thr = Math.sqrt(all / d.length) / 4;
+    function rms(a) { var s = 0; for (var k = a; k < a + w; k++) s += d[k] * d[k]; return Math.sqrt(s / w); }
+    var a0 = 0, a1 = d.length - w;
+    while (a0 < a1 && rms(a0) < thr) a0 += w;
+    while (a1 > a0 && rms(a1) < thr) a1 -= w;
+    return a1 - a0 > buf.sampleRate * 0.2 ? { start: a0 / buf.sampleRate, end: (a1 + w) / buf.sampleRate } : null;
+  }
+  function setLoop(src, buf) {
+    src.loop = true;
+    var r = buf._loop === undefined ? (buf._loop = loopRange(buf)) : buf._loop;
+    if (r) { src.loopStart = r.start; src.loopEnd = r.end; }
+  }
+
   function startMusic() {
     if (!ctx || music || !buffers[S.bgm]) return;
-    music = ctx.createBufferSource(); music.buffer = buffers[S.bgm]; music.loop = true;
+    music = ctx.createBufferSource(); music.buffer = buffers[S.bgm]; setLoop(music, music.buffer);
     music.connect(musicFilter); music.start();
   }
 
   // 효과음 하나. opt: {vol, pitch, at(ms 뒤)}
   function play(name, opt) {
     if (!ctx || !buffers[name] || muted) return;
+    played[name] = (played[name] || 0) + 1;
     var def = S.sfx[name] || [1, 0], o = opt || {};
     var src = ctx.createBufferSource(), g = ctx.createGain();
     src.buffer = buffers[name];
@@ -97,8 +116,9 @@ G.Sound = (function () {
       return;
     }
     if (!L) {
+      played[name] = (played[name] || 0) + 1;
       L = loops[name] = { src: ctx.createBufferSource(), g: ctx.createGain(), idle: 0 };
-      L.src.buffer = buffers[name]; L.src.loop = true; L.g.gain.value = 0;
+      L.src.buffer = buffers[name]; setLoop(L.src, buffers[name]); L.g.gain.value = 0;
       L.src.connect(L.g); L.g.connect(sfxBus); L.src.start();
     }
     L.idle = 0;
@@ -191,7 +211,9 @@ G.Sound = (function () {
       var lp = {};
       Object.keys(loops).forEach(function (k) { lp[k] = +loops[k].g.gain.value.toFixed(2); });
       return { state: ctx && ctx.state, loaded: Object.keys(buffers), muted: muted, music: !!music,
-               filterHz: musicFilter && Math.round(musicFilter.frequency.value), musicGain: musicBus && +musicBus.gain.value.toFixed(2), loops: lp };
+               filterHz: musicFilter && Math.round(musicFilter.frequency.value), musicGain: musicBus && +musicBus.gain.value.toFixed(2), loops: lp, played: played,
+               loopRanges: ['bgm_main', 'sfx_draw', 'sfx_eraser'].filter(function (n) { return buffers[n]; }).map(function (n) {
+                 var r = loopRange(buffers[n]); return n + ' ' + (r ? r.start.toFixed(3) + '~' + r.end.toFixed(3) + ' / ' + buffers[n].duration.toFixed(3) : '-'); }) };
     }
   };
 })();
