@@ -38,6 +38,7 @@ G.LevelCheck = (function () {
     // 정지 횟수·잉크 무제한 (레벨 툴, 사용자 요청 2026-10-21). 켤 때만 저장
     if (!o.infStops) delete o.infStops;
     if (!o.infInk) delete o.infInk;
+    if (!o.noEraser) delete o.noEraser;           // 지우개 끔 (테스트용, 사용자 요청 2026-10-22). 켤 때만 저장
     // 카메라: 기본 줌, 화면 위 끝·아래 끝(월드 y) — 카메라가 이 밖은 보여 주지 않음 (사용자 요청 2026-10-21)
     o.camera = o.camera || {};
     if (o.camera.zoom == null) o.camera.zoom = D.art.camera.baseZoom;
@@ -174,7 +175,9 @@ G.LevelCheck = (function () {
     if (lv.drops.follow && lv.drops.gap <= 0) add('error', '대열 간격은 0보다 커야 해요');
     if (lv.drops.heroSpeed <= 0 || lv.drops.smallSpeed <= 0) add('error', '물방울 속도는 0보다 커야 해요');
     if (lv.drops.smallSpeed < lv.drops.heroSpeed * lv.eraser.pct / 100) add('warn', '작은 물방울이 지우개보다 느려요 — ' + (lv.drops.follow ? '대열에서 이탈해 ' : '') + '뒤처진 물방울은 모두 지워져요');
-    add('info', '지우개: ' + (lv.eraser.delayMs / 1000) + '초 뒤 출발, 주인공 속도의 ' + lv.eraser.pct + '% · 구간 경계 ' + lv.segments.length + '개');
+    if (lv.noEraser) add('warn', '지우개 꺼짐 (테스트용) — 제출 전에 다시 켜세요');
+    else add('info', '지우개: ' + (lv.eraser.delayMs / 1000) + '초 뒤 출발, 주인공 속도의 ' + lv.eraser.pct + '%');
+    add('info', '구간 경계 ' + lv.segments.length + '개');
     return out;
   }
 

@@ -58,7 +58,7 @@ G.Game = {
     game.projs = [];                               // 날아가는 투사체 {x, y, vx, vy, ms, color, from} (사용자 결정 2026-10-22)
     game.blocked = 0;                              // 같은 색 선에 막힌 투사체 수
     game.fx = [];
-    game.eraserX = lv.start.x - D.eraser.startBack;
+    game.eraserX = lv.noEraser ? -1e9 : lv.start.x - D.eraser.startBack;   // 지우개 끔 (레벨 툴, 사용자 요청 2026-10-22): 아주 먼 왼쪽에 둠
     game.status = 'ready';
     game.failReason = '';
     game.timeMs = 0;
@@ -136,9 +136,6 @@ G.Game = {
     liners.forEach(function (d) { self.placeLine(game, d); });
     fallers.forEach(function (d) { self.beforeFall(game, d); });
     G.Physics.step(game.engine, s);
-    this.shoot(game);
-    this.moveProjectiles(game, s);
-    if (game.status !== 'run') return;
     liners.forEach(function (d) { self.checkLine(game, d); });
     fallers.forEach(function (d) { self.afterFall(game, d, realMs, s, fx); });
     free.forEach(function (d, k) {
@@ -153,6 +150,9 @@ G.Game = {
     joiners.forEach(function (d) { self.moveJoin(game, d, realMs * s); });
     G.Draw.rise(game, s, fx);
     G.Draw.cleanup(game);
+    this.shoot(game);                              // 물방울 판정(대열·떨어짐)이 끝난 뒤에 → 맞아서 몸체가 없어진 물방울을 다시 보지 않게 (2026-10-22 수정)
+    this.moveProjectiles(game, s);
+    if (game.status !== 'run') return;
     this.moveEraser(game, s);
 
     walk.forEach(function (d) {
@@ -175,7 +175,7 @@ G.Game = {
   // 지우개: 출발 delay 뒤 주인공 속도의 pct% 로 오른쪽으로 (게임 시간 기준이라 정지 중엔 멈춤)
   moveEraser: function (game, s) {
     var E = game.level.data.eraser;
-    if (game.runMs < E.delayMs) return;
+    if (game.level.data.noEraser || game.runMs < E.delayMs) return;
     game.eraserX += game.level.data.drops.heroSpeed * E.pct / 100 * s;
     for (var i = game.lines.length - 1; i >= 0; i--) {   // 지우개가 지나간 선도 지움 (잉크는 돌아오지 않음)
       var ln = game.lines[i], pts = G.Draw.worldPts(ln), maxX = -Infinity;

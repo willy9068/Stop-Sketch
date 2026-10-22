@@ -529,3 +529,15 @@ G.LEVELS.forEach(function (lv) {
   console.log('25 잉크 병: 둘 먹은 뒤 최대/남은 ' + got + ' · 다시 하기 ' + g.inkMax + '/' + Math.round(g.ink) + ' · 병 ' + g.level.items.filter(function (it) { return !it.got; }).length + '개 다시 보임' +
     ' (1450/1450 → 1000/1000 · 2개여야 정상)');
 })();
+
+// 26. 지우개 끄기 (레벨 툴 테스트용, 사용자 요청 2026-10-22): 벽 사이를 오가는 주인공이 켜면 지워지고, 끄면 30초 뒤에도 안 지워짐
+(function () {
+  function run(off) {
+    var lv = { id: 't', name: '시험', ink: 1000, stops: 9, start: { x: 300 }, goal: { x: 3000 }, inks: ['black'], noEraser: off, eraser: { pct: 50, delayMs: 1000 },
+      ground: [{ x0: -400, x1: 3400, top: 600 }], props: [{ type: 'wall', x: 100, y: 450, w: 40, h: 150 }, { type: 'wall', x: 700, y: 450, w: 40, h: 150 }] };
+    var g = G.Game.create('A', lv); G.Game.start(g);
+    for (var i = 0; i < 60 * 30 && g.status === 'run'; i++) G.Game.update(g, STEP);
+    return (off ? '끔' : '켬') + ' ' + g.status + (g.failReason ? '(' + g.failReason + ')' : '') + ' ' + (g.timeMs / 1000).toFixed(1) + 's';
+  }
+  console.log('26 지우개 끄기: ' + run(false) + ' · ' + run(true) + ' (켬은 fail(지우개), 끔은 30초 뒤에도 run 이어야 정상)');
+})();

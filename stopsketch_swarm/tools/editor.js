@@ -820,6 +820,7 @@ var G = G || {};
       check('d_follow', '대열', l.drops.follow, '주인공 발자국을 따라옴') +
       num('d_gap', '대열 간격', l.drops.gap) + hint('발자국 길이 px') +
       sec('지우개') +
+      check('l_noEraser', '지우개 끄기', l.noEraser, '켜면 지우개가 나오지 않음 (테스트용)') +
       num('e_pct', '속도 % (주인공)', l.eraser.pct) + num('e_delayMs', '출발 ms', l.eraser.delayMs) +
       sec('구간 경계', '설계 표시만, "x:이름" 한 줄에 하나') +
       '<div class="f"><label>경계</label><textarea id="l_segments" rows="5">' +
@@ -935,6 +936,7 @@ var G = G || {};
     if (id === 'l_test') l.test = t.checked || undefined;
     else if (id === 'l_infInk') l.infInk = t.checked || undefined;        // 무제한 (사용자 요청 2026-10-21)
     else if (id === 'l_infStops') l.infStops = t.checked || undefined;
+    else if (id === 'l_noEraser') l.noEraser = t.checked || undefined;   // 지우개 끄기 (사용자 요청 2026-10-22)
     else if (id === 'c_zoom') l.camera.zoom = Math.max(D.art.camera.minZoom, Math.min(D.art.camera.maxZoom, Math.round(+t.value * 100) / 100 || D.art.camera.baseZoom));
     else if (id === 'c_top') l.camera.top = Math.min(v, l.camera.bottom - 100);
     else if (id === 'c_bottom') l.camera.bottom = Math.max(v, l.camera.top + 100);
@@ -1032,8 +1034,8 @@ var G = G || {};
   function levelsText() {
     var body = S.levels.map(function (l) {
       var lines = ['  {'];
-      ['id', 'name', 'test', 'bg', 'ink', 'infInk', 'stops', 'infStops', 'inks', 'fx', 'drops', 'eraser', 'camera', 'segments', 'start', 'goal'].forEach(function (k) {
-        if ((k === 'test' || k === 'infInk' || k === 'infStops') && !l[k]) return;   // 테스트용·무제한 표시는 켰을 때만
+      ['id', 'name', 'test', 'bg', 'ink', 'infInk', 'stops', 'infStops', 'noEraser', 'inks', 'fx', 'drops', 'eraser', 'camera', 'segments', 'start', 'goal'].forEach(function (k) {
+        if ((k === 'test' || k === 'infInk' || k === 'infStops' || k === 'noEraser') && !l[k]) return;   // 테스트용·무제한·지우개 끔 표시는 켰을 때만
         var v = k === 'segments' ? (l.segments || []).slice().sort(function (a, b) { return a.x - b.x; }) : l[k];   // 구간 경계는 x 순서로 저장
         lines.push('    ' + JSON.stringify(k) + ': ' + JSON.stringify(v) + ',');
       });
