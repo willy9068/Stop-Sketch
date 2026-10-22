@@ -1,6 +1,7 @@
 // 시작점: 캔버스, 입력, 고정 타임스텝 루프 — 물방울 무리 시험판
 // 조작 (사용자 결정 2026-10-20): 왼쪽 드래그 그리기 · 스페이스 시간 정지 · 우클릭 선 빨아들이기 · 1~5/병 클릭 색 · 휠 줌 · Enter 스킵
 //   Esc 일시 정지 (사용자 결정 2026-10-21): 달리는 중에만, 창이 포커스를 잃어도 자동으로. 일시 정지 중엔 Esc·R·D·창 버튼만
+//   M 키·위 막대 스피커 = 소리 켬/끔 (사용자 결정 2026-10-22). 소리는 첫 클릭·키에서 깨움 (브라우저 규칙)
 var G = G || {};
 
 (function () {
@@ -8,6 +9,7 @@ var G = G || {};
   var canvas = document.getElementById('game');
   var ctx = canvas.getContext('2d');
   G.Assets.load();
+  G.Sound.init();
   canvas.width = D.view.w;
   canvas.height = D.view.h;
 
@@ -77,8 +79,12 @@ var G = G || {};
     return { x: (e.clientX - r.left) * D.view.w / r.width, y: (e.clientY - r.top) * D.view.h / r.height };
   }
 
+  function toggleSound() { app.game.toast(G.T(G.Sound.toggle() ? 'toast.soundOn' : 'toast.soundOff')); }
+
   window.addEventListener('keydown', function (e) {
     var g = app.game;
+    G.Sound.unlock();
+    if (e.code === 'KeyM' && !e.repeat) { toggleSound(); return; }
     if (e.code === 'Escape') { e.preventDefault(); if (!e.repeat) G.Game.togglePause(g); return; }
     if (g.paused) {
       if (e.code === 'Space' || e.code === 'Enter') e.preventDefault();
@@ -106,8 +112,11 @@ var G = G || {};
   document.addEventListener('visibilitychange', function () { if (document.hidden) G.Game.pause(app.game); });
   canvas.addEventListener('mousedown', function (e) {
     var g = app.game, sp = mouseScreen(e);
+    G.Sound.unlock();
+    if (e.button === 0 && G.UI.soundAt(sp.x, sp.y)) { toggleSound(); return; }   // 위 막대 스피커
     if (g.paused) {                                // 일시 정지 창: 버튼만
       var pa = e.button === 0 && G.UI.resultAt(g, sp.x, sp.y);
+      if (pa) G.Sound.click();
       if (pa === 'resume') G.Game.unpause(g);
       else if (pa === 'retry') app.restart();
       return;
@@ -123,6 +132,7 @@ var G = G || {};
     if (g.status === 'ready') { G.Game.start(g); return; }
     if (g.status !== 'run') {                      // 결과 창: 버튼을 눌러야 다시 하기 / 다음 스테이지 (사용자 요청 2026-10-21)
       var act = G.UI.resultAt(g, sp.x, sp.y);
+      if (act) G.Sound.click();
       if (act === 'retry') app.restart();
       else if (act === 'next' && g.status === 'clear' && g.hasNext) app.goLevel(app.levelIndex + 1);
       return;
@@ -147,6 +157,7 @@ var G = G || {};
     }
     if (n === D.loop.maxStepsPerFrame) acc = 0;   // 너무 밀리면 버린다 (탭 전환 등)
     G.UI.render(ctx, app.game, G.Debug.state);
+    G.Sound.watch(app.game);
 
     frames++; fpsT += dt;
     if (fpsT >= 500) {

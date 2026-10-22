@@ -212,7 +212,32 @@ G.DATA = {
     camera: { baseZoom: 1, topY: -400, bottomPad: 120, minZoom: 0.5, maxZoom: 1.3, margin: 160, manualMs: 3000, ease: 0.06, zoomOutEase: 0.08, zoomInEase: 0.012 }   // zoomInEase: 천천히 줌 인 (약 3초, 사용자 요청 2026-10-20)
   },
 
+  // 사운드 (사용자 결정 2026-10-22, grill me): 배경 음악 1곡 반복 + 효과음 22개. 파일은 stopsketch/assets/sound/<이름>.(mp3|ogg|wav|flac),
+  //   없는 소리는 그냥 안 남 (사운드 문서: 스톱앤스케치_사운드_프롬프트_ComfyUI.md). 음량 기본값은 uitext.js musicVolume·sfxVolume (UI 툴)
+  //   stopMuffle: 시간 정지 중 배경 음악을 먹먹하게(높은 소리를 깎는 필터 freq Hz, 음량 배율 gain, 바뀌는 시간 ms)
+  //   burst: 같은 효과음이 짧은 시간에 여러 번(무리) — gapMs 간격으로 차례로, 한 번마다 음을 pitchStep 씩 올림(최대 pitchMax), maxQueue 개까지
+  //   small: 작은 물방울 소리는 음량 × vol, 음 × pitch / eraser: 주인공과 지우개 거리 near 이하면 최대 vol, far 이상이면 0
+  sound: {
+    dir: '../../stopsketch/assets/sound/', exts: ['mp3', 'ogg', 'wav', 'flac'],
+    bgm: 'bgm_main',
+    stopMuffle: { freq: 650, gain: 0.55, ms: 250 },
+    burst: { gapMs: 80, pitchStep: 0.05, pitchMax: 1.5, maxQueue: 12 },
+    small: { vol: 0.6, pitch: 1.18 },
+    eraser: { near: 200, far: 1000, vol: 0.7 },
+    jingleDuck: 0.35,                                // 클리어·실패 음악이 나오는 동안 배경 음악 음량 배율
+    // 이름: [음량 0~1, 음 높이 흔들림(±), 반복(loop)]. 우선순위 ★ 꼭 · ☆ 있으면 좋음 · ○ 나중 (사운드 문서 표와 같음)
+    sfx: {
+      sfx_stop: [0.9, 0], sfx_resume: [0.9, 0], sfx_draw: [0.5, 0, true], sfx_bounce: [0.8, 0.05], sfx_boost: [0.7, 0.04],
+      sfx_rise: [0.7, 0], sfx_erase: [0.8, 0.03], sfx_suck: [0.8, 0.03], sfx_plop: [0.8, 0.06], sfx_lost: [0.8, 0.04],
+      sfx_clear: [0.9, 0], sfx_fail: [0.9, 0],
+      sfx_land: [0.6, 0.08], sfx_wake: [0.7, 0.05], sfx_join: [0.6, 0.06], sfx_star: [0.8, 0], sfx_item: [0.8, 0],
+      sfx_shoot: [0.6, 0.05], sfx_block: [0.7, 0.05], sfx_eraser: [0.6, 0, true],
+      sfx_color: [0.5, 0], sfx_click: [0.6, 0]
+    }
+  },
+
   save: {
+    soundKey: 'stopsketch.swarm.sound.v1',          // 소리 켬/끔 (M 키·위 막대 스피커)
     key: 'stopsketch.swarm.save.v1', oldKeys: [],
     editorDraftKey: 'stopsketch.swarm.editor.draft.v1', oldEditorDraftKeys: []
   }

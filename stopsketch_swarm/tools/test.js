@@ -2,7 +2,7 @@
 // 사용: node tools/test.js
 var fs = require('fs'), path = require('path'), vm = require('vm');
 var SRC = path.join(__dirname, '..', 'src');
-['data.js', 'uitext.js', 'levels.js', 'rules.js', 'levelcheck.js', 'util.js'].forEach(function (f) {
+['data.js', 'uitext.js', 'levels.js', 'rules.js', 'levelcheck.js', 'util.js', 'sound.js'].forEach(function (f) {
   vm.runInThisContext(fs.readFileSync(path.join(SRC, f), 'utf8'), { filename: f });
 });
 var R = G.Rules, D = G.DATA;
@@ -219,6 +219,15 @@ t('세운 빨강(60° 넘음): 부딪힌 쪽으로 튕김, 눕힌 빨강은 늘 
   near(R.bounceVelocity(a, 15, { x: -2, y: 0 }, { x: 10, y: 0 }, true).x, 15, 1e-9, '오른쪽에서 부딪힘 → 오른쪽');
   near(R.bounceVelocity(-a, 15, { x: 2, y: 0 }, { x: -10, y: 0 }, true).x, -15, 1e-9, '-90° 로 그어도 같음');
   near(R.bounceVelocity(0, 15, { x: 0, y: 2 }, { x: 0, y: 10 }, false).y, -15, 1e-9, '눕힌 선은 밑에서 닿아도 위로');
+});
+t('무리 소리: 간격을 두고 차례로, 음을 조금씩 올림, 너무 밀리면 버림 (사용자 결정 2026-10-22)', function () {
+  var B = { gapMs: 80, pitchStep: 0.05, pitchMax: 1.5, maxQueue: 12 }, st = { next: 0, n: 0, last: -1e9 }, out = [];
+  for (var i = 0; i < 14; i++) out.push(G.Sound.plan(st, 1000, B));   // 같은 순간에 14번
+  eq(out[0].at, 1000); eq(out[1].at, 1080); eq(out[2].at, 1160);
+  near(out[0].pitch, 1); near(out[1].pitch, 1.05); near(out[10].pitch, 1.5, 1e-9, '최대 1.5');
+  eq(!!out[11], true, '12개까지 받음'); eq(out[12], null, '13번째부터는 버림');
+  var later = G.Sound.plan(st, 5000, B);                                // 한참 뒤엔 음 높이 처음부터
+  eq(later.at, 5000); near(later.pitch, 1);
 });
 t('점-선분 거리 (가운데·끝 바깥)', function () {
   near(R.pointSegDist({ x: 5, y: 3 }, { x: 0, y: 0 }, { x: 10, y: 0 }), 3);

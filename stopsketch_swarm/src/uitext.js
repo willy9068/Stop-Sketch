@@ -20,7 +20,7 @@ G.UITEXT = {
     "shelf.help": "병 클릭 · 1~5 · 우클릭: 선 빨아들이기 · 휠: 줌",
     "stop.banner": "정지 중 — 드래그로 그리기 · 스페이스로 재생하면 선이 떨어져요",
     "ready.title": "출발 : 클릭 or 스페이스 바",
-    "ready.help": "드래그: 그리기 / 스페이스: 시간 정지 / 우클릭: 선 빨아들이기 / 1~5·병 클릭: 색 / 휠: 줌 / R: 처음부터 / Esc: 일시 정지",
+    "ready.help": "드래그: 그리기 / 스페이스: 시간 정지 / 우클릭: 선 빨아들이기 / 1~5·병 클릭: 색 / 휠: 줌 / R: 처음부터 / Esc: 일시 정지 / M: 소리",
     "result.clear": "정화!",
     "result.stars": "별 {stars} / {total}",
     "result.purity": "정화 {purity}%  (물방울 {inJar} / {all})",
@@ -45,6 +45,8 @@ G.UITEXT = {
     "toast.noCrystal": "노랑: 칠한 자리에 배치된 선이 없어요",
     "toast.noSuck": "빨아들일 선이 없어요",
     "toast.noInk": "잉크가 없어요 — 우클릭으로 선을 빨아들이면 돌려받아요",
+    "toast.soundOn": "소리 켬 (M)",
+    "toast.soundOff": "소리 끔 (M)",
     "toast.test": "레벨 툴 테스트 플레이: {name} (계정에 저장 안 됨)",
     "ink.black": "검정 · 기본",
     "ink.red": "빨강 · 튕김",
@@ -136,6 +138,8 @@ G.UITEXT = {
     "pauseResumeX": 420,
     "pauseResumeY": 380,
     "pauseRetryX": 650,
-    "pauseRetryY": 380
+    "pauseRetryY": 380,
+    "musicVolume": 0.45,
+    "sfxVolume": 0.8
   }
 };

@@ -51,7 +51,7 @@ def main():
                 add(z, p)
         add(z, os.path.join(SWARM, 'README.md'))
         for p in files_under(os.path.join(ROOT, 'stopsketch', 'assets')):
-            if p.endswith('.png'):
+            if p.endswith('.png') or os.sep + 'sound' + os.sep in p:   # 게임이 읽는 그림과 소리 (2026-10-22)
                 add(z, p)
 
     # 5 리소스: 게임 이미지 + 생성·선택 기록, 이미지 프롬프트, 수치(data.js)·화면 글자(uitext.js)·스테이지(levels.js), 설계·개발 기록
@@ -59,7 +59,7 @@ def main():
     with zipfile.ZipFile(os.path.join(OUT, '5_리소스', 'stopsketch_리소스.zip'), 'w', zipfile.ZIP_DEFLATED) as z:
         for p in files_under(os.path.join(ROOT, 'stopsketch', 'assets')):
             add(z, p)
-        for rel in ['스톱앤스케치_AI이미지_프롬프트_ComfyUI.md', '스톱앤스케치_레퍼런스_성과_조사표.md', '스톱앤스케치_게임개요_초안.md',
+        for rel in ['스톱앤스케치_AI이미지_프롬프트_ComfyUI.md', '스톱앤스케치_사운드_프롬프트_ComfyUI.md', '스톱앤스케치_레퍼런스_성과_조사표.md', '스톱앤스케치_게임개요_초안.md',
                     'stopsketch/DEVLOG.md', 'stopsketch/docs/일일히스토리.md',
                     'stopsketch_swarm/src/data.js', 'stopsketch_swarm/src/uitext.js', 'stopsketch_swarm/src/levels.js']:
             add(z, os.path.join(ROOT, rel))

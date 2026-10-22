@@ -4,13 +4,13 @@
 
 ## 새 세션 시작할 때
 1. `stopsketch/DEVLOG.md` 의 **"다음 할 일 (새 세션은 여기부터)"** 와 **"사용자에게 물을 것"** 을 먼저 읽는다. 가장 최근 일차 섹션이 지금 상태다.
-2. 결정의 기준 문서: `업무가이드_통합.md` 11장(확정 내용), `스톱앤스케치_게임개요_초안.md`, 이미지는 `스톱앤스케치_AI이미지_프롬프트_ComfyUI.md` (가장 뒤 장이 최신 요청).
+2. 결정의 기준 문서: `업무가이드_통합.md` 11장(확정 내용, 무리 버전은 11-8), `스톱앤스케치_게임개요_초안.md`, 이미지는 `스톱앤스케치_AI이미지_프롬프트_ComfyUI.md` (가장 뒤 장이 최신 요청), 소리는 `스톱앤스케치_사운드_프롬프트_ComfyUI.md`.
 
 ## 작업 규칙 (사용자 요청)
 - **답변은 한국어로.**
 - **수정할 때마다 기록한다**: 사용자 결정은 "(사용자 결정 날짜)" 로, Claude가 임시로 정한 것은 "Claude가 임시로 정한 것" 표에. `DEVLOG.md` 와 관련 문서(README, 개요 초안, 업무가이드, 이미지 문서)를 함께 고친다. "다음 할 일" 도 늘 최신으로.
 - **수정할 때마다 GitHub에 올린다**: https://github.com/willy9068/Stop-Sketch (main). 저장소 루트 = `D:\stopsketch`. 커밋 메시지는 한국어.
-- 이미지 프롬프트에 기존 작품·캐릭터·작가 이름을 넣지 않는다 (느낌은 특징으로 풀어 씀).
+- 이미지·사운드 프롬프트에 기존 작품·캐릭터·작가 이름을 넣지 않는다 (느낌은 특징으로 풀어 씀).
 
 ## 구조
 - **정식 데모 = 무리 버전 `stopsketch_swarm/` (사용자 결정 2026-10-20).** 제출본 `stopsketch_swarm/dist/stopsketch_swarm_demo.html`, 스테이지는 데모 1~3 (테스트용 스테이지는 `test: true` 로 게임에서 숨김)
@@ -20,6 +20,7 @@
 - 무리판 `stopsketch_swarm/tools/ui_editor.html` + `ui_editor.js` = UI·글자 툴 (게임 화면 글자·크기·색·위치 → `src/uitext.js`, 사용자 요청 2026-10-21). 게임 글자는 코드에 직접 쓰지 말고 `uitext.js` + `G.T()`
 - `stopsketch/tools/level_editor.html` + `editor.js` 레벨 툴, `test.js` 순수 계산 테스트, `sim.js` 물리 시뮬레이션, `build_single.py` 제출본 빌드
 - `stopsketch/assets/` 게임이 쓰는 이미지(파일명 = 이미지 문서 3장 표). 없으면 코드로 그린 임시 모양
+- `stopsketch/assets/sound/` 게임이 쓰는 소리(파일명 = 사운드 문서 4장 표, 2026-10-22). 없으면 그 소리만 안 남. 소리 장치는 `stopsketch_swarm/src/sound.js` (게임 상태 변화를 보고 소리를 냄, node 시뮬레이션과 무관)
 - `stopsketch_Image/` 사용자가 만든 원본 이미지
 - `스톱앤스케치_제안서.pptx` 제안서 (2026-10-22). 다시 만들기: `stopsketch_swarm/tools/proposal/` 에서 `npm install` → `node make_proposal.js` (그림은 `데모제출/2_대표이미지/` 스크린샷)
 - `데모제출/` 제출 폴더 (필수 6가지 번호 폴더, 2026-10-22). 다시 만들기: `python stopsketch_swarm/tools/make_submission.py` (먼저 제출본 빌드). 대표 이미지(2번)·영상(6번)은 손으로 넣는 것이라 스크립트가 지우지 않음

@@ -564,10 +564,36 @@ G.UI = (function () {
 
     // 오른쪽: 이번 판에 주운 별 (사용자 결정 2026-10-20) + 스테이지 이름·시간·정화
     var sx = V.w - 22 - 26 * Math.max(0, game.starsTotal - 1);
+    drawSpeaker(ctx, soundRect(game));
     for (var k = 0; k < game.starsTotal; k++) drawStarIcon(ctx, sx + k * 26 - 4, gy + 20, 11, k < game.starKeys.length);
     ctx.textAlign = 'right'; ctx.font = G.TF('hudSmallSize'); ctx.fillStyle = ink;
     say(ctx, G.T('hud.stage', { name: lv.name, attempt: game.attempt, time: (game.timeMs / 1000).toFixed(1), purity: Math.round(G.Game.purity(game) * 100) }), V.w - 20, y2);
     ctx.textAlign = 'left';
+  }
+
+  // 소리 켬/끔 스피커 (사용자 결정 2026-10-22): 위 막대 오른쪽, 별 아이콘 왼쪽. 누르거나 M 키
+  var lastStars = 3;
+  function soundRect(game) {
+    if (game) lastStars = game.starsTotal;
+    var H = G.TS('hudH'), s = 30, x = V.w - 22 - 26 * Math.max(0, lastStars - 1) - 4 - 11 - 18 - s;
+    return { x: x, y: (H - 56) / 2 + 20 - s / 2, w: s, h: s };
+  }
+  function soundAt(sx, sy) { var r = soundRect(); return sx >= r.x - 4 && sx <= r.x + r.w + 4 && sy >= r.y - 4 && sy <= r.y + r.h + 4; }
+  function drawSpeaker(ctx, r) {
+    var on = !(G.Sound && G.Sound.isMuted()), x = r.x, y = r.y, s = r.w, hot = hoverPt && soundAt(hoverPt.x, hoverPt.y);
+    ctx.save();
+    ctx.strokeStyle = C.outline; ctx.fillStyle = hot ? '#FFE9A8' : 'rgba(255,253,246,0.9)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(x + s * 0.12, y + s * 0.38); ctx.lineTo(x + s * 0.3, y + s * 0.38); ctx.lineTo(x + s * 0.52, y + s * 0.16);
+    ctx.lineTo(x + s * 0.52, y + s * 0.84); ctx.lineTo(x + s * 0.3, y + s * 0.62); ctx.lineTo(x + s * 0.12, y + s * 0.62); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.lineCap = 'round';
+    if (on) {
+      ctx.beginPath(); ctx.arc(x + s * 0.55, y + s * 0.5, s * 0.17, -0.9, 0.9); ctx.stroke();
+      ctx.beginPath(); ctx.arc(x + s * 0.55, y + s * 0.5, s * 0.32, -0.9, 0.9); ctx.stroke();
+    } else {
+      ctx.strokeStyle = C.red;
+      ctx.beginPath(); ctx.moveTo(x + s * 0.64, y + s * 0.34); ctx.lineTo(x + s * 0.92, y + s * 0.66); ctx.moveTo(x + s * 0.92, y + s * 0.34); ctx.lineTo(x + s * 0.64, y + s * 0.66); ctx.stroke();
+    }
+    ctx.restore();
   }
 
   // 스킵 버튼: 주인공이 도착하면 화면 위 가운데 (사용자 결정 2026-10-20)
@@ -840,5 +866,5 @@ G.UI = (function () {
 
   return { render: render, toWorld: toWorld, toScreen: toScreen, cam: cam, wheel: wheel, resetCamera: resetCamera,
            drawBackground: drawBackground, drawGoal: drawGoal, drawStart: drawStart,
-           inkAt: inkAt, skipAt: skipAt, resultAt: resultAt, hover: hover, resultLayout: resultLayout, drawInkLine: drawInkLine };
+           inkAt: inkAt, skipAt: skipAt, resultAt: resultAt, soundAt: soundAt, hover: hover, resultLayout: resultLayout, drawInkLine: drawInkLine };
 })();

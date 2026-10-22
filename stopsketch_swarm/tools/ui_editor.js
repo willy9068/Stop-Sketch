@@ -33,7 +33,7 @@ var G = G || {};
     'fail.fall': '떨어짐', 'fail.erased': '지우개에 지워짐', 'fail.spike': '가시', 'fail.shot': '투사체에 맞음',
     'toast.noStops': '정지 횟수 없음', 'toast.inkLocked': '못 쓰는 색을 고름', 'toast.stopUp': '정지 +1 획득', 'toast.inkUp': '잉크 병 획득',
     'toast.heroHome': '주인공 도착', 'toast.short': '선이 너무 짧음', 'toast.noCrystal': '노랑: 지울 선 없음', 'toast.noSuck': '빨아들일 선 없음',
-    'toast.noInk': '잉크 없음', 'toast.test': '레벨 툴 테스트 시작',
+    'toast.noInk': '잉크 없음', 'toast.soundOn': '소리 켬', 'toast.soundOff': '소리 끔', 'toast.test': '레벨 툴 테스트 시작',
     'ink.black': '검정', 'ink.red': '빨강', 'ink.blue': '파랑', 'ink.green': '초록', 'ink.yellow': '노랑'
   };
   var STYLE = [   // [이름, 설명, 장면]
@@ -74,7 +74,9 @@ var G = G || {};
     ['pausePanelW', '일시 정지 창 바탕 폭', 'pause'], ['pausePanelH', '일시 정지 창 바탕 높이', 'pause'],
     ['pauseTitleX', '일시 정지: 제목 x', 'pause'], ['pauseTitleY', '일시 정지: 제목 y', 'pause'], ['pauseColor', '일시 정지 제목 색', 'pause'],
     ['pauseResumeX', '계속하기 버튼 x (왼쪽)', 'pause'], ['pauseResumeY', '계속하기 버튼 y (위)', 'pause'],
-    ['pauseRetryX', '일시 정지: 다시 하기 x (왼쪽)', 'pause'], ['pauseRetryY', '일시 정지: 다시 하기 y (위)', 'pause']
+    ['pauseRetryX', '일시 정지: 다시 하기 x (왼쪽)', 'pause'], ['pauseRetryY', '일시 정지: 다시 하기 y (위)', 'pause'],
+    // 사운드 (사용자 결정 2026-10-22): 0 ~ 1
+    ['musicVolume', '배경 음악 음량 (0~1)', 'run'], ['sfxVolume', '효과음 음량 (0~1)', 'run']
   ];
 
   // ---------- 미리보기 게임 ----------

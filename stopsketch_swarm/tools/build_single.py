@@ -9,6 +9,8 @@
 - 원본(src/*, assets/*)은 건드리지 않는다. 합친 결과만 새로 만든다.
 - 이미지: assets/<이름>.png 중 data.js art.images 에 있는 것만 WebP로 줄여(가로 최대 1280) base64로 넣는다.
   없는 이미지는 게임이 색 블록으로 그린다. assets/original/ 등 하위 폴더는 보지 않는다.
+- 소리 (2026-10-22): assets/sound/<이름>.(mp3|ogg|wav|flac) 중 data.js sound 에 있는 이름만 그대로 base64로 넣는다 (G.EMBED_AUDIO).
+  변환하지 않으므로 용량을 줄이려면 mp3·ogg 로 저장할 것. 없는 소리는 게임에서 그냥 안 남.
 - 합친 뒤 외부 요청(src=, href=, fetch, import)이 남아 있지 않은지 검사한다.
 필요: Python 3 + Pillow (이미지가 있을 때만)
 """
@@ -32,6 +34,27 @@ def read(rel):
 def used_images():
     m = re.search(r"images:\s*\[([^\]]*)\]", read('data.js'))
     return re.findall(r"'([^']+)'", m.group(1)) if m else []
+
+
+AUDIO_EXTS = [('mp3', 'audio/mpeg'), ('ogg', 'audio/ogg'), ('wav', 'audio/wav'), ('flac', 'audio/flac')]
+
+
+def used_sounds():
+    m = re.search(r"sound:\s*\{(.*?)\n  \},", read('data.js'), re.S)
+    if not m:
+        return []
+    b = re.search(r"bgm:\s*'([^']+)'", m.group(1))
+    return ([b.group(1)] if b else []) + re.findall(r"\b(sfx_\w+):", m.group(1))
+
+
+def encode_sound(name):
+    for ext, mime in AUDIO_EXTS:
+        p = os.path.join(ASSETS, 'sound', name + '.' + ext)
+        if os.path.isfile(p):
+            with open(p, 'rb') as f:
+                data = f.read()
+            return 'data:%s;base64,' % mime + base64.b64encode(data).decode('ascii'), ext, len(data)
+    return None, None, 0
 
 
 def encode_image(path):
@@ -62,9 +85,21 @@ def main():
         code = read(m.group(1)).replace('</script', '<\\/script')
         return '<script>\n// ' + m.group(1) + '\n' + code + '\n</script>'
 
+    audio, audio_info, audio_missing = {}, [], []
+    for name in used_sounds():
+        uri, ext, size = encode_sound(name)
+        if not uri:
+            audio_missing.append(name)
+            continue
+        audio[name] = uri
+        audio_info.append('%s.%s %.0fKB' % (name, ext, size / 1024))
+        if size > 1024 * 1024:
+            print('주의: %s.%s 가 %.1fMB — mp3·ogg 로 줄이면 제출본이 가벼워짐' % (name, ext, size / 1024 / 1024))
+
     out = SCRIPT_TAG.sub(inline, html)
     boot = ('<script>\nvar G = window.G = window.G || {}; G.SINGLE_FILE = true;\nG.EMBED = '
-            + json.dumps(embed, separators=(',', ':')) + ';\n</script>\n')
+            + json.dumps(embed, separators=(',', ':')) + ';\nG.EMBED_AUDIO = '
+            + json.dumps(audio, separators=(',', ':')) + ';\n</script>\n')
     out = out.replace('<script>\n// vendor/matter.min.js', boot + '<script>\n// vendor/matter.min.js', 1)
 
     # 외부 요청 검사 (주석 속 URL은 요청이 아니므로 태그·호출만 본다)
@@ -78,6 +113,9 @@ def main():
     print('이미지 %d장 내장 %s' % (len(embed), sorted(embed)))
     if missing:
         print('없는 이미지(색 블록으로 표시): %s' % missing)
+    print('소리 %d개 내장 %s' % (len(audio), audio_info))
+    if audio_missing:
+        print('없는 소리(안 남) %d개: %s' % (len(audio_missing), audio_missing))
     print('스크립트 %d개 → %s (%.0fKB)' % (len(scripts), OUT, os.path.getsize(OUT) / 1024))
 
 

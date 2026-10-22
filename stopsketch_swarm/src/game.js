@@ -140,7 +140,7 @@ G.Game = {
     fallers.forEach(function (d) { self.afterFall(game, d, realMs, s, fx); });
     free.forEach(function (d, k) {
       G.Drop.sense(d, game.engine, realMs, s, fx);
-      d.events.forEach(function (e) { game.fx.push({ type: e, x: d.body.position.x, y: d.body.position.y + d.r, dir: d.dir, t: game.timeMs }); });
+      d.events.forEach(function (e) { game.fx.push({ type: e, x: d.body.position.x, y: d.body.position.y + d.r, dir: d.dir, small: !d.hero, t: game.timeMs }); });   // small: 소리 크기 (sound.js)
       if (!vyBefore[k].g && d.grounded && vyBefore[k].vy >= G.DATA.art.fx.landVy && d.hero) {
         game.fx.push({ type: 'land', x: d.body.position.x, y: d.body.position.y + d.r, t: game.timeMs });
       }
@@ -349,7 +349,7 @@ G.Game = {
       d.grounded = sup.ground; d.under = sup.color; d.events.length = 0;
     } else G.Drop.sense(d, game.engine, realMs, s, fx);
     if (d.dead) return;
-    d.events.forEach(function (e) { game.fx.push({ type: e, x: b.position.x, y: b.position.y + d.r, dir: d.dir, t: game.timeMs }); });
+    d.events.forEach(function (e) { game.fx.push({ type: e, x: b.position.x, y: b.position.y + d.r, dir: d.dir, small: true, t: game.timeMs }); });
     d.vel = { x: v.x, y: v.y };
     if (d.mode === 'fall') {
       // 외부 영향 = 빨강에 튕김, 공중에서 옆으로 부딪힘(옆 속도가 확 바뀜), 위로 밀림. 위에서 내려서는 착지는 아님
