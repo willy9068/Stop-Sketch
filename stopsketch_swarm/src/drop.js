@@ -114,7 +114,14 @@ G.Drop = {
       d.boostMs = fx.boostMs;
     }
     if (fx && red && d.bounceCdMs === 0 && scale > 0) {
-      M.Body.setVelocity(b, G.Rules.bounceVelocity(red.angle, fx.bounce, b.velocity));
+      var side = G.Rules.isSideBounce(red.angle, G.DATA.redSideDeg), rel = { x: b.position.x - red.position.x, y: b.position.y - red.position.y };
+      var nv = G.Rules.bounceVelocity(red.angle, fx.bounce, b.velocity, rel, side);
+      M.Body.setVelocity(b, nv);
+      if (side && Math.abs(nv.x) > 0.5) {          // 세운 빨강에 옆으로 튕기면 걷는 방향도 그쪽으로 (사용자 결정 2026-10-22). 바로 벽 판정으로 다시 돌지 않게 쿨다운
+        if ((nv.x > 0 ? 1 : -1) !== d.dir) d.turns += 1;
+        d.dir = nv.x > 0 ? 1 : -1;
+        d.turnCdMs = D.turnCooldownMs;
+      }
       d.grounded = false;
       d.bounceCdMs = G.DATA.bounceCdMs;
       d.bounces += 1;

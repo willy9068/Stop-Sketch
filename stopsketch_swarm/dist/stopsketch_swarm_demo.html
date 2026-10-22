@@ -151,6 +151,9 @@ G.DATA = {
   //   bounce: 빨강 튕김 속도(15 ≈ 400px) / boostPct·boostMs: 파랑 / riseSpeed: 초록이 올라가는 속도(스텝당 px)
   inkFx: { bounce: 15, boostPct: 190, boostMs: 1200, riseSpeed: 1.2 },
   bounceCdMs: 250,
+  // 빨강 옆으로 튕김 (사용자 결정 2026-10-22, grill me): 닿은 빨강 부분이 이 각도(도)보다 서 있으면 부딪힌 쪽으로 튕기고, 걷는 방향도 튕긴 쪽으로 바뀜
+  //   (주인공·혼자 걷는 물방울. 대열 물방울은 주인공 발자국을 따라감). 이보다 눕힌 빨강은 지금처럼 위로 튕기고 가던 방향 그대로
+  redSideDeg: 60,
   greenTopY: -300,         // 초록이 아무것에도 안 닿으면 여기(월드 y)에서 멈춤
 
   // 발사기 투사체 (사용자 결정 2026-10-22): 발사기마다 색(검정·빨강·파랑·초록)이 있고, 같은 색으로 그린 선에 닿으면 막혀 사라짐.
@@ -721,7 +724,8 @@ G.LEVELS = [
   },
   {
     "id": "w6",
-    "name": "스테이지 6",
+    "name": "테스트 · 스테이지 6 · 발사기",
+    "test": true,
     "bg": "bg_a",
     "ink": 2000,
     "stops": 3,
@@ -886,12 +890,15 @@ G.Rules = (function () {
     return list[(i + d + list.length) % list.length];
   }
   // 빨강 선(기울기 angle 라디안)을 밟았을 때 튕기는 속도: 선과 수직이면서 위쪽 방향으로 bounce, 선을 따라가는 속도는 유지
-  function bounceVelocity(angle, bounce, v) {
+  // rel: 선 가운데에서 물방울 쪽 (side 일 때만 씀). side: 선 서 있음(redSideDeg 넘음) → 위쪽이 아니라 물방울이 부딪힌 쪽으로 (사용자 결정 2026-10-22)
+  function bounceVelocity(angle, bounce, v, rel, side) {
     var nx = Math.sin(angle), ny = -Math.cos(angle);
-    if (ny > 0) { nx = -nx; ny = -ny; }          // 늘 위쪽을 향하게
+    if (side && rel ? nx * rel.x + ny * rel.y < 0 : ny > 0) { nx = -nx; ny = -ny; }   // 눕힌 선은 늘 위쪽을 향하게
     var along = v.x * Math.cos(angle) + v.y * Math.sin(angle);
     return { x: Math.cos(angle) * along + nx * bounce, y: Math.sin(angle) * along + ny * bounce };
   }
+  // 빨강이 "서 있는" 각도인가 (angle 라디안, 0 = 가로)
+  function isSideBounce(angle, deg) { return Math.abs(Math.sin(angle)) > Math.sin(deg * Math.PI / 180); }
   // 점 p 와 선분 a-b 사이 거리 (투사체가 초록 선에 닿았는지)
   function pointSegDist(p, a, b) {
     var dx = b.x - a.x, dy = b.y - a.y, l2 = dx * dx + dy * dy;
@@ -970,7 +977,7 @@ G.Rules = (function () {
     refundInk: refundInk, drainInk: drainInk,
     segHit: segHit, crystalAxis: crystalAxis, eraseCrystal: eraseCrystal, fitZoom: fitZoom, jarMix: jarMix, slopeFactor: slopeFactor, clearResult: clearResult, mergeRecord: mergeRecord,
     nextColor: nextColor, bounceVelocity: bounceVelocity, pointSegDist: pointSegDist, simplify: simplify,
-    newStops: newStops, canStop: canStop, useStop: useStop, rechargeStops: rechargeStops,
+    isSideBounce: isSideBounce, newStops: newStops, canStop: canStop, useStop: useStop, rechargeStops: rechargeStops,
     timeScale: timeScale, shouldAutoResume: shouldAutoResume
   };
 })();
@@ -1532,7 +1539,14 @@ G.Drop = {
       d.boostMs = fx.boostMs;
     }
     if (fx && red && d.bounceCdMs === 0 && scale > 0) {
-      M.Body.setVelocity(b, G.Rules.bounceVelocity(red.angle, fx.bounce, b.velocity));
+      var side = G.Rules.isSideBounce(red.angle, G.DATA.redSideDeg), rel = { x: b.position.x - red.position.x, y: b.position.y - red.position.y };
+      var nv = G.Rules.bounceVelocity(red.angle, fx.bounce, b.velocity, rel, side);
+      M.Body.setVelocity(b, nv);
+      if (side && Math.abs(nv.x) > 0.5) {          // 세운 빨강에 옆으로 튕기면 걷는 방향도 그쪽으로 (사용자 결정 2026-10-22). 바로 벽 판정으로 다시 돌지 않게 쿨다운
+        if ((nv.x > 0 ? 1 : -1) !== d.dir) d.turns += 1;
+        d.dir = nv.x > 0 ? 1 : -1;
+        d.turnCdMs = D.turnCooldownMs;
+      }
       d.grounded = false;
       d.bounceCdMs = G.DATA.bounceCdMs;
       d.bounces += 1;

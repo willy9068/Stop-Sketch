@@ -319,7 +319,8 @@ G.LEVELS = [
   },
   {
     "id": "w6",
-    "name": "스테이지 6",
+    "name": "테스트 · 스테이지 6 · 발사기",
+    "test": true,
     "bg": "bg_a",
     "ink": 2000,
     "stops": 3,

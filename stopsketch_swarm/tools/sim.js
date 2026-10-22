@@ -567,7 +567,7 @@ G.LEVELS.forEach(function (lv) {
   if (!lv) return;
   function until(g, f, sec) { for (var i = 0; i < sec * 60 && g.status === 'run' && !f(g); i++) G.Game.update(g, STEP); }
   function draws(g, list) { list.forEach(function (it) { drawLine(g, it[0], it[1], true); }); }   // 한 번 정지에 여러 선 (시험이라 정지 횟수 다시 채움)
-  function run(delay) {
+  function run(delay, tri) {
     var g = G.Game.create('A', lv); G.Game.start(g);
     PLANS.d3.slice(0, 7).forEach(function (p) { until(g, p.when, 30); drawLine(g, p.pts, p.color); });   // 2번 모범 풀이 ①~③ (첫 발사기·절벽·초록 발사기)
     until(g, function (g) { return hx(g) > 3650 && hy(g) < 300; }, 15);
@@ -575,8 +575,9 @@ G.LEVELS.forEach(function (lv) {
     until(g, function (g) { return hx(g) < 4300 && g.hero.dir < 0 && hy(g) > 850; }, 30);
     for (var i = 0; i < delay; i++) G.Game.update(g, STEP);
     draws(g, [[[{ x: 4060, y: 700 }, { x: 4060, y: 900 }], 'yellow'], [[{ x: 3845, y: 873 }, { x: 3960, y: 897 }], 'black'],
-      [[{ x: 3220, y: 903 }, { x: 3790, y: 903 }], 'black'], [[{ x: 2800, y: 903 }, { x: 3228, y: 903 }], 'black'],
-      [[{ x: 2830, y: 830 }, { x: 2830, y: 900 }, { x: 2805, y: 900 }], 'red'], [[{ x: 2845, y: 830 }, { x: 2845, y: 900 }, { x: 2870, y: 900 }], 'black']]);
+      [[{ x: 3220, y: 903 }, { x: 3790, y: 903 }], 'black'], [[{ x: 2800, y: 903 }, { x: 3228, y: 903 }], 'black']
+      ].concat(tri ? [[[{ x: 2830, y: 901 }, { x: 2845, y: 840 }, { x: 2860, y: 901 }, { x: 2830, y: 901 }], 'red']]   // 빨강 이등변 삼각형: 포탄을 막고 부딪히면 오른쪽으로 튕겨 돌아섬 (사용자 의도)
+        : [[[{ x: 2830, y: 830 }, { x: 2830, y: 900 }, { x: 2805, y: 900 }], 'red'], [[{ x: 2845, y: 830 }, { x: 2845, y: 900 }, { x: 2870, y: 900 }], 'black']]));
     until(g, function (g) { return hx(g) < 3600 && g.hero.dir > 0; }, 40);
     draws(g, [[[{ x: 3660, y: 897 }, { x: 3810, y: 871 }], 'black']]);   // 나올 때 블록 왼쪽 비탈 (블록 위까지 걸치게)
     until(g, function (g) { return hx(g) > 4300; }, 25);
@@ -585,5 +586,32 @@ G.LEVELS.forEach(function (lv) {
     until(g, function () { return false; }, 60);
     return g.status + ' ' + (g.timeMs / 1000).toFixed(1) + 's ' + g.rescued + '/' + g.total + (g.result ? ' 별 ' + g.result.stars + ' 정화 ' + Math.round(g.result.purity * 100) + '%' : ' ' + g.failReason);
   }
-  console.log('27 데모 3 정석 루트 (아래 통로 들어가는 때를 0·1·2초 늦춤): ' + [0, 60, 120].map(run).join(' · ') + ' (모두 clear 10/10 별 3 정화 100% 이어야 정상)');
+  console.log('27 데모 3 정석 루트 (아래 통로 들어가는 때를 0·1·2초 늦춤)\n   빨강+검정 벽: ' + [0, 60, 120].map(function (d) { return run(d, false); }).join(' · ') +
+    '\n   빨강 삼각형(세운 빨강 옆 튕김): ' + [0, 60, 120].map(function (d) { return run(d, true); }).join(' · ') + '\n   (clear 10/10 별 3 정화 100% 이어야 정상)');
+})();
+
+// 28. 세운 빨강에 옆으로 튕기면 걷는 방향도 바뀜 (사용자 결정 2026-10-22, grill me): 60° 넘는 빨강 = 부딪힌 쪽으로 튕기고 그쪽으로 걸어감.
+//     눕힌 빨강은 지금처럼 위로 튕기고 가던 방향 그대로. ㄴ자로 세운 빨강 벽에 왼쪽·오른쪽에서 부딪혀 봄 (혼자 걷는 작은 물방울도)
+(function () {
+  function run(fromLeft, small) {
+    var x = fromLeft ? 700 : 300;
+    var lv = { id: 't', name: '시험', ink: 3000, stops: 9, start: { x: fromLeft ? 300 : 1100 }, goal: { x: 3000 }, inks: ['red', 'black'], drops: { follow: false }, eraser: { pct: 1, delayMs: 600000 },
+      ground: [{ x0: -400, x1: 3400, top: 600 }], props: small ? [{ type: 'drop', x: fromLeft ? 360 : 1040, y: 587 }] : [] };
+    var g = G.Game.create('A', lv); G.Game.start(g); if (!fromLeft) g.hero.dir = -1;
+    drawLine(g, fromLeft ? [{ x: x, y: 520 }, { x: x, y: 598 }, { x: x + 30, y: 598 }] : [{ x: 700, y: 520 }, { x: 700, y: 598 }, { x: 670, y: 598 }], 'red');
+    var d = small ? null : g.hero, turned = null;
+    for (var i = 0; i < 60 * 6 && g.status === 'run'; i++) {
+      G.Game.update(g, STEP);
+      if (small && !d) d = g.drops.filter(function (q) { return !q.hero; })[0] || null;
+      if (d && d.body && turned === null && d.bounces) turned = { x: Math.round(d.body.position.x), dir: d.dir };
+    }
+    return (fromLeft ? '왼쪽에서' : '오른쪽에서') + (small ? '(작은)' : '') + ' → ' + (turned ? '튕김 x' + turned.x + ' 방향 ' + (turned.dir > 0 ? '오른쪽' : '왼쪽') : '안 튕김') +
+      ' · 6초 뒤 x ' + (d && d.body ? Math.round(d.body.position.x) : '-');
+  }
+  // 눕힌 빨강: 그대로 가던 방향
+  var lv = { id: 't', name: '시험', ink: 3000, stops: 9, start: { x: 300 }, goal: { x: 3000 }, inks: ['red'], eraser: { pct: 1, delayMs: 600000 }, ground: [{ x0: -400, x1: 3400, top: 600 }], props: [] };
+  var g = G.Game.create('A', lv); G.Game.start(g); drawLine(g, [{ x: 500, y: 598 }, { x: 560, y: 598 }], 'red');
+  for (var i = 0; i < 60 * 4; i++) G.Game.update(g, STEP);
+  console.log('28 세운 빨강 옆 튕김: ' + [run(true), run(false), run(true, true)].join(' · ') + ' · 눕힌 빨강 → 튕김 ' + g.hero.bounces + '번 방향 ' + (g.hero.dir > 0 ? '오른쪽' : '왼쪽') +
+    '\n   (왼쪽에서 부딪히면 왼쪽으로·오른쪽에서는 오른쪽으로 튕기고 그쪽으로 걸어가야, 눕힌 빨강은 오른쪽 그대로여야 정상)');
 })();

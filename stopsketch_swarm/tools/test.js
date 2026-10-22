@@ -212,6 +212,14 @@ t('기운 빨강: 선과 수직으로 튕김', function () {
   var a = -Math.PI / 4, v = R.bounceVelocity(a, 10, { x: 0, y: 0 });
   near(v.x * Math.cos(a) + v.y * Math.sin(a), 0, 1e-9, '선 방향 성분'); near(Math.sqrt(v.x * v.x + v.y * v.y), 10, 1e-9);
 });
+t('세운 빨강(60° 넘음): 부딪힌 쪽으로 튕김, 눕힌 빨강은 늘 위로 (사용자 결정 2026-10-22)', function () {
+  var a = Math.PI / 2;                           // 세로 선
+  eq(R.isSideBounce(a, 60), true); eq(R.isSideBounce(Math.PI / 4, 60), false); eq(R.isSideBounce(-Math.PI / 2, 60), true);
+  near(R.bounceVelocity(a, 15, { x: 2, y: 0 }, { x: -10, y: 0 }, true).x, -15, 1e-9, '왼쪽에서 부딪힘 → 왼쪽');
+  near(R.bounceVelocity(a, 15, { x: -2, y: 0 }, { x: 10, y: 0 }, true).x, 15, 1e-9, '오른쪽에서 부딪힘 → 오른쪽');
+  near(R.bounceVelocity(-a, 15, { x: 2, y: 0 }, { x: -10, y: 0 }, true).x, -15, 1e-9, '-90° 로 그어도 같음');
+  near(R.bounceVelocity(0, 15, { x: 0, y: 2 }, { x: 0, y: 10 }, false).y, -15, 1e-9, '눕힌 선은 밑에서 닿아도 위로');
+});
 t('점-선분 거리 (가운데·끝 바깥)', function () {
   near(R.pointSegDist({ x: 5, y: 3 }, { x: 0, y: 0 }, { x: 10, y: 0 }), 3);
   near(R.pointSegDist({ x: 13, y: 4 }, { x: 0, y: 0 }, { x: 10, y: 0 }), 5);

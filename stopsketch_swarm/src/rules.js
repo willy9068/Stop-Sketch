@@ -135,12 +135,15 @@ G.Rules = (function () {
     return list[(i + d + list.length) % list.length];
   }
   // 빨강 선(기울기 angle 라디안)을 밟았을 때 튕기는 속도: 선과 수직이면서 위쪽 방향으로 bounce, 선을 따라가는 속도는 유지
-  function bounceVelocity(angle, bounce, v) {
+  // rel: 선 가운데에서 물방울 쪽 (side 일 때만 씀). side: 선 서 있음(redSideDeg 넘음) → 위쪽이 아니라 물방울이 부딪힌 쪽으로 (사용자 결정 2026-10-22)
+  function bounceVelocity(angle, bounce, v, rel, side) {
     var nx = Math.sin(angle), ny = -Math.cos(angle);
-    if (ny > 0) { nx = -nx; ny = -ny; }          // 늘 위쪽을 향하게
+    if (side && rel ? nx * rel.x + ny * rel.y < 0 : ny > 0) { nx = -nx; ny = -ny; }   // 눕힌 선은 늘 위쪽을 향하게
     var along = v.x * Math.cos(angle) + v.y * Math.sin(angle);
     return { x: Math.cos(angle) * along + nx * bounce, y: Math.sin(angle) * along + ny * bounce };
   }
+  // 빨강이 "서 있는" 각도인가 (angle 라디안, 0 = 가로)
+  function isSideBounce(angle, deg) { return Math.abs(Math.sin(angle)) > Math.sin(deg * Math.PI / 180); }
   // 점 p 와 선분 a-b 사이 거리 (투사체가 초록 선에 닿았는지)
   function pointSegDist(p, a, b) {
     var dx = b.x - a.x, dy = b.y - a.y, l2 = dx * dx + dy * dy;
@@ -219,7 +222,7 @@ G.Rules = (function () {
     refundInk: refundInk, drainInk: drainInk,
     segHit: segHit, crystalAxis: crystalAxis, eraseCrystal: eraseCrystal, fitZoom: fitZoom, jarMix: jarMix, slopeFactor: slopeFactor, clearResult: clearResult, mergeRecord: mergeRecord,
     nextColor: nextColor, bounceVelocity: bounceVelocity, pointSegDist: pointSegDist, simplify: simplify,
-    newStops: newStops, canStop: canStop, useStop: useStop, rechargeStops: rechargeStops,
+    isSideBounce: isSideBounce, newStops: newStops, canStop: canStop, useStop: useStop, rechargeStops: rechargeStops,
     timeScale: timeScale, shouldAutoResume: shouldAutoResume
   };
 })();
