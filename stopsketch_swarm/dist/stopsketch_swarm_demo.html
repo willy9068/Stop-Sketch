@@ -300,7 +300,7 @@ G.UITEXT = {
     "hud.home": "물방울 {rescued}/{total} 도착",
     "hud.lineInfo": "대열 {line} · 이탈 {alone} · 잠듦 {sleep} · 잃음 {lost}",
     "hud.walkInfo": "걷는 중 {walk} · 잠듦 {sleep} · 잃음 {lost}",
-    "hud.stage": "{name}  ·  {attempt}번째  ·  {time}초  ·  정화 {purity}%",
+    "hud.stage": "{name}  ·  {attempt}번째 시도  ·  {time}초  ·  정화 {purity}%",
     "hud.lineLen": "×{n}",
     "skip.button": "남은 물방울 기다리지 않고 끝내기 (Enter)  ·  정화 {n}/{all}",
     "shelf.locked": "잠김",
@@ -2554,6 +2554,7 @@ G.Sound = (function () {
       return;
     }
     if (G.SINGLE_FILE) return;                     // 제출본은 외부 파일을 읽지 않는다
+    if (name === S.bgm && (location.protocol === 'file:' || /[?&]audioel/.test(location.search))) { loadElement(name); return; }
     (function tryExt(k) {                          // 개발본: 확장자를 차례로
       if (k >= S.exts.length) return;
       var x = new XMLHttpRequest();
@@ -2564,8 +2565,25 @@ G.Sound = (function () {
     })(0);
   }
 
+  // 개발본을 파일로 직접 열면(file://) 브라우저가 스크립트의 파일 읽기(XHR)를 막아 배경 음악이 안 남 (사용자 확인 2026-10-23)
+  //   → <audio> 로 재생 (이건 허용됨). 이 경로는 높은 소리를 깎는 필터를 못 써서 정지 중엔 음량만 줄임. 제출본은 내장이라 해당 없음
+  var musicEl = null;
+  function loadElement(name) {
+    (function tryExt(k) {
+      if (k >= S.exts.length) return;
+      var el = new Audio(), done = false;
+      el.preload = 'auto'; el.loop = true; el.volume = 0;
+      el.addEventListener('canplay', function () { if (done) return; done = true; musicEl = el; buffers[name] = { element: true }; unlock(); });
+      el.addEventListener('error', function () { if (!done) { done = true; tryExt(k + 1); } });
+      el.src = S.dir + name + '.' + S.exts[k];
+    })(0);
+  }
+
   // 브라우저는 사용자가 누르기 전에는 소리를 막음 → 첫 클릭·키에서 깨움
-  function unlock() { if (ctx && ctx.state === 'suspended' && !pausedNow) ctx.resume(); }
+  function unlock() {
+    if (ctx && ctx.state === 'suspended' && !pausedNow) ctx.resume();
+    if (musicEl && musicEl.paused && !pausedNow) { var p = musicEl.play(); if (p && p.catch) p.catch(function () { /* 첫 클릭 전이면 다음 입력에서 다시 */ }); }
+  }
 
   // 반복 구간: 앞뒤의 아주 작은 부분(짧은 페이드·mp3 앞뒤 여백)을 건너뛰어 반복할 때 끊기지 않게 (2026-10-22 소리 파일 점검)
   //   5ms 창의 크기가 전체 평균의 1/4(약 -12dB) 이상인 첫·마지막 자리
@@ -2650,11 +2668,18 @@ G.Sound = (function () {
   function watch(game) {
     if (!ctx) return;
     // Esc 일시 정지: 소리 전체 멈춤 (풀면 이어서)
-    if (game.paused !== pausedNow) { pausedNow = game.paused; if (pausedNow) ctx.suspend(); else ctx.resume(); }
+    if (game.paused !== pausedNow) {
+      pausedNow = game.paused;
+      if (pausedNow) { ctx.suspend(); if (musicEl) musicEl.pause(); } else { ctx.resume(); unlock(); }
+    }
     if (pausedNow) return;
     var now = ctx.currentTime, M = S.stopMuffle;
     // 정지 중 먹먹하게 + 결과 음악 동안 낮춤
     var duck = performance.now() < duckUntil ? S.jingleDuck : 1;
+    if (musicEl) {                                 // file:// 의 <audio> 배경 음악: 음량만 (켬/끔·정지 중·결과 음악 동안)
+      var tv = muted ? 0 : vol('music') * (game.stopped ? M.gain : 1) * duck;
+      musicEl.volume = Math.max(0, Math.min(1, musicEl.volume + (tv - musicEl.volume) * 0.15));
+    }
     musicFilter.frequency.setTargetAtTime(game.stopped ? M.freq : 20000, now, M.ms / 3000);
     musicBus.gain.setTargetAtTime(vol('music') * (game.stopped ? M.gain : 1) * duck, now, M.ms / 3000);
     sfxBus.gain.setTargetAtTime(vol('sfx'), now, 0.05);
@@ -2715,8 +2740,9 @@ G.Sound = (function () {
       var lp = {};
       Object.keys(loops).forEach(function (k) { lp[k] = +loops[k].g.gain.value.toFixed(2); });
       return { state: ctx && ctx.state, loaded: Object.keys(buffers), muted: muted, music: !!music,
+               musicEl: musicEl && { paused: musicEl.paused, volume: +musicEl.volume.toFixed(2), src: musicEl.src.split('/').pop() },
                filterHz: musicFilter && Math.round(musicFilter.frequency.value), musicGain: musicBus && +musicBus.gain.value.toFixed(2), loops: lp, played: played,
-               loopRanges: ['bgm_main', 'sfx_draw', 'sfx_eraser'].filter(function (n) { return buffers[n]; }).map(function (n) {
+               loopRanges: ['bgm_main', 'sfx_draw', 'sfx_eraser'].filter(function (n) { return buffers[n] && buffers[n].getChannelData; }).map(function (n) {
                  var r = loopRange(buffers[n]); return n + ' ' + (r ? r.start.toFixed(3) + '~' + r.end.toFixed(3) + ' / ' + buffers[n].duration.toFixed(3) : '-'); }) };
     }
   };

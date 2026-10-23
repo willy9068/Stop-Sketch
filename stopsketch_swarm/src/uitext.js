@@ -13,7 +13,7 @@ G.UITEXT = {
     "hud.home": "물방울 {rescued}/{total} 도착",
     "hud.lineInfo": "대열 {line} · 이탈 {alone} · 잠듦 {sleep} · 잃음 {lost}",
     "hud.walkInfo": "걷는 중 {walk} · 잠듦 {sleep} · 잃음 {lost}",
-    "hud.stage": "{name}  ·  {attempt}번째  ·  {time}초  ·  정화 {purity}%",
+    "hud.stage": "{name}  ·  {attempt}번째 시도  ·  {time}초  ·  정화 {purity}%",
     "hud.lineLen": "×{n}",
     "skip.button": "남은 물방울 기다리지 않고 끝내기 (Enter)  ·  정화 {n}/{all}",
     "shelf.locked": "잠김",
