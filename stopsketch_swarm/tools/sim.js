@@ -22,6 +22,21 @@ function drawLine(game, pts, color, keepStops) {
   if (!keepStops) G.Rules.rechargeStops(game.stops);
 }
 
+// 정지 한 번에 여러 선 (strokes: [{color, pts}])
+function drawStrokes(game, strokes) {
+  G.Game.toggleStop(game);
+  strokes.forEach(function (st) {
+    game.color = st.color;
+    G.Draw.begin(game, st.pts[0]);
+    for (var k = 1; k < st.pts.length; k++) {
+      var a = st.pts[k - 1], b = st.pts[k], n = Math.ceil(G.Rules.dist(a, b) / 4);
+      for (var j = 1; j <= n; j++) G.Draw.move(game, { x: a.x + (b.x - a.x) * j / n, y: a.y + (b.y - a.y) * j / n });
+    }
+    G.Draw.end(game);
+  });
+  G.Game.toggleStop(game);
+  G.Rules.rechargeStops(game.stops);
+}
 function hx(g) { return g.hero.body ? g.hero.body.position.x : Infinity; }
 
 // plans: [{when(g) → true 이면 그림, color, pts, what}]
@@ -30,7 +45,7 @@ function play(lv, plans, skip, maxSec) {
   G.Game.start(g);
   var todo = plans.filter(function (p, i) { return i !== skip; }).map(function (p) { return { p: p }; });
   for (var i = 0; i < (maxSec || 120) * 60 && g.status === 'run'; i++) {
-    todo.forEach(function (t) { if (!t.done && t.p.when(g)) { drawLine(g, t.p.pts, t.p.color); t.done = 1; } });
+    todo.forEach(function (t) { if (!t.done && t.p.when(g)) { if (t.p.strokes) drawStrokes(g, t.p.strokes); else drawLine(g, t.p.pts, t.p.color); t.done = 1; } });
     G.Game.update(g, STEP);
     if (process.env.SIMDBG === lv.id && skip === -1 && i % 45 === 0) {   // 자세히 보기: SIMDBG=w2 node tools/sim.js
       console.log('   ', (i / 60).toFixed(1) + 's', 'E' + Math.round(g.eraserX), G.Game.walking(g).map(function (d) {
@@ -124,6 +139,44 @@ PLANS.s2_4 = [
   { what: '파랑 다리', color: 'blue', when: function (g) { return hx(g) > -100; }, pts: P([[440, 494], [760, 494]]) },
   { what: '비탈 앞 파랑', color: 'blue', when: function (g) { return hx(g) > 600; }, pts: P([[800, 494], [1000, 494]]) },
   { what: '턱 넘는 파랑', color: 'blue', when: function (g) { return hx(g) > 1250; }, pts: P([[1420, 346], [1640, 246], [1700, 246], [1820, 354]]) }
+];
+// 2차 데모 월드 3(빨강)·4(초록) 스테이지 초안 풀이 (Claude 2026-10-23, 3일차). strokes = 정지 한 번에 여러 선
+PLANS.s3_1 = [
+  { what: '턱 앞 빨강', color: 'red', when: function (g) { return hx(g) > -300; }, pts: P([[580, 496], [700, 496]]) },
+  { what: '가시 덮기', color: 'black', when: function (g) { return hx(g) > 300; }, pts: P([[930, 326], [995, 294], [1205, 294], [1270, 326]]) }
+];
+PLANS.s3_2 = [
+  { what: '파랑 도움닫기', color: 'blue', when: function (g) { return hx(g) > -350; }, pts: P([[300, 494], [640, 494]]) },
+  { what: '끝 빨강', color: 'red', when: function (g) { return hx(g) > -340; }, pts: P([[645, 496], [700, 496]]) },
+  { what: '가시 덮기', color: 'black', when: function (g) { return hx(g) > 1150 && hy(g) < 520; }, pts: P([[1380, 496], [1445, 464], [1805, 464], [1870, 496]]) }
+];
+PLANS.s3_3 = [
+  { what: '첫 빨강', color: 'red', when: function (g) { return hx(g) > -350; }, pts: P([[450, 496], [550, 496]]) },
+  { what: '가시 덮기', color: 'black', when: function (g) { return hx(g) > 620 && hy(g) < 300; }, pts: P([[730, 256], [795, 224], [955, 224], [1000, 256]]) },
+  { what: '둘째 빨강', color: 'red', when: function (g) { return hx(g) > 640 && hy(g) < 300; }, pts: P([[1040, 256], [1140, 256]]) }
+];
+PLANS.s3_4 = [
+  { what: '파랑 도움닫기', color: 'blue', when: function (g) { return hx(g) > -400; }, pts: P([[250, 494], [545, 494]]) },
+  { what: '끝 빨강', color: 'red', when: function (g) { return hx(g) > -390; }, pts: P([[550, 496], [600, 496]]) },
+  { what: '턱 앞 빨강', color: 'red', when: function (g) { return hx(g) > 1060 && hy(g) < 520; }, pts: P([[1390, 496], [1490, 496]]) },
+  { what: '위 가시 덮기', color: 'black', when: function (g) { return hx(g) > 1060 && hy(g) < 520; }, pts: P([[1630, 276], [1695, 244], [1905, 244], [1970, 276]]) }
+];
+PLANS.s4_1 = [
+  { what: '구덩이 바닥 초록', color: 'green', when: function (g) { return G.Game.walking(g).filter(function (d) { return d.body.position.y > 700; }).length >= 4; }, pts: P([[520, 796], [885, 796]]) }
+];
+PLANS.s4_2 = [
+  { what: '초록 방패', color: 'green', when: function (g) { return hx(g) > -400; }, pts: P([[920, 330], [1080, 330]]) },
+  { what: '초록 + 검정 방패', color: 'green', when: function (g) { return hx(g) > -390; }, pts: P([[1420, 330], [1580, 330]]) },
+  { what: '검정 얹기', color: 'black', when: function (g) { return hx(g) > -380; }, pts: P([[1420, 318], [1580, 318]]) }
+];
+PLANS.s4_3 = [
+  { what: '구덩이 초록', color: 'green', when: function (g) { return hx(g) > 380; }, pts: P([[465, 760], [885, 760]]) },
+  { what: '턱 앞 빨강', color: 'red', when: function (g) { return hx(g) > 905 && hy(g) < 520; }, pts: P([[1040, 496], [1140, 496]]) }
+];
+PLANS.s4_4 = [
+  { what: '초록 + 빨강 방패', strokes: [{ color: 'green', pts: P([[600, 60], [800, 60]]) }, { color: 'red', pts: P([[600, 48], [800, 48]]) }], when: function (g) { return hx(g) > -400; } },
+  { what: '구덩이 초록', color: 'green', when: function (g) { return G.Game.walking(g).filter(function (d) { return d.body.position.y > 700; }).length >= 5; }, pts: P([[520, 796], [885, 796]]) },
+  { what: '파랑 + 빨강 멀리뛰기', strokes: [{ color: 'blue', pts: P([[1000, 494], [1295, 494]]) }, { color: 'red', pts: P([[1300, 496], [1350, 496]]) }], when: function (g) { return hx(g) > 920 && hy(g) < 520; } }
 ];
 
 console.log('1 아무것도 안 함');
