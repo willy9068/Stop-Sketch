@@ -6,7 +6,8 @@ var G = G || {};
 G.Level = {
   build: function (engine, raw) {
     var P = G.Physics, lv = G.LevelCheck.normalize(raw), SD = G.DATA.props.shooter;
-    var out = { data: lv, goalX: lv.goal.x, sleepers: [], items: [], crystals: [], statics: [], shooters: [] };
+    var out = { data: lv, goalX: lv.goal.x, sleepers: [], items: [], crystals: [], statics: [], shooters: [], spikes: [] };
+    engine.spikes = out.spikes;                    // 가시에 찔리는 범위 (drop.js 가 봄, 사용자 요청 2026-10-23)
     lv.ground.forEach(function (g) {
       if (!g.angle) { out.statics.push(P.add(engine, P.staticRect((g.x0 + g.x1) / 2, g.top + g.h / 2, g.x1 - g.x0, g.h))); return; }
       var s = G.LevelCheck.groundShape(g);         // 비탈 땅: 윗면이 기운 사다리꼴 (사용자 요청 2026-10-21)
@@ -22,6 +23,7 @@ G.Level = {
       }
       var b = G.Props.build(engine, p);
       if (b) out.statics.push(b);
+      if (p.type === 'spike' && b) { b.collisionFilter.category = G.Drop.SPIKE; out.spikes.push(G.Props.spikeHit(p)); }   // 물방울은 가시 상자와 안 부딪힘
       if (p.type === 'shooter') out.shooters.push({ prop: p, body: b, next: p.firstMs != null ? p.firstMs : SD.firstMs });
       if (p.type === 'drop') out.sleepers.push({ prop: p, x: p.x, y: p.y, state: 'sleep' });
       if (p.type === 'stopup') out.items.push({ prop: p, kind: 'stopup', got: false });

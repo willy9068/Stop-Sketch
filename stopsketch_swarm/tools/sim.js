@@ -615,3 +615,23 @@ G.LEVELS.forEach(function (lv) {
   console.log('28 세운 빨강 옆 튕김: ' + [run(true), run(false), run(true, true)].join(' · ') + ' · 눕힌 빨강 → 튕김 ' + g.hero.bounces + '번 방향 ' + (g.hero.dir > 0 ? '오른쪽' : '왼쪽') +
     '\n   (왼쪽에서 부딪히면 왼쪽으로·오른쪽에서는 오른쪽으로 튕기고 그쪽으로 걸어가야, 눕힌 빨강은 오른쪽 그대로여야 정상)');
 })();
+
+// 29. 가시에 찔리는 범위를 그림보다 작게 (사용자 요청 2026-10-23: 데모 1 가시 위에 검정을 그려도 찔림)
+//     물방울은 가시 상자와 부딪히지 않고 안쪽 "찔리는 범위"(위 35%·양옆 일부를 뺀 곳, 몸은 60% 크기로)에 들어가면 찔림. 선은 가시 상자 위에 얹히고, 겹쳐 그리면 위로 올려짐
+(function () {
+  function run(pts, small) {
+    var lv = { id: 't', name: '시험', ink: 3000, stops: 9, start: { x: 200 }, goal: { x: 1400 }, inks: ['black'], eraser: { pct: 1, delayMs: 600000 },
+      drops: { follow: true },
+      ground: [{ x0: -400, x1: 500, top: 441 }, { x0: 500, x1: 900, top: 650, h: 350 }, { x0: 900, x1: 1800, top: 441 }],
+      props: [{ type: 'spike', x: 500, y: 600, w: 400, h: 50 }].concat(small ? [{ type: 'drop', x: 260, y: 428 }] : []) };
+    var g = G.Game.create('A', lv); G.Game.start(g);
+    if (pts) drawLine(g, pts, 'black');
+    for (var i = 0; i < 60 * 8 && g.status === 'run'; i++) G.Game.update(g, STEP);
+    return g.status === 'run' ? (g.lost ? '안전(작은 물방울 잃음 ' + g.lost + ')' : '안전') : g.failReason;
+  }
+  console.log('29 가시 찔리는 범위: 맨 가시 ' + run(null) + ' · 가시 위 검정 ' + run([{ x: 505, y: 596 }, { x: 895, y: 596 }]) +
+    ' · 가시 그림 가운데(y 625)에 그림 ' + run([{ x: 505, y: 625 }, { x: 895, y: 625 }]) + ' · 가시 그림 아래쪽(y 640) ' + run([{ x: 505, y: 640 }, { x: 895, y: 640 }]) +
+    ' · 오른쪽 30px 빔 ' + run([{ x: 505, y: 596 }, { x: 865, y: 596 }]) + ' · 오른쪽 45px 빔 ' + run([{ x: 505, y: 596 }, { x: 850, y: 596 }]) +
+    ' · 대열 작은 물방울과 함께 ' + run([{ x: 505, y: 596 }, { x: 895, y: 596 }], true) +
+    '\n   (맨 가시·45px 빔(틈으로 빠짐)만 찔리고 나머지는 안전이어야 정상. 예전엔 가시 그림 아래쪽 절반에 그은 선이 땅으로 밀려 내려가 찔렸음)');
+})();

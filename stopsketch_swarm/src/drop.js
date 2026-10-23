@@ -1,10 +1,18 @@
 // 물방울: 주인공 1 + 깨어난 작은 물방울들 (사용자 결정 2026-10-20). 모두 원형 몸체, 바닥에서 자동으로 걷고 벽에 막히면 뒤로 돎.
 // 물방울끼리는 서로 통과(같은 음수 group). 색 선: 빨강 = 선과 수직으로 튕김, 파랑 = 밟는 동안·내린 뒤 잠시 빨라짐.
-// 위·아래로 끼면 죽지 않고 가까운 옆으로 밀려남. 가시에 닿으면 죽음.
+// 위·아래로 끼면 죽지 않고 가까운 옆으로 밀려남. 가시: 가시 상자와는 부딪히지 않고, 그보다 작은 "찔리는 범위"에 들어가면 죽음 (사용자 요청 2026-10-23).
 var G = G || {};
 
 G.Drop = {
   GROUP: -7,
+  SPIKE: 0x0002,                                   // 가시 몸체의 충돌 분류 — 물방울만 이것과 안 부딪힘 (선·조각은 가시 위에 얹힘)
+  MASK: 0xFFFFFFFF & ~0x0002,
+
+  inSpike: function (engine, d) {
+    var list = engine.spikes || [], p = d.body.position, r = d.r * G.DATA.spikeHit.rK;
+    for (var i = 0; i < list.length; i++) if (G.Props.inSpike(list[i], p.x, p.y, r)) return true;
+    return false;
+  },
 
   // hero: 주인공이면 true (크기가 크고, 죽으면 실패). cfg = 스테이지 drops 설정 {heroSpeed, smallSpeed, collide}
   //   collide 가 꺼져 있으면 같은 음수 group 이라 물방울끼리 통과, 켜져 있으면 서로 부딪힘(벽처럼 뒤로 돌고 위에 올라탐)
@@ -13,7 +21,7 @@ G.Drop = {
     cfg = cfg || {};
     var body = M.Bodies.circle(x, y, r, {
       friction: 0, frictionAir: 0, frictionStatic: 0, restitution: 0, label: 'drop',
-      collisionFilter: { group: cfg.collide ? 0 : this.GROUP }
+      collisionFilter: { group: cfg.collide ? 0 : this.GROUP, mask: this.MASK }
     });
     M.Body.setDensity(body, D.density);
     M.Body.setInertia(body, Infinity);
@@ -69,13 +77,13 @@ G.Drop = {
   sense: function (d, engine, realMs, scale, fx) {
     var D = G.DATA.drop, M = G.Physics.M, b = d.body, r = d.r, gameMs = realMs * scale;
     var stepUp = Math.max(D.stepUpMin, D.stepUp * r / D.heroRadius);
+    if (G.Drop.inSpike(engine, d)) { d.dead = 'spike'; return; }
     var touch = G.Physics.touching(engine, b);
     var under = null, ground = false, wall = false, red = null, blue = false, above = null, below = false, low = false, front = null, flat = false;
     d.events.length = 0;
     function face(part, p) { var e = G.Physics.edgeAt(part, p, b.position); return !!e && e.len >= D.slope.minEdge; }   // 닿은 곳이 긴 면(비탈·벽 면)인가
     for (var t = 0; t < touch.length; t++) {
       var pts = touch[t].pts, other = touch[t].other, root = touch[t].root, color = other.inkColor || root.inkColor;
-      if (root.label === 'spike' || other.label === 'spike') { d.dead = 'spike'; return; }
       for (var i = 0; i < pts.length; i++) {
         var dy = pts[i].y - b.position.y, dx = pts[i].x - b.position.x;
         if (dy > r * D.groundCheck) {
@@ -149,9 +157,9 @@ G.Drop = {
   // 대열 물방울: 가시에 닿았는가, 발밑(반지름 + supportTol 안)에 물방울 아닌 몸체가 있는가
   //   위치를 직접 옮기므로 걷기 판정 대신 아래로 짧은 광선을 쏴서 봄 (경사에서 살짝 떠도 바닥으로 침)
   support: function (d, engine) {
+    if (G.Drop.inSpike(engine, d)) return { ground: true, spike: true };
     var b = d.body, touch = G.Physics.touching(engine, b), color = null;
     for (var t = 0; t < touch.length; t++) {
-      if (touch[t].root.label === 'spike' || touch[t].other.label === 'spike') return { ground: true, spike: true };
       var c = touch[t].other.inkColor || touch[t].root.inkColor;
       if (c && c !== 'yellow' && !color && touch[t].pts.some(function (q) { return q.y > b.position.y; })) color = c;   // 발밑 색 (물들기)
     }
@@ -164,7 +172,7 @@ G.Drop = {
   // 대열에 붙는 동안은 아무것과도 안 부딪힘 (통 튀어 날아가는 중), 대열에선 물방울끼리 통과(떨어지는 중·기다리는 중 포함), 혼자 걸을 땐 스테이지 설정대로
   setFilter: function (d, mode, collide) {
     var f = d.body.collisionFilter;
-    f.mask = mode === 'join' ? 0 : 0xFFFFFFFF;
+    f.mask = mode === 'join' ? 0 : this.MASK;
     f.group = mode === 'free' && collide ? 0 : this.GROUP;
   },
 

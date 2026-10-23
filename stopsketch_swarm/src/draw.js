@@ -39,6 +39,13 @@ G.Draw = {
     var green = line.color === 'green';
     var body = G.Physics.lineBody(line.pts, G.DATA.ink.thickness, line.color, green);
     if (!body) { this.drop(game, line, true); return; }
+    // 가시와 겹쳐 그린 선은 가시 위로 올림 (사용자 요청 2026-10-23: 가시 그림 아래쪽 절반에 그으면 물리가 선을 가시 밑(땅)으로 밀어내
+    //   덮지 못하고 찔리던 문제). 초록은 원래대로 겹친 것을 무시하고 떠오름
+    if (!green) {
+      var spikes = game.level.statics.filter(function (s) { return s.label === 'spike'; }), lift = 0;
+      while (lift < 160 && spikes.length && G.Physics.overlapping(body, spikes).length) { G.Physics.M.Body.translate(body, { x: 0, y: -2 }); lift += 2; }
+      if (lift) line.pts = line.pts.map(function (q) { return { x: q.x, y: q.y - lift }; });
+    }
     // 그릴 때의 점을 몸체 기준 좌표로 저장 → 몸체가 움직이고 돌면 그림도 따라감
     line.local = line.pts.map(function (q) { return { x: q.x - body.position.x, y: q.y - body.position.y }; });
     line.angle0 = body.angle;                      // 조각 하나짜리 몸체는 처음부터 각도가 있음 → 그 뒤 돈 만큼만 반영

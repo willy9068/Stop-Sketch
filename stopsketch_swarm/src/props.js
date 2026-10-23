@@ -155,6 +155,20 @@ G.Props = (function () {
     ctx.restore();
   }
 
+  // 가시에 찔리는 범위 (사용자 요청 2026-10-23): 가운데 cx,cy · 돌린 각 a(라디안) · 가시 기준 안쪽 상자 x0~x1, y0~y1 (가시 끝 쪽 = 위)
+  function spikeHit(p) {
+    var H = G.DATA.spikeHit, top = p.h * H.top, side = Math.min(p.h * H.side, p.w * 0.25);
+    return { cx: p.x + p.w / 2, cy: p.y + p.h / 2, a: (p.angle || 0) * Math.PI / 180,
+             x0: -p.w / 2 + side, x1: p.w / 2 - side, y0: -p.h / 2 + top, y1: p.h / 2 };
+  }
+  // 원(x, y, r)이 찔리는 범위에 닿는가
+  function inSpike(s, x, y, r) {
+    var c = Math.cos(-s.a), sn = Math.sin(-s.a), dx = x - s.cx, dy = y - s.cy;
+    var lx = dx * c - dy * sn, ly = dx * sn + dy * c;
+    var qx = Math.max(s.x0, Math.min(s.x1, lx)) - lx, qy = Math.max(s.y0, Math.min(s.y1, ly)) - ly;
+    return qx * qx + qy * qy < r * r;
+  }
+
   // opts: { editor: true } 이면 그림이 없는 장식도 자리 표시. angle(도)이 있으면 돌려서 그림 (배치된 선은 자기 방식)
   function draw(ctx, p, opts) {
     if (p.type === 'shooter') { drawShooter(ctx, p); return; }   // 상자는 안 돌리고 그림만 쏘는 방향으로
@@ -325,5 +339,5 @@ G.Props = (function () {
   }
 
   return { def: def, rect: rect, pivot: pivot, draw: draw, drawGround: drawGround, drawGrounds: drawGrounds, build: build, drawStarShape: drawStarShape,
-           drawCrystal: drawCrystal, drawSleeper: drawSleeper, drawShooter: drawShooter };
+           drawCrystal: drawCrystal, drawSleeper: drawSleeper, drawShooter: drawShooter, spikeHit: spikeHit, inSpike: inSpike };
 })();

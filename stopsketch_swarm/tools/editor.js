@@ -261,6 +261,13 @@ var G = G || {};
     l.props.forEach(function (p) { if (p.type === 'deco' || p.type === 'text') P.draw(ctx, p, { editor: true }); });
     P.drawGrounds(ctx, l.ground);
     l.props.forEach(function (p) { var d = P.def(p.type); if (d && d.solid) P.draw(ctx, p, { editor: true }); });
+    l.props.forEach(function (p) {                   // 가시: 실제로 찔리는 범위 (빨간 점선, 사용자 요청 2026-10-23 — 그림보다 작음)
+      if (p.type !== 'spike') return;
+      var s = P.spikeHit(p);
+      ctx.save(); ctx.translate(s.cx, s.cy); ctx.rotate(s.a);
+      ctx.setLineDash([6 / S.view.zoom, 4 / S.view.zoom]); ctx.strokeStyle = '#E0312B'; ctx.lineWidth = 1.5 / S.view.zoom;
+      ctx.strokeRect(s.x0, s.y0, s.x1 - s.x0, s.y1 - s.y0); ctx.restore();
+    });
     l.props.forEach(function (p) {                   // 배치된 선: 못 박힌 끝(빨간 점) — 노랑으로 지워 나뉘면 박힌 끝이 있는 조각만 남음
       if (p.type !== 'crystal') return;
       var pin = p.pin || 'both', k = 3.5 / S.view.zoom, e = crystalEnds(p);
