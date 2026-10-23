@@ -75,6 +75,19 @@ var G = G || {};
     ['pauseTitleX', '일시 정지: 제목 x', 'pause'], ['pauseTitleY', '일시 정지: 제목 y', 'pause'], ['pauseColor', '일시 정지 제목 색', 'pause'],
     ['pauseResumeX', '계속하기 버튼 x (왼쪽)', 'pause'], ['pauseResumeY', '계속하기 버튼 y (위)', 'pause'],
     ['pauseRetryX', '일시 정지: 다시 하기 x (왼쪽)', 'pause'], ['pauseRetryY', '일시 정지: 다시 하기 y (위)', 'pause'],
+    // 스테이지 목록 버튼 (2차 데모, 2026-10-23)
+    ['menuRetryX', '클리어: 스테이지 목록 버튼 x (왼쪽)', 'clear'], ['menuRetryY', '클리어: 스테이지 목록 버튼 y (위)', 'clear'],
+    ['failMenuX', '실패: 스테이지 목록 버튼 x', 'fail'], ['failMenuY', '실패: 스테이지 목록 버튼 y', 'fail'],
+    ['pauseMenuX', '일시 정지: 스테이지 목록 x', 'pause'], ['pauseMenuY', '일시 정지: 스테이지 목록 y', 'pause'],
+    // 시작·월드·스테이지 화면 (2차 데모, 2026-10-23) — 이 툴에서는 미리보기 없이 숫자만 (게임에서 확인)
+    ['titleY', '시작 화면: 제목 y', 'run'], ['titleSize', '시작 화면: 제목 크기', 'run'], ['titleLogoW', '시작 화면: 제목 그림 폭', 'run'],
+    ['titleSubY', '시작 화면: 부제 y', 'run'], ['titleSubSize', '시작 화면: 부제 크기', 'run'], ['titleStartY', '시작 화면: 시작 버튼 y', 'run'],
+    ['menuBtnW', '메뉴 버튼 폭', 'run'], ['menuBtnH', '메뉴 버튼 높이', 'run'], ['menuBtnSize', '메뉴 버튼 글자 크기', 'run'], ['menuSmallSize', '메뉴 작은 글자 크기', 'run'],
+    ['menuTitleY', '월드·스테이지 화면 제목 y', 'run'], ['menuTitleSize', '월드·스테이지 화면 제목 크기', 'run'],
+    ['menuBackX', '뒤로 버튼 x', 'run'], ['menuBackY', '뒤로 버튼 y', 'run'], ['menuBackW', '뒤로 버튼 폭', 'run'], ['menuBackH', '뒤로 버튼 높이', 'run'],
+    ['worldCardY', '월드 카드 y (위)', 'run'], ['worldCardW', '월드 카드 폭', 'run'], ['worldCardH', '월드 카드 높이', 'run'], ['worldCardGap', '월드 카드 간격', 'run'],
+    ['worldNameSize', '월드 이름 크기', 'run'], ['worldDescSize', '월드 설명·별 글자 크기', 'run'],
+    ['stageTileY', '스테이지 칸 y (위)', 'run'], ['stageTileSize', '스테이지 칸 크기', 'run'], ['stageTileGap', '스테이지 칸 간격', 'run'], ['stageNumSize', '스테이지 번호 크기', 'run'],
     // 사운드 (사용자 결정 2026-10-22): 0 ~ 1
     ['musicVolume', '배경 음악 음량 (0~1)', 'run'], ['sfxVolume', '효과음 음량 (0~1)', 'run']
   ];

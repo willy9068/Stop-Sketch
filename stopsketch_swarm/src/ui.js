@@ -103,6 +103,13 @@ G.UI = (function () {
     }
   }
 
+  // 스테이지 배경 이름: 'world' 면 그 월드의 배경(data.js worlds[].bg), 그림이 아직 없으면 빈 종이 (2차 데모, 2026-10-23)
+  function bgName(lv) {
+    if (lv.bg !== 'world') return lv.bg;
+    var w = G.DATA.worlds.filter(function (q) { return q.id === lv.world; })[0];
+    return w && G.Assets.get(w.bg) ? w.bg : 'bg_plain';
+  }
+
   // 시작 구멍 (스케치북을 뚫고 나온 구멍)
   function drawStart(ctx, sx, gy) {
     if (gy == null) return;
@@ -350,7 +357,7 @@ G.UI = (function () {
     ctx.scale(cam.z, cam.z);
     ctx.translate(-cam.x, -cam.y);
     var lv = game.level.data;
-    lv.props.forEach(function (p) { if (p.type === 'deco' || p.type === 'text') G.Props.draw(ctx, p); });
+    lv.props.forEach(function (p) { if (p.type === 'deco' || p.type === 'text' || p.type === 'hint') G.Props.draw(ctx, p); });
     G.Props.drawGrounds(ctx, lv.ground);
     lv.props.forEach(function (p) { var d = G.Props.def(p.type); if (d && d.solid && p.type !== 'crystal') G.Props.draw(ctx, p); });
     game.level.crystals.forEach(function (c) { G.Props.drawCrystal(ctx, c); });
@@ -809,12 +816,18 @@ G.UI = (function () {
   }
   function resultBtns(game) {
     var S = G.TS, w = S('resultBtnW'), h = S('resultBtnH'), next = game.status === 'clear' && game.hasNext, rk = retryKeys(game), out = [];
+    // 스테이지 목록 버튼 (2차 데모, 사용자 결정 2026-10-23): 레벨 툴 테스트 플레이(메뉴 없음)에서는 안 보임
+    var menu = !(G.app && G.app.testMode);
     if (game.paused) return [
       { act: 'resume', x: S('pauseResumeX'), y: S('pauseResumeY'), w: w, h: h, label: G.T('pause.resume'), keys: ['pauseResumeX', 'pauseResumeY'] },
       { act: 'retry', x: S('pauseRetryX'), y: S('pauseRetryY'), w: w, h: h, label: G.T('pause.retry'), keys: ['pauseRetryX', 'pauseRetryY'] }
-    ];
+    ].concat(menu ? [{ act: 'menu', x: S('pauseMenuX'), y: S('pauseMenuY'), w: w, h: h, label: G.T('pause.menu'), keys: ['pauseMenuX', 'pauseMenuY'] }] : []);
     out.push({ act: 'retry', x: S(rk[0]), y: S(rk[1]), w: w, h: h, label: G.T('result.retry'), keys: rk });
     if (next) out.push({ act: 'next', x: S('nextBtnX'), y: S('nextBtnY'), w: w, h: h, label: G.T('result.next'), keys: ['nextBtnX', 'nextBtnY'] });
+    if (menu) {
+      var mk = game.status === 'fail' ? ['failMenuX', 'failMenuY'] : ['menuRetryX', 'menuRetryY'];
+      out.push({ act: 'menu', x: S(mk[0]), y: S(mk[1]), w: w, h: h, label: G.T('result.menu'), keys: mk });
+    }
     return out;
   }
   function drawButton(ctx, b) {
@@ -828,7 +841,7 @@ G.UI = (function () {
     say(ctx, b.label, b.x + b.w / 2, b.y + b.h / 2 - (n - 1) * lh / 2);
     ctx.restore();
   }
-  // 화면 좌표 → 누른 결과 창·일시 정지 창 버튼 ('retry' / 'next' / 'resume' / null). 창이 보일 때만
+  // 화면 좌표 → 누른 결과 창·일시 정지 창 버튼 ('retry' / 'next' / 'resume' / 'menu' / null). 창이 보일 때만
   function resultAt(game, sx, sy) {
     if (!resultShown || (game.status !== 'clear' && game.status !== 'fail' && !game.paused)) return null;
     var hit = null;
@@ -853,7 +866,7 @@ G.UI = (function () {
     lastT = now;
     updateCamera(game, dt);
     updateJar(game, dt);
-    drawBackground(ctx, game.level.data.bg, cam.x);
+    drawBackground(ctx, bgName(game.level.data), cam.x);
     drawWorld(ctx, game, debug);
     drawArrows(ctx, game);
     drawStopOverlay(ctx, game);
@@ -865,6 +878,6 @@ G.UI = (function () {
   }
 
   return { render: render, toWorld: toWorld, toScreen: toScreen, cam: cam, wheel: wheel, resetCamera: resetCamera,
-           drawBackground: drawBackground, drawGoal: drawGoal, drawStart: drawStart,
+           drawBackground: drawBackground, bgName: bgName, drawGoal: drawGoal, drawStart: drawStart,
            inkAt: inkAt, skipAt: skipAt, resultAt: resultAt, soundAt: soundAt, hover: hover, resultLayout: resultLayout, drawInkLine: drawInkLine };
 })();

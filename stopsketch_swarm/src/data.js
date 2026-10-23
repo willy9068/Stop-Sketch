@@ -177,6 +177,8 @@ G.DATA = {
     shooter:  { name: '발사기', solid: true, box: true, w: 70, h: 70, color: '#5B5560', aim: 180, periodMs: 2000, speed: 5, firstMs: 1000, shot: 'black',
                 imgs: [['obs_shooter', 'fit']] },
     deco:     { name: '장식', size: 180, img: 'deco_cloud_1' },
+    // 점선 힌트 "여기에 그려 보세요" (2차 데모 첫 판 안내, 사용자 결정 2026-10-23): 부딪히지 않는 그림. 배치된 선처럼 길이(w)·두께(h)·각도, ink = 색
+    hint:     { name: '점선 힌트', box: true, w: 200, h: 8, ink: 'black' },
     text:     { name: '글자', size: 20, text: '안내 문구' }
   },
 
@@ -192,9 +194,15 @@ G.DATA = {
       'start_hole', 'goal_jar_empty', 'ink_black', 'ink_red', 'ink_blue', 'ink_yellow', 'ink_green', 'ink_select', 'ui_shelf',
       'fx_bounce', 'fx_boost', 'fx_absorb', 'eraser_edge', 'ui_arrow', 'goal_jar_dark',
       'eraser_body', 'eraser_crumb_1', 'eraser_crumb_2', 'eraser_crumb_3', 'eraser_smudge', 'fx_erase_puff',
-      'obs_shooter', 'proj', 'fx_block', 'proj_white', 'fx_proj_pop'   // proj_white·fx_proj_pop: 7차 이미지 요청 (흰색으로 그려 코드가 투사체 색을 입힘)
+      'obs_shooter', 'proj', 'fx_block', 'proj_white', 'fx_proj_pop',  // proj_white·fx_proj_pop: 7차 이미지 요청 (흰색으로 그려 코드가 투사체 색을 입힘)
+      // 8차 이미지 요청 (2차 데모, 이미지 문서 16장): 월드 배경 · 시작 화면 · 월드 카드 · 스테이지 칸 · 버튼 · 안내 그림. 없으면 코드 모양
+      'bg_w1', 'bg_w2', 'bg_w3', 'bg_w4', 'bg_w5', 'bg_w6', 'title_bg', 'title_logo',
+      'world_card', 'world_icon_1', 'world_icon_2', 'world_icon_3', 'world_icon_4', 'world_icon_5', 'world_icon_6',
+      'ui_lock', 'stage_tile', 'stage_tile_boss', 'ui_button', 'ui_back', 'fx_unlock',
+      'tut_w1', 'tut_w2', 'tut_w3', 'tut_w4', 'tut_w5'
     ],
-    backgrounds: { bg_a: '종이 + 구름', bg_b: '줄 노트', bg_plain: '빈 종이', none: '단색 종이' },
+    backgrounds: { world: '월드 배경 (월드마다)', bg_a: '종이 + 구름', bg_b: '줄 노트', bg_plain: '빈 종이', none: '단색 종이',
+                   bg_w1: '월드 1 모눈종이', bg_w2: '월드 2 줄 노트', bg_w3: '월드 3 여백 줄', bg_w4: '월드 4 방안지', bg_w5: '월드 5 크라프트지', bg_w6: '월드 6 수채화지' },
     decos: ['deco_cloud_1', 'deco_cloud_2', 'deco_cloud_3'],
     charSize: 3.2,
     charFace: { char_run: -1 },  // 그림이 바라보는 방향 (-1 = 왼쪽). 진행 방향에 맞춰 뒤집음 (사용자 요청 2026-10-20)
@@ -249,6 +257,19 @@ G.DATA = {
       sfx_color: [0.5, 0], sfx_click: [0.6, 0]
     }
   },
+
+  // 월드 (사용자 결정 2026-10-23, 업무가이드 11-9): 색이 하나씩 열림. 스테이지는 levels.js 의 world(1~6)·order(1~) 로 묶음
+  //   inks: 이 월드에서 쓸 수 있는 물감 (지금까지 열린 색 모두) — 새 스테이지 기본값, 스테이지마다 levels.js inks 로 바꿈
+  //   color: 월드 색 (카드 테두리·스테이지 칸), bg: 월드 배경 그림 (스테이지 bg 가 'world' 면 이것), 없으면 bg_plain
+  //   이름·설명 글자는 uitext.js world.N.name / world.N.desc (UI 툴)
+  worlds: [
+    { id: 1, color: '#2B2118', inks: ['black'], bg: 'bg_w1' },
+    { id: 2, color: '#1F6FE0', inks: ['black', 'blue'], bg: 'bg_w2' },
+    { id: 3, color: '#E0312B', inks: ['black', 'blue', 'red'], bg: 'bg_w3' },
+    { id: 4, color: '#1FA655', inks: ['black', 'blue', 'red', 'green'], bg: 'bg_w4' },
+    { id: 5, color: '#F2B807', inks: ['black', 'blue', 'red', 'green', 'yellow'], bg: 'bg_w5' },
+    { id: 6, color: '#8A5BD6', inks: ['black', 'blue', 'red', 'green', 'yellow'], bg: 'bg_w6' }
+  ],
 
   save: {
     soundKey: 'stopsketch.swarm.sound.v1',          // 소리 켬/끔 (M 키·위 막대 스피커)

@@ -251,5 +251,20 @@ t('오르막 속도 배율', function () {
   eq(R.slopeFactor(25, st), 0.5); eq(R.slopeFactor(30, st), 0.5); eq(R.slopeFactor(31, st), 0); eq(R.slopeFactor(60, st), 0);
 });
 
+t('월드·스테이지 열림 (사용자 결정 2026-10-23)', function () {
+  function ok(v, m) { if (!v) throw new Error(m || '거짓'); }
+  var L = [{ id: 'b', world: 1, order: 2 }, { id: 'a', world: 1, order: 1 }, { id: 'c', world: 2, order: 1 }, { id: 'd', world: 2, order: 2 }, { id: 'old' }];
+  eq(R.playOrder(L).map(function (l) { return l.id; }).join(''), 'abcdold');
+  var rec = {};
+  ok(R.worldUnlocked(L, rec, 1), 'w1'); ok(!R.worldUnlocked(L, rec, 2), 'w2 잠김');
+  ok(R.stageUnlocked(L, rec, L[1]), 'a 열림'); ok(!R.stageUnlocked(L, rec, L[0]), 'b 잠김'); ok(!R.stageUnlocked(L, rec, L[2]), 'c 잠김');
+  rec.a = { clears: 1, stars: 2 };
+  ok(R.stageUnlocked(L, rec, L[0]), 'a 깨면 b'); ok(!R.worldUnlocked(L, rec, 2), 'b 안 깨면 w2 잠김');
+  rec.b = { clears: 1, stars: 5 };
+  ok(R.worldUnlocked(L, rec, 2), 'b 깨면 w2'); ok(R.stageUnlocked(L, rec, L[2]), 'c'); ok(!R.stageUnlocked(L, rec, L[3]), 'd 잠김');
+  var st = R.worldStars(L, rec, 1, function () { return 3; }); eq(st.got, 5); eq(st.total, 6);   // 별은 스테이지 별 개수까지만
+  ok(!R.worldUnlocked(L, {}, 3), 'w3 은 스테이지가 없어도 앞 월드를 깨야');
+});
+
 console.log('\n' + pass + ' 통과, ' + fail + ' 실패');
 process.exit(fail ? 1 : 0);

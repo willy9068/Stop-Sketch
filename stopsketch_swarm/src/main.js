@@ -2,6 +2,8 @@
 // 조작 (사용자 결정 2026-10-20): 왼쪽 드래그 그리기 · 스페이스 시간 정지 · 우클릭 선 빨아들이기 · 1~5/병 클릭 색 · 휠 줌 · Enter 스킵
 //   Esc 일시 정지 (사용자 결정 2026-10-21): 달리는 중에만, 창이 포커스를 잃어도 자동으로. 일시 정지 중엔 Esc·R·D·창 버튼만
 //   M 키·위 막대 스피커 = 소리 켬/끔 (사용자 결정 2026-10-22). 소리는 첫 클릭·키에서 깨움 (브라우저 규칙)
+//   화면 (2차 데모, 사용자 결정 2026-10-23): 시작 화면(title) → 월드 선택(worlds) → 스테이지 선택(stages) → 플레이(play). 메뉴에서 Esc = 뒤로
+//   주소에 ?unlock 을 붙이면 모든 월드·스테이지가 열림 (확인용, 기록은 그대로). 레벨 툴 테스트 플레이(#test=)는 바로 플레이
 var G = G || {};
 
 (function () {
@@ -25,12 +27,15 @@ var G = G || {};
     },
     restart: function () { G.Game.reset(app.game); G.UI.resetCamera(); },
     // 구간 목록: 보통은 levels.js, 레벨 툴의 "테스트 플레이"는 주소 #test= 로 구간 하나를 넘겨준다
-    levels: G.LEVELS.filter(function (l) { return !l.test; }),   // 테스트용 스테이지(test: true)는 게임·제출본에서 숨김 (사용자 결정 2026-10-20)
+    levels: G.Rules.playOrder(G.LEVELS.filter(function (l) { return !l.test; })),   // 테스트용 스테이지(test: true)는 게임·제출본에서 숨김 (사용자 결정 2026-10-20). 월드 → 순서대로
     levelIndex: 0,
     testMode: false,
+    scene: 'title', menuWorld: 1, unlockAll: /[?&]unlock/.test(location.search),
     goLevel: function (i) {
       if (!app.levels[i]) return;
+      app.scene = 'play';
       app.levelIndex = i;
+      if (app.levels[i].world) app.menuWorld = app.levels[i].world;
       G.Game.setLevel(app.game, app.levels[i]);
       G.UI.resetCamera();
       app.game.hasNext = !!app.levels[i + 1];
@@ -39,7 +44,7 @@ var G = G || {};
   };
   var m = /#test=(.+)$/.exec(location.hash);
   if (m) {
-    try { app.levels = [JSON.parse(decodeURIComponent(m[1]))]; app.testMode = true; } catch (e) { /* 잘못된 주소면 무시 */ }
+    try { app.levels = [JSON.parse(decodeURIComponent(m[1]))]; app.testMode = true; app.scene = 'play'; } catch (e) { /* 잘못된 주소면 무시 */ }
   }
   // 계정: 잉크 성장(inkBonus·먹은 병)과 구간 기록. 레벨 툴 테스트는 계정을 건드리지 않게 복사본으로 (저장 안 함)
   app.account = app.testMode ? JSON.parse(JSON.stringify(app.save)) : app.save;
@@ -70,6 +75,22 @@ var G = G || {};
     app.restart();
     app.game.toast('계정 초기화: 스테이지 기록을 지웠어요');
   };
+  // 메뉴 이동: 'title' · 'worlds' · 'stages' (스테이지 목록은 app.menuWorld 의 것)
+  app.toMenu = function (scene) {
+    if (app.game.paused) G.Game.unpause(app.game);
+    app.scene = scene;
+  };
+  function menuAct(act) {
+    if (!act) return;
+    G.Sound.click();
+    if (act === 'start') app.toMenu('worlds');
+    else if (act === 'back') app.toMenu(app.scene === 'stages' ? 'worlds' : 'title');
+    else if (act.indexOf('world:') === 0) { app.menuWorld = +act.slice(6); app.toMenu('stages'); }
+    else if (act.indexOf('stage:') === 0) {
+      var id = act.slice(6);
+      app.levels.forEach(function (l, i) { if (l.id === id) app.goLevel(i); });
+    }
+  }
   G.Debug.init(app);
   G.app = app;
 
@@ -85,6 +106,13 @@ var G = G || {};
     var g = app.game;
     G.Sound.unlock();
     if (e.code === 'KeyM' && !e.repeat) { toggleSound(); return; }
+    if (app.scene !== 'play') {                    // 메뉴: Esc·Backspace 뒤로, 시작 화면은 스페이스·Enter 로 시작
+      if (e.code === 'Space' || e.code === 'Enter') { e.preventDefault(); if (app.scene === 'title' && !e.repeat) menuAct('start'); }
+      else if ((e.code === 'Escape' || e.code === 'Backspace') && !e.repeat) { e.preventDefault(); if (app.scene !== 'title') menuAct('back'); }
+      else if (e.code === 'KeyD') G.Debug.toggle(app);
+      return;
+    }
+    if (e.code === 'Escape' && !e.repeat && !app.testMode && (g.status === 'clear' || g.status === 'fail')) { e.preventDefault(); app.toMenu('stages'); return; }   // 결과 창: Esc = 스테이지 목록
     if (e.code === 'Escape') { e.preventDefault(); if (!e.repeat) G.Game.togglePause(g); return; }
     if (g.paused) {
       if (e.code === 'Space' || e.code === 'Enter') e.preventDefault();
@@ -106,19 +134,21 @@ var G = G || {};
   });
 
   canvas.addEventListener('contextmenu', function (e) { e.preventDefault(); });
-  canvas.addEventListener('wheel', function (e) { e.preventDefault(); if (e.deltaY && !app.game.paused) G.UI.wheel(e.deltaY); }, { passive: false });
+  canvas.addEventListener('wheel', function (e) { e.preventDefault(); if (app.scene === 'play' && e.deltaY && !app.game.paused) G.UI.wheel(e.deltaY); }, { passive: false });
   // 다른 창·탭으로 가면 자동 일시 정지 (사용자 결정 2026-10-21)
   window.addEventListener('blur', function () { G.Game.pause(app.game); });
   document.addEventListener('visibilitychange', function () { if (document.hidden) G.Game.pause(app.game); });
   canvas.addEventListener('mousedown', function (e) {
     var g = app.game, sp = mouseScreen(e);
     G.Sound.unlock();
+    if (app.scene !== 'play') { if (e.button === 0) menuAct(G.Menu.click(app, sp.x, sp.y)); return; }
     if (e.button === 0 && G.UI.soundAt(sp.x, sp.y)) { toggleSound(); return; }   // 위 막대 스피커
     if (g.paused) {                                // 일시 정지 창: 버튼만
       var pa = e.button === 0 && G.UI.resultAt(g, sp.x, sp.y);
       if (pa) G.Sound.click();
       if (pa === 'resume') G.Game.unpause(g);
       else if (pa === 'retry') app.restart();
+      else if (pa === 'menu') app.toMenu('stages');
       return;
     }
     if (e.button === 2) {                          // 우클릭: 선 빨아들이기 (달리는 중에도)
@@ -135,12 +165,13 @@ var G = G || {};
       if (act) G.Sound.click();
       if (act === 'retry') app.restart();
       else if (act === 'next' && g.status === 'clear' && g.hasNext) app.goLevel(app.levelIndex + 1);
+      else if (act === 'menu') app.toMenu('stages');
       return;
     }
     if (g.ink <= 0 && !g.level.data.infInk) { g.toast(G.T('toast.noInk')); return; }
     G.Draw.begin(g, G.UI.toWorld(sp.x, sp.y));
   });
-  window.addEventListener('mousemove', function (e) { G.UI.hover(mouseScreen(e).x, mouseScreen(e).y); if (app.game.stroke) { var sp = mouseScreen(e); G.Draw.move(app.game, G.UI.toWorld(sp.x, sp.y)); } });
+  window.addEventListener('mousemove', function (e) { G.UI.hover(mouseScreen(e).x, mouseScreen(e).y); G.Menu.hover(mouseScreen(e).x, mouseScreen(e).y); if (app.game.stroke) { var sp = mouseScreen(e); G.Draw.move(app.game, G.UI.toWorld(sp.x, sp.y)); } });
   window.addEventListener('mouseup', function (e) { if (e.button === 0) G.Draw.end(app.game); });
 
   // ---- 루프 (고정 타임스텝) ----
@@ -151,13 +182,13 @@ var G = G || {};
     acc += dt;
     var n = 0;
     while (acc >= D.loop.stepMs && n < D.loop.maxStepsPerFrame) {
-      G.Game.update(app.game, D.loop.stepMs);
+      if (app.scene === 'play') G.Game.update(app.game, D.loop.stepMs);
       acc -= D.loop.stepMs;
       n++;
     }
     if (n === D.loop.maxStepsPerFrame) acc = 0;   // 너무 밀리면 버린다 (탭 전환 등)
-    G.UI.render(ctx, app.game, G.Debug.state);
-    G.Sound.watch(app.game);
+    if (app.scene === 'play') { G.UI.render(ctx, app.game, G.Debug.state); G.Sound.watch(app.game); }
+    else { G.Menu.render(ctx, app); G.Sound.idle(); }
 
     frames++; fpsT += dt;
     if (fpsT >= 500) {

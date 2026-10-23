@@ -26,11 +26,12 @@ var G = G || {};
   var TOOLS = [
     ['select', '선택', 'V'], ['ground', '땅', 'G'], ['wall', '벽', 'W'], ['platform', '발판', 'P'],
     ['drop', '물방울', 'B'], ['spike', '가시', 'K'], ['crystal', '배치된 선', 'L'], ['star', '별', 'S'], ['stopup', '정지 +1', 'Z'], ['inkup', '잉크 병', 'I'], ['shooter', '발사기', 'O'], ['segment', '구간 경계', 'J'],
-    ['deco', '장식', 'C'], ['text', '글자', 'T']
+    ['deco', '장식', 'C'], ['text', '글자', 'T'], ['hint', '점선 힌트', 'H']
   ];
   var GRID = 10, HANDLE = 7;
 
   function lv() { return S.levels[S.cur]; }
+  function isBar(o) { return !!o && (o.type === 'crystal' || o.type === 'hint'); }   // 길이·두께·회전 손잡이로 다루는 막대 (배치된 선 · 점선 힌트)
   function snap(v) { return $('snap').checked && !S.altDown ? Math.round(v / GRID) * GRID : Math.round(v); }
   function toWorld(sx, sy) { return { x: sx / S.view.zoom + S.view.x, y: sy / S.view.zoom + S.view.y }; }
   function toScreen(wx, wy) { return { x: (wx - S.view.x) * S.view.zoom, y: (wy - S.view.y) * S.view.zoom }; }
@@ -119,7 +120,7 @@ var G = G || {};
     var s = S.sel, o = selObj();
     if (!o || s.kind === 'start' || s.kind === 'goal' || s.kind === 'seg' || s.kind === 'camTop' || s.kind === 'camBot' || selList().length > 1) return [];
     var r = selRect(s), mx = r.x + r.w / 2, my = r.y + r.h / 2, out = [];
-    if (o.type === 'crystal') {                      // 배치된 선: 양 끝(길이)·위(두께)·회전 (사용자 결정 2026-10-20)
+    if (isBar(o)) {                                  // 배치된 선·점선 힌트: 양 끝(길이)·위(두께)·회전 (사용자 결정 2026-10-20)
       var ce = crystalEnds(o), up = { x: Math.sin(ce.a), y: -Math.cos(ce.a) }, rr = o.h / 2 + 26 / S.view.zoom;
       return [['cw', ce.s.x, ce.s.y], ['ce', ce.e.x, ce.e.y], ['ct', ce.c.x + up.x * o.h / 2, ce.c.y + up.y * o.h / 2], ['rot', ce.c.x + up.x * rr, ce.c.y + up.y * rr]];
     }
@@ -152,7 +153,7 @@ var G = G || {};
 
   // ---------- 그리기 ----------
   function drawWorldBg() {
-    var l = lv(), img = l.bg !== 'none' && G.Assets.get(l.bg);
+    var l = lv(), bgn = G.UI.bgName(l), img = bgn !== 'none' && G.Assets.get(bgn);
     var a = toWorld(0, 0), b = toWorld(cv.width, cv.height);
     ctx.fillStyle = D.colors.paper;
     ctx.fillRect(a.x, a.y, b.x - a.x, b.y - a.y);
@@ -316,7 +317,7 @@ var G = G || {};
     if (r) {
       ctx.save();
       ctx.lineWidth = 2 / z; ctx.strokeStyle = '#1F6FE0'; ctx.setLineDash([6 / z, 4 / z]);
-      if (so && so.type === 'crystal') {               // 돌린 상자 + 회전 손잡이까지 선
+      if (isBar(so)) {               // 돌린 상자 + 회전 손잡이까지 선
         ctx.translate(so.x + so.w / 2, so.y + so.h / 2); ctx.rotate((so.angle || 0) * Math.PI / 180);
         ctx.strokeRect(-so.w / 2, -so.h / 2, so.w, so.h);
         ctx.setLineDash([]); ctx.beginPath(); ctx.moveTo(0, -so.h / 2); ctx.lineTo(0, -so.h / 2 - 26 / z); ctx.stroke();
@@ -384,7 +385,7 @@ var G = G || {};
     return { c: c, a: a, ux: ux, uy: uy, s: { x: c.x - ux * p.w / 2, y: c.y - uy * p.w / 2 }, e: { x: c.x + ux * p.w / 2, y: c.y + uy * p.w / 2 } };
   }
   function hitProp(w, p) {
-    if (p.type !== 'crystal') return inRect(p.angle ? rotPt(w, P.pivot(p), -p.angle * Math.PI / 180) : w, P.rect(p));   // 돌린 물건은 돌리기 전 자리로 옮겨 봄
+    if (!isBar(p)) return inRect(p.angle ? rotPt(w, P.pivot(p), -p.angle * Math.PI / 180) : w, P.rect(p));   // 돌린 물건은 돌리기 전 자리로 옮겨 봄
     var ce = crystalEnds(p), dx = w.x - ce.c.x, dy = w.y - ce.c.y;
     var lx = dx * ce.ux + dy * ce.uy, ly = -dx * ce.uy + dy * ce.ux;
     return Math.abs(lx) <= p.w / 2 + 3 / S.view.zoom && Math.abs(ly) <= Math.max(p.h / 2, 6 / S.view.zoom);
@@ -457,6 +458,7 @@ var G = G || {};
       p = { type: 'spike', x: snap(w.x - d.w / 2), y: ts != null ? ts - d.h : snap(w.y - d.h / 2), w: d.w, h: d.h };
     }
     else if (tool === 'crystal') p = { type: 'crystal', x: snap(w.x - d.w / 2), y: snap(w.y - d.h / 2), w: d.w, h: d.h, angle: 0, pin: d.pin };
+    else if (tool === 'hint') p = { type: 'hint', x: snap(w.x - d.w / 2), y: snap(w.y - d.h / 2), w: d.w, h: d.h, angle: 0, ink: (l.inks || ['black'])[l.inks ? l.inks.length - 1 : 0] };   // 점선 힌트: 그 스테이지의 마지막(새) 색
     else if (tool === 'stopup') p = { type: 'stopup', x: snap(w.x), y: snap(w.y), size: d.size };
     else if (tool === 'star') p = { type: 'star', x: snap(w.x), y: snap(w.y), size: d.size };
     else if (tool === 'segment') {                   // 구간 경계: 클릭한 x 에 새 경계, 이름은 오른쪽 "선택" 칸에서
@@ -592,7 +594,7 @@ var G = G || {};
       if (h === 's') o.h = Math.max(20, snap(q.top + qh + dy) - q.top);
       return;
     }
-    if (o.type === 'crystal') { resizeCrystal(o, q, h, dx, dy); return; }
+    if (isBar(o)) { resizeCrystal(o, q, h, dx, dy); return; }
     if (h === 'rot') { setAngle(o, P.pivot(q), false); return; }   // 모든 물건 회전 (사용자 요청 2026-10-21)
     if (h === 'aim') { setAim(o, { x: q.x + q.w / 2, y: q.y + q.h / 2 }); return; }
     if (q.angle && P.def(o.type).box) {              // 돌린 상자: 끄는 거리를 돌리기 전 방향으로 바꿔 크기를 바꾸고, 가운데를 다시 돌려 놓음
@@ -711,7 +713,7 @@ var G = G || {};
       var o = objOf(sl), ground = sl.kind === 'ground', step = fine ? 1 : ground ? 5 : 15;
       if (o.type === 'shooter') { o.aim = normDeg((o.aim != null ? o.aim : D.props.shooter.aim) + dir * step); return; }   // 발사기는 쏘는 방향
       var v = (o.angle || 0) + dir * step;
-      if (o.type === 'crystal') { o.angle = ((v % 360) + 360) % 360; return; }
+      if (isBar(o)) { o.angle = ((v % 360) + 360) % 360; return; }
       v = ground ? Math.max(-60, Math.min(60, v)) : ((v % 360) + 540) % 360 - 180;
       if (v) o.angle = v; else delete o.angle;
     });
@@ -800,6 +802,8 @@ var G = G || {};
       '<div class="f"><label>이름</label><input id="l_name" value="' + esc(l.name) + '"></div>' +
       '<div class="f"><label>id</label><input id="l_id" value="' + esc(l.id) + '"></div>' +
       '<div class="f"><label>테스트용</label><label><input type="checkbox" id="l_test"' + (l.test ? ' checked' : '') + '>게임·제출본에서 숨김</label></div>' +
+      num('l_world', '월드', l.world || 0) + num('l_order', '월드 안 순서', l.order || 0) +
+      hint('월드 1 검정 · 2 파랑 · 3 빨강 · 4 초록 · 5 노랑 · 6 모든 물감 (0 = 월드 없음). 순서 1, 2, 3… 마지막 순서가 그 월드의 도전 스테이지 (2차 데모, 2026-10-23)') +
       '<div class="f"><label>배경</label><select id="l_bg">' + opts(bgs, l.bg) + '</select></div>' +
       num('l_ink', '잉크', l.ink) + check('l_infInk', '잉크 무제한', l.infInk, '켜면 잉크가 줄지 않음') +
       num('l_stops', '정지 횟수', l.stops) + check('l_infStops', '정지 무제한', l.infStops, '켜면 정지 횟수가 줄지 않음') +
@@ -875,6 +879,11 @@ var G = G || {};
         h += '<div class="hint">양 끝 손잡이 = 길이, 위 손잡이 = 두께, 동그란 위 손잡이 = 회전 (격자 맞춤이면 15도씩)</div>';
         h += '<div class="f"><label>못 박힌 끝</label><select id="f_pin">' + opts([['both', '양쪽'], ['start', '시작 끝 (0도일 때 왼쪽)'], ['end', '끝 (0도일 때 오른쪽)'], ['none', '없음']], o.pin || 'both') + '</select></div>';
         h += '<div class="hint">빨간 점 = 벽·땅에 박힌 끝. 노랑으로 칠해 지우면 선이 나뉘는데, 박힌 끝이 있는 조각은 제자리에 남고 나머지는 떨어져요</div>';
+      } else if (o.type === 'hint') {                // 점선 힌트 (2차 데모 첫 판 안내, 사용자 결정 2026-10-23)
+        h += num('f_cx', '가운데 x', Math.round(o.x + o.w / 2)) + num('f_cy', '가운데 y', Math.round(o.y + o.h / 2)) +
+             num('f_w', '길이', o.w) + num('f_h', '두께', o.h) + num('f_angle', '각도 (도)', o.angle || 0);
+        h += '<div class="f"><label>색</label><select id="f_ink">' + opts(D.inks.order.map(function (c) { return [c, D.inks[c].name]; }), o.ink || 'black') + '</select></div>';
+        h += '<div class="hint">"여기에 그려 보세요" 점선. 부딪히지 않는 그림이고, 끝의 화살표 = 그리는 방향. 양 끝 손잡이 = 길이, 동그란 위 손잡이 = 회전</div>';
       } else if (o.type === 'shooter') {             // 발사기 (사용자 결정 2026-10-22)
         var sd = D.props.shooter;
         h += num('f_x', 'x (왼쪽)', o.x) + num('f_y', 'y (위)', o.y) + num('f_w', '폭', o.w) + num('f_h', '높이', o.h) +
@@ -949,6 +958,8 @@ var G = G || {};
     else if (id === 'c_top') l.camera.top = Math.min(v, l.camera.bottom - 100);
     else if (id === 'c_bottom') l.camera.bottom = Math.max(v, l.camera.top + 100);
     else if (id === 'f_camy' && S.sel) { if (S.sel.kind === 'camTop') l.camera.top = Math.min(v, l.camera.bottom - 100); else l.camera.bottom = Math.max(v, l.camera.top + 100); }
+    else if (id === 'l_world') { l.world = Math.max(0, Math.round(v)) || undefined; if (!l.world) delete l.world; }
+    else if (id === 'l_order') { l.order = Math.max(0, Math.round(v)) || undefined; if (!l.order) delete l.order; }
     else if (id === 'l_name') l.name = v; else if (id === 'l_id') l.id = v; else if (id === 'l_bg') l.bg = v;
     else if (id === 'l_ink') l.ink = v; else if (id === 'l_stops') l.stops = v;
     else if (id === 'l_start') l.start.x = v; else if (id === 'l_goal') l.goal.x = v;
@@ -971,18 +982,18 @@ var G = G || {};
       var f = id.slice(2);
       if (S.sel.kind === 'ground' && t.type === 'number') { setGround(o, f, r1(+t.value)); changed(false); return; }
       if (f === 'type') { o.type = v; }
-      else if (f === 'img' || f === 'text' || f === 'pin' || f === 'shot') o[f] = v;
+      else if (f === 'img' || f === 'text' || f === 'pin' || f === 'shot' || f === 'ink') o[f] = v;
       else if (f === 'aim') o.aim = normDeg(v) === -180 ? 180 : normDeg(v);
       else if (f === 'speed') o.speed = Math.max(0.5, Math.round(+t.value * 10) / 10);
       else if (f === 'periodMs') o.periodMs = Math.max(100, v);
       else if (f === 'firstMs') o.firstMs = Math.max(0, v);
       else if (f === 'amount') { if (v > 0 && v !== D.ink.upAmount) o.amount = v; else delete o.amount; }
       else if (f === 'h' && S.sel.kind === 'ground') o.h = Math.max(20, v);
-      else if (f === 'angle' && o.type !== 'crystal') {   // 회전·경사 (사용자 요청 2026-10-21). 0 이면 저장 안 함
+      else if (f === 'angle' && !isBar(o)) {   // 회전·경사 (사용자 요청 2026-10-21). 0 이면 저장 안 함
         var av = S.sel.kind === 'ground' ? Math.max(-60, Math.min(60, v)) : ((v % 360) + 540) % 360 - 180;
         if (av) o.angle = av; else delete o.angle;
       }
-      else if (o.type === 'crystal' && (f === 'cx' || f === 'cy' || f === 'w' || f === 'h' || f === 'angle')) {   // 가운데를 유지하며
+      else if (isBar(o) && (f === 'cx' || f === 'cy' || f === 'w' || f === 'h' || f === 'angle')) {   // 가운데를 유지하며
         var ccx = o.x + o.w / 2, ccy = o.y + o.h / 2;
         if (f === 'cx') ccx = v; else if (f === 'cy') ccy = v;
         else if (f === 'w') o.w = Math.max(10, v); else if (f === 'h') o.h = Math.max(4, v);
@@ -1042,8 +1053,8 @@ var G = G || {};
   function levelsText() {
     var body = S.levels.map(function (l) {
       var lines = ['  {'];
-      ['id', 'name', 'test', 'bg', 'ink', 'infInk', 'stops', 'infStops', 'noEraser', 'inks', 'fx', 'drops', 'eraser', 'camera', 'segments', 'start', 'goal'].forEach(function (k) {
-        if ((k === 'test' || k === 'infInk' || k === 'infStops' || k === 'noEraser') && !l[k]) return;   // 테스트용·무제한·지우개 끔 표시는 켰을 때만
+      ['id', 'name', 'test', 'world', 'order', 'bg', 'ink', 'infInk', 'stops', 'infStops', 'noEraser', 'inks', 'fx', 'drops', 'eraser', 'camera', 'segments', 'start', 'goal'].forEach(function (k) {
+        if ((k === 'test' || k === 'infInk' || k === 'infStops' || k === 'noEraser' || k === 'world' || k === 'order') && !l[k]) return;   // 테스트용·무제한·지우개 끔 표시는 켰을 때만
         var v = k === 'segments' ? (l.segments || []).slice().sort(function (a, b) { return a.x - b.x; }) : l[k];   // 구간 경계는 x 순서로 저장
         lines.push('    ' + JSON.stringify(k) + ': ' + JSON.stringify(v) + ',');
       });

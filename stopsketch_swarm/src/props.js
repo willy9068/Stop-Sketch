@@ -170,7 +170,23 @@ G.Props = (function () {
   }
 
   // opts: { editor: true } 이면 그림이 없는 장식도 자리 표시. angle(도)이 있으면 돌려서 그림 (배치된 선은 자기 방식)
+  // 점선 힌트 (2차 데모, 사용자 결정 2026-10-23): 그 색의 굵은 점선 + 끝 화살표, 천천히 깜빡임. 가운데 기준으로 angle 만큼 돌림
+  function drawHint(ctx, p) {
+    var C = G.DATA.colors, cx = p.x + p.w / 2, cy = p.y + p.h / 2, half = p.w / 2, th = Math.max(3, p.h);
+    var a = 0.45 + 0.25 * Math.sin(Date.now() / 300);
+    ctx.save();
+    ctx.translate(cx, cy); ctx.rotate((p.angle || 0) * Math.PI / 180);
+    ctx.globalAlpha = a; ctx.strokeStyle = C[p.ink || 'black'] || C.ink; ctx.fillStyle = ctx.strokeStyle;
+    ctx.lineWidth = th; ctx.lineCap = 'round'; ctx.setLineDash([th * 2.2, th * 1.8]);
+    ctx.beginPath(); ctx.moveTo(-half, 0); ctx.lineTo(half - th * 1.5, 0); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(half + th * 0.5, 0); ctx.lineTo(half - th * 2.2, -th * 1.6); ctx.lineTo(half - th * 2.2, th * 1.6); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.arc(-half, 0, th * 0.9, 0, 6.283); ctx.fill();
+    ctx.restore();
+  }
+
   function draw(ctx, p, opts) {
+    if (p.type === 'hint') { drawHint(ctx, p); return; }
     if (p.type === 'shooter') { drawShooter(ctx, p); return; }   // 상자는 안 돌리고 그림만 쏘는 방향으로
     if (!p.angle || p.type === 'crystal') { drawRaw(ctx, p, opts); return; }
     var c = pivot(p);

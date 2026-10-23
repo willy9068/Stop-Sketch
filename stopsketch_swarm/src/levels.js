@@ -6,6 +6,7 @@ G.LEVELS = [
   {
     "id": "d1",
     "name": "데모 레벨1",
+    "test": true,
     "bg": "bg_plain",
     "ink": 1600,
     "stops": 3,
@@ -72,6 +73,7 @@ G.LEVELS = [
   {
     "id": "d2",
     "name": "데모 레벨2",
+    "test": true,
     "bg": "bg_a",
     "ink": 1800,
     "stops": 3,
@@ -125,6 +127,7 @@ G.LEVELS = [
   {
     "id": "d3",
     "name": "데모 레벨3",
+    "test": true,
     "bg": "bg_b",
     "ink": 3000,
     "stops": 3,
@@ -341,6 +344,631 @@ G.LEVELS = [
       {"type":"wall","x":-160,"y":300,"w":40,"h":300},
       {"type":"drop","x":490,"y":580},
       {"type":"shooter","x":1200,"y":-250,"w":70,"h":70,"aim":90,"periodMs":2000,"speed":5,"firstMs":1000,"shot":"green"}
+    ]
+  },
+  {
+    "id": "s1_1",
+    "name": "1-1 (임시)",
+    "world": 1,
+    "order": 1,
+    "bg": "world",
+    "ink": 1200,
+    "stops": 3,
+    "noEraser": true,
+    "inks": ["black"],
+    "drops": {"heroSpeed":2.5,"smallSpeed":2.5,"collide":false,"follow":true,"gap":30},
+    "eraser": {"speed":0.4,"delayMs":4000},
+    "segments": [{"x":-700,"name":"임시 — 2일차에 다시 만듦"}],
+    "start": {"x":-420,"y":500},
+    "goal": {"x":1500,"y":500},
+    "ground": [
+      {"x0":-700,"x1":560,"top":500,"h":500},
+      {"x0":760,"x1":1800,"top":500,"h":500}
+    ],
+    "props": [
+      {"type":"wall","x":-690,"y":200,"w":40,"h":300},
+      {"type":"drop","x":150,"y":487},
+      {"type":"star","x":660,"y":380,"size":56},
+      {"type":"star","x":1000,"y":380,"size":56},
+      {"type":"star","x":1300,"y":380,"size":56},
+      {"type":"text","x":300,"y":380,"size":20,"text":"임시 스테이지 1-1 : 틈에 검정 다리"}
+    ]
+  },
+  {
+    "id": "s1_2",
+    "name": "1-2 (임시)",
+    "world": 1,
+    "order": 2,
+    "bg": "world",
+    "ink": 1200,
+    "stops": 3,
+    "noEraser": true,
+    "inks": ["black"],
+    "drops": {"heroSpeed":2.5,"smallSpeed":2.5,"collide":false,"follow":true,"gap":30},
+    "eraser": {"speed":0.4,"delayMs":4000},
+    "segments": [{"x":-700,"name":"임시 — 2일차에 다시 만듦"}],
+    "start": {"x":-420,"y":500},
+    "goal": {"x":1500,"y":500},
+    "ground": [
+      {"x0":-700,"x1":560,"top":500,"h":500},
+      {"x0":760,"x1":1800,"top":500,"h":500}
+    ],
+    "props": [
+      {"type":"wall","x":-690,"y":200,"w":40,"h":300},
+      {"type":"drop","x":150,"y":487},
+      {"type":"star","x":660,"y":380,"size":56},
+      {"type":"star","x":1000,"y":380,"size":56},
+      {"type":"star","x":1300,"y":380,"size":56},
+      {"type":"text","x":300,"y":380,"size":20,"text":"임시 스테이지 1-2 : 틈에 검정 다리"}
+    ]
+  },
+  {
+    "id": "s1_3",
+    "name": "1-3 (임시)",
+    "world": 1,
+    "order": 3,
+    "bg": "world",
+    "ink": 1200,
+    "stops": 3,
+    "noEraser": true,
+    "inks": ["black"],
+    "drops": {"heroSpeed":2.5,"smallSpeed":2.5,"collide":false,"follow":true,"gap":30},
+    "eraser": {"speed":0.4,"delayMs":4000},
+    "segments": [{"x":-700,"name":"임시 — 2일차에 다시 만듦"}],
+    "start": {"x":-420,"y":500},
+    "goal": {"x":1500,"y":500},
+    "ground": [
+      {"x0":-700,"x1":560,"top":500,"h":500},
+      {"x0":760,"x1":1800,"top":500,"h":500}
+    ],
+    "props": [
+      {"type":"wall","x":-690,"y":200,"w":40,"h":300},
+      {"type":"drop","x":150,"y":487},
+      {"type":"star","x":660,"y":380,"size":56},
+      {"type":"star","x":1000,"y":380,"size":56},
+      {"type":"star","x":1300,"y":380,"size":56},
+      {"type":"text","x":300,"y":380,"size":20,"text":"임시 스테이지 1-3 : 틈에 검정 다리"}
+    ]
+  },
+  {
+    "id": "s1_4",
+    "name": "1-4 (임시)",
+    "world": 1,
+    "order": 4,
+    "bg": "world",
+    "ink": 1200,
+    "stops": 3,
+    "noEraser": true,
+    "inks": ["black"],
+    "drops": {"heroSpeed":2.5,"smallSpeed":2.5,"collide":false,"follow":true,"gap":30},
+    "eraser": {"speed":0.4,"delayMs":4000},
+    "segments": [{"x":-700,"name":"임시 — 2일차에 다시 만듦"}],
+    "start": {"x":-420,"y":500},
+    "goal": {"x":1500,"y":500},
+    "ground": [
+      {"x0":-700,"x1":560,"top":500,"h":500},
+      {"x0":760,"x1":1800,"top":500,"h":500}
+    ],
+    "props": [
+      {"type":"wall","x":-690,"y":200,"w":40,"h":300},
+      {"type":"drop","x":150,"y":487},
+      {"type":"star","x":660,"y":380,"size":56},
+      {"type":"star","x":1000,"y":380,"size":56},
+      {"type":"star","x":1300,"y":380,"size":56},
+      {"type":"text","x":300,"y":380,"size":20,"text":"임시 스테이지 1-4 : 틈에 검정 다리"}
+    ]
+  },
+  {
+    "id": "s2_1",
+    "name": "2-1 (임시)",
+    "world": 2,
+    "order": 1,
+    "bg": "world",
+    "ink": 1200,
+    "stops": 3,
+    "inks": ["black","blue"],
+    "drops": {"heroSpeed":2.5,"smallSpeed":2.5,"collide":false,"follow":true,"gap":30},
+    "eraser": {"speed":0.4,"delayMs":4000},
+    "segments": [{"x":-700,"name":"임시 — 2일차에 다시 만듦"}],
+    "start": {"x":-420,"y":500},
+    "goal": {"x":1500,"y":500},
+    "ground": [
+      {"x0":-700,"x1":560,"top":500,"h":500},
+      {"x0":760,"x1":1800,"top":500,"h":500}
+    ],
+    "props": [
+      {"type":"wall","x":-690,"y":200,"w":40,"h":300},
+      {"type":"drop","x":150,"y":487},
+      {"type":"star","x":660,"y":380,"size":56},
+      {"type":"star","x":1000,"y":380,"size":56},
+      {"type":"star","x":1300,"y":380,"size":56},
+      {"type":"text","x":300,"y":380,"size":20,"text":"임시 스테이지 2-1 : 틈에 검정 다리"}
+    ]
+  },
+  {
+    "id": "s2_2",
+    "name": "2-2 (임시)",
+    "world": 2,
+    "order": 2,
+    "bg": "world",
+    "ink": 1200,
+    "stops": 3,
+    "inks": ["black","blue"],
+    "drops": {"heroSpeed":2.5,"smallSpeed":2.5,"collide":false,"follow":true,"gap":30},
+    "eraser": {"speed":0.4,"delayMs":4000},
+    "segments": [{"x":-700,"name":"임시 — 2일차에 다시 만듦"}],
+    "start": {"x":-420,"y":500},
+    "goal": {"x":1500,"y":500},
+    "ground": [
+      {"x0":-700,"x1":560,"top":500,"h":500},
+      {"x0":760,"x1":1800,"top":500,"h":500}
+    ],
+    "props": [
+      {"type":"wall","x":-690,"y":200,"w":40,"h":300},
+      {"type":"drop","x":150,"y":487},
+      {"type":"star","x":660,"y":380,"size":56},
+      {"type":"star","x":1000,"y":380,"size":56},
+      {"type":"star","x":1300,"y":380,"size":56},
+      {"type":"text","x":300,"y":380,"size":20,"text":"임시 스테이지 2-2 : 틈에 검정 다리"}
+    ]
+  },
+  {
+    "id": "s2_3",
+    "name": "2-3 (임시)",
+    "world": 2,
+    "order": 3,
+    "bg": "world",
+    "ink": 1200,
+    "stops": 3,
+    "inks": ["black","blue"],
+    "drops": {"heroSpeed":2.5,"smallSpeed":2.5,"collide":false,"follow":true,"gap":30},
+    "eraser": {"speed":0.4,"delayMs":4000},
+    "segments": [{"x":-700,"name":"임시 — 2일차에 다시 만듦"}],
+    "start": {"x":-420,"y":500},
+    "goal": {"x":1500,"y":500},
+    "ground": [
+      {"x0":-700,"x1":560,"top":500,"h":500},
+      {"x0":760,"x1":1800,"top":500,"h":500}
+    ],
+    "props": [
+      {"type":"wall","x":-690,"y":200,"w":40,"h":300},
+      {"type":"drop","x":150,"y":487},
+      {"type":"star","x":660,"y":380,"size":56},
+      {"type":"star","x":1000,"y":380,"size":56},
+      {"type":"star","x":1300,"y":380,"size":56},
+      {"type":"text","x":300,"y":380,"size":20,"text":"임시 스테이지 2-3 : 틈에 검정 다리"}
+    ]
+  },
+  {
+    "id": "s2_4",
+    "name": "2-4 (임시)",
+    "world": 2,
+    "order": 4,
+    "bg": "world",
+    "ink": 1200,
+    "stops": 3,
+    "inks": ["black","blue"],
+    "drops": {"heroSpeed":2.5,"smallSpeed":2.5,"collide":false,"follow":true,"gap":30},
+    "eraser": {"speed":0.4,"delayMs":4000},
+    "segments": [{"x":-700,"name":"임시 — 2일차에 다시 만듦"}],
+    "start": {"x":-420,"y":500},
+    "goal": {"x":1500,"y":500},
+    "ground": [
+      {"x0":-700,"x1":560,"top":500,"h":500},
+      {"x0":760,"x1":1800,"top":500,"h":500}
+    ],
+    "props": [
+      {"type":"wall","x":-690,"y":200,"w":40,"h":300},
+      {"type":"drop","x":150,"y":487},
+      {"type":"star","x":660,"y":380,"size":56},
+      {"type":"star","x":1000,"y":380,"size":56},
+      {"type":"star","x":1300,"y":380,"size":56},
+      {"type":"text","x":300,"y":380,"size":20,"text":"임시 스테이지 2-4 : 틈에 검정 다리"}
+    ]
+  },
+  {
+    "id": "s3_1",
+    "name": "3-1 (임시)",
+    "world": 3,
+    "order": 1,
+    "bg": "world",
+    "ink": 1200,
+    "stops": 3,
+    "inks": ["black","blue","red"],
+    "drops": {"heroSpeed":2.5,"smallSpeed":2.5,"collide":false,"follow":true,"gap":30},
+    "eraser": {"speed":0.4,"delayMs":4000},
+    "segments": [{"x":-700,"name":"임시 — 2일차에 다시 만듦"}],
+    "start": {"x":-420,"y":500},
+    "goal": {"x":1500,"y":500},
+    "ground": [
+      {"x0":-700,"x1":560,"top":500,"h":500},
+      {"x0":760,"x1":1800,"top":500,"h":500}
+    ],
+    "props": [
+      {"type":"wall","x":-690,"y":200,"w":40,"h":300},
+      {"type":"drop","x":150,"y":487},
+      {"type":"star","x":660,"y":380,"size":56},
+      {"type":"star","x":1000,"y":380,"size":56},
+      {"type":"star","x":1300,"y":380,"size":56},
+      {"type":"text","x":300,"y":380,"size":20,"text":"임시 스테이지 3-1 : 틈에 검정 다리"}
+    ]
+  },
+  {
+    "id": "s3_2",
+    "name": "3-2 (임시)",
+    "world": 3,
+    "order": 2,
+    "bg": "world",
+    "ink": 1200,
+    "stops": 3,
+    "inks": ["black","blue","red"],
+    "drops": {"heroSpeed":2.5,"smallSpeed":2.5,"collide":false,"follow":true,"gap":30},
+    "eraser": {"speed":0.4,"delayMs":4000},
+    "segments": [{"x":-700,"name":"임시 — 2일차에 다시 만듦"}],
+    "start": {"x":-420,"y":500},
+    "goal": {"x":1500,"y":500},
+    "ground": [
+      {"x0":-700,"x1":560,"top":500,"h":500},
+      {"x0":760,"x1":1800,"top":500,"h":500}
+    ],
+    "props": [
+      {"type":"wall","x":-690,"y":200,"w":40,"h":300},
+      {"type":"drop","x":150,"y":487},
+      {"type":"star","x":660,"y":380,"size":56},
+      {"type":"star","x":1000,"y":380,"size":56},
+      {"type":"star","x":1300,"y":380,"size":56},
+      {"type":"text","x":300,"y":380,"size":20,"text":"임시 스테이지 3-2 : 틈에 검정 다리"}
+    ]
+  },
+  {
+    "id": "s3_3",
+    "name": "3-3 (임시)",
+    "world": 3,
+    "order": 3,
+    "bg": "world",
+    "ink": 1200,
+    "stops": 3,
+    "inks": ["black","blue","red"],
+    "drops": {"heroSpeed":2.5,"smallSpeed":2.5,"collide":false,"follow":true,"gap":30},
+    "eraser": {"speed":0.4,"delayMs":4000},
+    "segments": [{"x":-700,"name":"임시 — 2일차에 다시 만듦"}],
+    "start": {"x":-420,"y":500},
+    "goal": {"x":1500,"y":500},
+    "ground": [
+      {"x0":-700,"x1":560,"top":500,"h":500},
+      {"x0":760,"x1":1800,"top":500,"h":500}
+    ],
+    "props": [
+      {"type":"wall","x":-690,"y":200,"w":40,"h":300},
+      {"type":"drop","x":150,"y":487},
+      {"type":"star","x":660,"y":380,"size":56},
+      {"type":"star","x":1000,"y":380,"size":56},
+      {"type":"star","x":1300,"y":380,"size":56},
+      {"type":"text","x":300,"y":380,"size":20,"text":"임시 스테이지 3-3 : 틈에 검정 다리"}
+    ]
+  },
+  {
+    "id": "s3_4",
+    "name": "3-4 (임시)",
+    "world": 3,
+    "order": 4,
+    "bg": "world",
+    "ink": 1200,
+    "stops": 3,
+    "inks": ["black","blue","red"],
+    "drops": {"heroSpeed":2.5,"smallSpeed":2.5,"collide":false,"follow":true,"gap":30},
+    "eraser": {"speed":0.4,"delayMs":4000},
+    "segments": [{"x":-700,"name":"임시 — 2일차에 다시 만듦"}],
+    "start": {"x":-420,"y":500},
+    "goal": {"x":1500,"y":500},
+    "ground": [
+      {"x0":-700,"x1":560,"top":500,"h":500},
+      {"x0":760,"x1":1800,"top":500,"h":500}
+    ],
+    "props": [
+      {"type":"wall","x":-690,"y":200,"w":40,"h":300},
+      {"type":"drop","x":150,"y":487},
+      {"type":"star","x":660,"y":380,"size":56},
+      {"type":"star","x":1000,"y":380,"size":56},
+      {"type":"star","x":1300,"y":380,"size":56},
+      {"type":"text","x":300,"y":380,"size":20,"text":"임시 스테이지 3-4 : 틈에 검정 다리"}
+    ]
+  },
+  {
+    "id": "s4_1",
+    "name": "4-1 (임시)",
+    "world": 4,
+    "order": 1,
+    "bg": "world",
+    "ink": 1200,
+    "stops": 3,
+    "inks": ["black","blue","red","green"],
+    "drops": {"heroSpeed":2.5,"smallSpeed":2.5,"collide":false,"follow":true,"gap":30},
+    "eraser": {"speed":0.4,"delayMs":4000},
+    "segments": [{"x":-700,"name":"임시 — 2일차에 다시 만듦"}],
+    "start": {"x":-420,"y":500},
+    "goal": {"x":1500,"y":500},
+    "ground": [
+      {"x0":-700,"x1":560,"top":500,"h":500},
+      {"x0":760,"x1":1800,"top":500,"h":500}
+    ],
+    "props": [
+      {"type":"wall","x":-690,"y":200,"w":40,"h":300},
+      {"type":"drop","x":150,"y":487},
+      {"type":"star","x":660,"y":380,"size":56},
+      {"type":"star","x":1000,"y":380,"size":56},
+      {"type":"star","x":1300,"y":380,"size":56},
+      {"type":"text","x":300,"y":380,"size":20,"text":"임시 스테이지 4-1 : 틈에 검정 다리"}
+    ]
+  },
+  {
+    "id": "s4_2",
+    "name": "4-2 (임시)",
+    "world": 4,
+    "order": 2,
+    "bg": "world",
+    "ink": 1200,
+    "stops": 3,
+    "inks": ["black","blue","red","green"],
+    "drops": {"heroSpeed":2.5,"smallSpeed":2.5,"collide":false,"follow":true,"gap":30},
+    "eraser": {"speed":0.4,"delayMs":4000},
+    "segments": [{"x":-700,"name":"임시 — 2일차에 다시 만듦"}],
+    "start": {"x":-420,"y":500},
+    "goal": {"x":1500,"y":500},
+    "ground": [
+      {"x0":-700,"x1":560,"top":500,"h":500},
+      {"x0":760,"x1":1800,"top":500,"h":500}
+    ],
+    "props": [
+      {"type":"wall","x":-690,"y":200,"w":40,"h":300},
+      {"type":"drop","x":150,"y":487},
+      {"type":"star","x":660,"y":380,"size":56},
+      {"type":"star","x":1000,"y":380,"size":56},
+      {"type":"star","x":1300,"y":380,"size":56},
+      {"type":"text","x":300,"y":380,"size":20,"text":"임시 스테이지 4-2 : 틈에 검정 다리"}
+    ]
+  },
+  {
+    "id": "s4_3",
+    "name": "4-3 (임시)",
+    "world": 4,
+    "order": 3,
+    "bg": "world",
+    "ink": 1200,
+    "stops": 3,
+    "inks": ["black","blue","red","green"],
+    "drops": {"heroSpeed":2.5,"smallSpeed":2.5,"collide":false,"follow":true,"gap":30},
+    "eraser": {"speed":0.4,"delayMs":4000},
+    "segments": [{"x":-700,"name":"임시 — 2일차에 다시 만듦"}],
+    "start": {"x":-420,"y":500},
+    "goal": {"x":1500,"y":500},
+    "ground": [
+      {"x0":-700,"x1":560,"top":500,"h":500},
+      {"x0":760,"x1":1800,"top":500,"h":500}
+    ],
+    "props": [
+      {"type":"wall","x":-690,"y":200,"w":40,"h":300},
+      {"type":"drop","x":150,"y":487},
+      {"type":"star","x":660,"y":380,"size":56},
+      {"type":"star","x":1000,"y":380,"size":56},
+      {"type":"star","x":1300,"y":380,"size":56},
+      {"type":"text","x":300,"y":380,"size":20,"text":"임시 스테이지 4-3 : 틈에 검정 다리"}
+    ]
+  },
+  {
+    "id": "s4_4",
+    "name": "4-4 (임시)",
+    "world": 4,
+    "order": 4,
+    "bg": "world",
+    "ink": 1200,
+    "stops": 3,
+    "inks": ["black","blue","red","green"],
+    "drops": {"heroSpeed":2.5,"smallSpeed":2.5,"collide":false,"follow":true,"gap":30},
+    "eraser": {"speed":0.4,"delayMs":4000},
+    "segments": [{"x":-700,"name":"임시 — 2일차에 다시 만듦"}],
+    "start": {"x":-420,"y":500},
+    "goal": {"x":1500,"y":500},
+    "ground": [
+      {"x0":-700,"x1":560,"top":500,"h":500},
+      {"x0":760,"x1":1800,"top":500,"h":500}
+    ],
+    "props": [
+      {"type":"wall","x":-690,"y":200,"w":40,"h":300},
+      {"type":"drop","x":150,"y":487},
+      {"type":"star","x":660,"y":380,"size":56},
+      {"type":"star","x":1000,"y":380,"size":56},
+      {"type":"star","x":1300,"y":380,"size":56},
+      {"type":"text","x":300,"y":380,"size":20,"text":"임시 스테이지 4-4 : 틈에 검정 다리"}
+    ]
+  },
+  {
+    "id": "s5_1",
+    "name": "5-1 (임시)",
+    "world": 5,
+    "order": 1,
+    "bg": "world",
+    "ink": 1200,
+    "stops": 3,
+    "inks": ["black","blue","red","green","yellow"],
+    "drops": {"heroSpeed":2.5,"smallSpeed":2.5,"collide":false,"follow":true,"gap":30},
+    "eraser": {"speed":0.4,"delayMs":4000},
+    "segments": [{"x":-700,"name":"임시 — 2일차에 다시 만듦"}],
+    "start": {"x":-420,"y":500},
+    "goal": {"x":1500,"y":500},
+    "ground": [
+      {"x0":-700,"x1":560,"top":500,"h":500},
+      {"x0":760,"x1":1800,"top":500,"h":500}
+    ],
+    "props": [
+      {"type":"wall","x":-690,"y":200,"w":40,"h":300},
+      {"type":"drop","x":150,"y":487},
+      {"type":"star","x":660,"y":380,"size":56},
+      {"type":"star","x":1000,"y":380,"size":56},
+      {"type":"star","x":1300,"y":380,"size":56},
+      {"type":"text","x":300,"y":380,"size":20,"text":"임시 스테이지 5-1 : 틈에 검정 다리"}
+    ]
+  },
+  {
+    "id": "s5_2",
+    "name": "5-2 (임시)",
+    "world": 5,
+    "order": 2,
+    "bg": "world",
+    "ink": 1200,
+    "stops": 3,
+    "inks": ["black","blue","red","green","yellow"],
+    "drops": {"heroSpeed":2.5,"smallSpeed":2.5,"collide":false,"follow":true,"gap":30},
+    "eraser": {"speed":0.4,"delayMs":4000},
+    "segments": [{"x":-700,"name":"임시 — 2일차에 다시 만듦"}],
+    "start": {"x":-420,"y":500},
+    "goal": {"x":1500,"y":500},
+    "ground": [
+      {"x0":-700,"x1":560,"top":500,"h":500},
+      {"x0":760,"x1":1800,"top":500,"h":500}
+    ],
+    "props": [
+      {"type":"wall","x":-690,"y":200,"w":40,"h":300},
+      {"type":"drop","x":150,"y":487},
+      {"type":"star","x":660,"y":380,"size":56},
+      {"type":"star","x":1000,"y":380,"size":56},
+      {"type":"star","x":1300,"y":380,"size":56},
+      {"type":"text","x":300,"y":380,"size":20,"text":"임시 스테이지 5-2 : 틈에 검정 다리"}
+    ]
+  },
+  {
+    "id": "s5_3",
+    "name": "5-3 (임시)",
+    "world": 5,
+    "order": 3,
+    "bg": "world",
+    "ink": 1200,
+    "stops": 3,
+    "inks": ["black","blue","red","green","yellow"],
+    "drops": {"heroSpeed":2.5,"smallSpeed":2.5,"collide":false,"follow":true,"gap":30},
+    "eraser": {"speed":0.4,"delayMs":4000},
+    "segments": [{"x":-700,"name":"임시 — 2일차에 다시 만듦"}],
+    "start": {"x":-420,"y":500},
+    "goal": {"x":1500,"y":500},
+    "ground": [
+      {"x0":-700,"x1":560,"top":500,"h":500},
+      {"x0":760,"x1":1800,"top":500,"h":500}
+    ],
+    "props": [
+      {"type":"wall","x":-690,"y":200,"w":40,"h":300},
+      {"type":"drop","x":150,"y":487},
+      {"type":"star","x":660,"y":380,"size":56},
+      {"type":"star","x":1000,"y":380,"size":56},
+      {"type":"star","x":1300,"y":380,"size":56},
+      {"type":"text","x":300,"y":380,"size":20,"text":"임시 스테이지 5-3 : 틈에 검정 다리"}
+    ]
+  },
+  {
+    "id": "s5_4",
+    "name": "5-4 (임시)",
+    "world": 5,
+    "order": 4,
+    "bg": "world",
+    "ink": 1200,
+    "stops": 3,
+    "inks": ["black","blue","red","green","yellow"],
+    "drops": {"heroSpeed":2.5,"smallSpeed":2.5,"collide":false,"follow":true,"gap":30},
+    "eraser": {"speed":0.4,"delayMs":4000},
+    "segments": [{"x":-700,"name":"임시 — 2일차에 다시 만듦"}],
+    "start": {"x":-420,"y":500},
+    "goal": {"x":1500,"y":500},
+    "ground": [
+      {"x0":-700,"x1":560,"top":500,"h":500},
+      {"x0":760,"x1":1800,"top":500,"h":500}
+    ],
+    "props": [
+      {"type":"wall","x":-690,"y":200,"w":40,"h":300},
+      {"type":"drop","x":150,"y":487},
+      {"type":"star","x":660,"y":380,"size":56},
+      {"type":"star","x":1000,"y":380,"size":56},
+      {"type":"star","x":1300,"y":380,"size":56},
+      {"type":"text","x":300,"y":380,"size":20,"text":"임시 스테이지 5-4 : 틈에 검정 다리"}
+    ]
+  },
+  {
+    "id": "s6_1",
+    "name": "6-1 (임시)",
+    "world": 6,
+    "order": 1,
+    "bg": "world",
+    "ink": 1200,
+    "stops": 3,
+    "inks": ["black","blue","red","green","yellow"],
+    "drops": {"heroSpeed":2.5,"smallSpeed":2.5,"collide":false,"follow":true,"gap":30},
+    "eraser": {"speed":0.4,"delayMs":4000},
+    "segments": [{"x":-700,"name":"임시 — 2일차에 다시 만듦"}],
+    "start": {"x":-420,"y":500},
+    "goal": {"x":1500,"y":500},
+    "ground": [
+      {"x0":-700,"x1":560,"top":500,"h":500},
+      {"x0":760,"x1":1800,"top":500,"h":500}
+    ],
+    "props": [
+      {"type":"wall","x":-690,"y":200,"w":40,"h":300},
+      {"type":"drop","x":150,"y":487},
+      {"type":"star","x":660,"y":380,"size":56},
+      {"type":"star","x":1000,"y":380,"size":56},
+      {"type":"star","x":1300,"y":380,"size":56},
+      {"type":"text","x":300,"y":380,"size":20,"text":"임시 스테이지 6-1 : 틈에 검정 다리"}
+    ]
+  },
+  {
+    "id": "s6_2",
+    "name": "6-2 (임시)",
+    "world": 6,
+    "order": 2,
+    "bg": "world",
+    "ink": 1200,
+    "stops": 3,
+    "inks": ["black","blue","red","green","yellow"],
+    "drops": {"heroSpeed":2.5,"smallSpeed":2.5,"collide":false,"follow":true,"gap":30},
+    "eraser": {"speed":0.4,"delayMs":4000},
+    "segments": [{"x":-700,"name":"임시 — 2일차에 다시 만듦"}],
+    "start": {"x":-420,"y":500},
+    "goal": {"x":1500,"y":500},
+    "ground": [
+      {"x0":-700,"x1":560,"top":500,"h":500},
+      {"x0":760,"x1":1800,"top":500,"h":500}
+    ],
+    "props": [
+      {"type":"wall","x":-690,"y":200,"w":40,"h":300},
+      {"type":"drop","x":150,"y":487},
+      {"type":"star","x":660,"y":380,"size":56},
+      {"type":"star","x":1000,"y":380,"size":56},
+      {"type":"star","x":1300,"y":380,"size":56},
+      {"type":"text","x":300,"y":380,"size":20,"text":"임시 스테이지 6-2 : 틈에 검정 다리"}
+    ]
+  },
+  {
+    "id": "s6_3",
+    "name": "6-3 (임시)",
+    "world": 6,
+    "order": 3,
+    "bg": "world",
+    "ink": 1200,
+    "stops": 3,
+    "inks": ["black","blue","red","green","yellow"],
+    "drops": {"heroSpeed":2.5,"smallSpeed":2.5,"collide":false,"follow":true,"gap":30},
+    "eraser": {"speed":0.4,"delayMs":4000},
+    "segments": [{"x":-700,"name":"임시 — 2일차에 다시 만듦"}],
+    "start": {"x":-420,"y":500},
+    "goal": {"x":1500,"y":500},
+    "ground": [
+      {"x0":-700,"x1":560,"top":500,"h":500},
+      {"x0":760,"x1":1800,"top":500,"h":500}
+    ],
+    "props": [
+      {"type":"wall","x":-690,"y":200,"w":40,"h":300},
+      {"type":"drop","x":150,"y":487},
+      {"type":"star","x":660,"y":380,"size":56},
+      {"type":"star","x":1000,"y":380,"size":56},
+      {"type":"star","x":1300,"y":380,"size":56},
+      {"type":"text","x":300,"y":380,"size":20,"text":"임시 스테이지 6-3 : 틈에 검정 다리"}
     ]
   }
 ];

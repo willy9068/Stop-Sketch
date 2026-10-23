@@ -21,6 +21,7 @@ G.Debug = {
       if (a.indexOf('level:') === 0) app.goLevel(+a.slice(6));
       if (a === 'boxes') { self.state.showBoxes = !self.state.showBoxes; }
       if (a === 'reset') { app.restart(); }
+      if (a === 'unlock') { app.unlockAll = !app.unlockAll; }
       if (a === 'clear') { app.save.stats = {}; G.Save.write(app.save); }
       if (a === 'account' && confirm('스테이지 기록(별·정화)을 지울까요?')) app.resetAccount();
       self.refresh(app);
@@ -58,6 +59,7 @@ G.Debug = {
     html += '<button data-act="ink">잉크 충전</button>';
     html += '<button data-act="boxes"' + (s.showBoxes ? ' class="on"' : '') + '>충돌 박스</button>';
     html += '<button data-act="reset">구간 다시 (R)</button>';
+    html += '<button data-act="unlock"' + (app.unlockAll ? ' class="on"' : '') + '>모든 월드·스테이지 열기</button>';
     html += '</div><div class="row">모드별 기록 (이 브라우저에 저장)</div>';
     html += '<table><tr><th>모드</th><th>시도</th><th>도착</th><th>실패</th><th>평균 정지</th></tr>';
     Object.keys(modes).forEach(function (k) {

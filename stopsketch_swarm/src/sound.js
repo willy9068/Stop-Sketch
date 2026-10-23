@@ -269,7 +269,21 @@ G.Sound = (function () {
     loop('sfx_eraser', ev);
   }
 
+  // 메뉴 화면 (2차 데모): 반복 소리는 끄고, 배경 음악은 정지 필터 없이 원래대로
+  function idle() {
+    if (!ctx) return;
+    if (pausedNow) { pausedNow = false; ctx.resume(); unlock(); }
+    var now = ctx.currentTime;
+    if (musicEl) { var tv = muted ? 0 : vol('music'); musicEl.volume = Math.max(0, Math.min(1, musicEl.volume + (tv - musicEl.volume) * 0.15)); }
+    musicFilter.frequency.setTargetAtTime(20000, now, 0.08);
+    musicBus.gain.setTargetAtTime(vol('music'), now, 0.08);
+    sfxBus.gain.setTargetAtTime(vol('sfx'), now, 0.05);
+    loop('sfx_draw', 0); loop('sfx_eraser', 0);
+    prev = null;                                   // 플레이로 돌아가면 처음부터 비교
+  }
+
   return {
+    idle: idle,
     init: function () { if (typeof window !== 'undefined' && !ctx) init(); },
     unlock: unlock, watch: watch, toggle: toggle, isMuted: function () { return muted; },
     click: function () { play('sfx_click'); }, plan: plan,

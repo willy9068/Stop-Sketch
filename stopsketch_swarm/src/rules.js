@@ -215,7 +215,38 @@ G.Rules = (function () {
     return stopped && mode.limitMs > 0 && stoppedMs >= mode.limitMs;
   }
 
+  // ---- 월드 · 스테이지 진행 (사용자 결정 2026-10-23, 업무가이드 11-9) ----
+  // levels: 게임에 나오는 스테이지(테스트용 뺀 것), records: 계정 기록 {id: {clears, stars, ...}}
+  // 순서: world(1~) → order(1~). world 가 없는 스테이지는 맨 뒤 월드 0 으로 (예전 데모 등)
+  function playOrder(levels) {
+    return levels.slice().sort(function (a, b) { return ((a.world || 99) - (b.world || 99)) || ((a.order || 0) - (b.order || 0)); });
+  }
+  function worldStages(levels, w) { return playOrder(levels).filter(function (l) { return l.world === w; }); }
+  function cleared(records, id) { return !!(records[id] && records[id].clears > 0); }
+  // 월드 w 가 열렸나: 1 은 늘, 그 뒤는 앞 월드의 마지막 스테이지를 깼을 때 (앞 월드에 스테이지가 없으면 그 앞을 봄)
+  function worldUnlocked(levels, records, w) {
+    for (var p = w - 1; p >= 1; p--) {
+      var prev = worldStages(levels, p);
+      if (prev.length) return cleared(records, prev[prev.length - 1].id);
+    }
+    return true;
+  }
+  // 스테이지가 열렸나: 월드가 열렸고, 월드 첫 스테이지이거나 바로 앞 스테이지를 깼을 때
+  function stageUnlocked(levels, records, lv) {
+    if (!lv.world) return true;
+    if (!worldUnlocked(levels, records, lv.world)) return false;
+    var list = worldStages(levels, lv.world), i = list.indexOf(lv);
+    return i <= 0 || cleared(records, list[i - 1].id);
+  }
+  // 월드 별 합계: {got, total} (스테이지마다 별 3개로 셈 — 결과 창과 같게 starsTotal 은 스테이지 별 개수)
+  function worldStars(levels, records, w, starsOf) {
+    var got = 0, total = 0;
+    worldStages(levels, w).forEach(function (l) { total += starsOf(l); got += Math.min(starsOf(l), (records[l.id] && records[l.id].stars) || 0); });
+    return { got: got, total: total };
+  }
+
   return {
+    playOrder: playOrder, worldStages: worldStages, worldUnlocked: worldUnlocked, stageUnlocked: stageUnlocked, worldStars: worldStars,
     dist: dist, polylineLength: polylineLength,
     newStroke: newStroke, addSample: addSample, smooth: smooth, finishStroke: finishStroke,
     lineAlpha: lineAlpha, lineExpired: lineExpired,

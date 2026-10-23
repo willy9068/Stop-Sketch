@@ -66,6 +66,10 @@ G.DATA = {
     groundCheck: 0.45,     // 접촉점이 중심보다 반지름 × 이 값 이상 아래면 "바닥"
     stepUp: 16,            // 이 높이 이하의 턱은 넘어감 (작은 물방울은 반지름 비율로 줄이되 stepUpMin 보다 작지 않게)
     stepUpMin: 12,         //   쓰러진 배치된 선(두께 10)을 작은 물방울도 넘어가게
+    // 낮은 턱 살짝 점프 (사용자 요청 2026-10-23: 애매하게 낮은 턱에서 억울하게 되돌아가지 않게)
+    //   stepUp 보다 높고 up 이하인 턱(작은 물방울은 반지름 비율로 줄이되 minUp 보다 작지 않게) 앞에서는 되돌아서지 않고 그 높이 + extra 만큼 뛰어 넘음
+    //   위가 막혀 있으면(천장·더 높은 벽) 뛰지 않고 되돌아섬. cdMs: 뛴 뒤 이만큼은 벽 판정으로 되돌아서지 않음. probe: 앞을 살피는 거리 px
+    hop: { up: 30, minUp: 20, extra: 6, cdMs: 400, probe: 4 },
     turnCooldownMs: 250,
     wakeReach: 1.4,        // 잠든 물방울과 걷는 물방울 중심 거리가 (두 반지름 합 × 이 값) 안이면 깨어나 합류
     pinchMs: 120,          // 위·아래로 이만큼 끼어 있으면 가까운 옆으로 밀어냄 (끼여서 죽지 않음, 사용자 결정 2026-10-20)
@@ -163,8 +167,9 @@ G.DATA = {
   projectile: { radius: 13, lifeMs: 7000, hitK: 0.8 },   // hitK: 물방울과 맞았다고 보는 거리 = 물방울 반지름 + 투사체 반지름 × 이 값
   shooterColors: ['black', 'red', 'blue', 'green'],
 
-  // 지우개 (사용자 결정 2026-10-20): 출발 delay 뒤 화면 밖 왼쪽에서 주인공 속도의 pct% 로 따라옴. 정지 중엔 멈춤
-  eraser: { pct: 20, delayMs: 3000, startBack: 700 },
+  // 지우개 (사용자 결정 2026-10-20): 출발 delay 뒤 화면 밖 왼쪽에서 따라옴. 정지 중엔 멈춤
+  //   speed: 이동 속도(스텝당 px) — 주인공 속도와 따로 (사용자 요청 2026-10-23). 예전 스테이지의 pct(주인공 속도의 %)는 불러올 때 speed 로 바꿈
+  eraser: { speed: 1, delayMs: 3000, startBack: 700 },
 
   colors: {
     paper: '#F3E9D2',
@@ -210,6 +215,8 @@ G.DATA = {
     shooter:  { name: '발사기', solid: true, box: true, w: 70, h: 70, color: '#5B5560', aim: 180, periodMs: 2000, speed: 5, firstMs: 1000, shot: 'black',
                 imgs: [['obs_shooter', 'fit']] },
     deco:     { name: '장식', size: 180, img: 'deco_cloud_1' },
+    // 점선 힌트 "여기에 그려 보세요" (2차 데모 첫 판 안내, 사용자 결정 2026-10-23): 부딪히지 않는 그림. 배치된 선처럼 길이(w)·두께(h)·각도, ink = 색
+    hint:     { name: '점선 힌트', box: true, w: 200, h: 8, ink: 'black' },
     text:     { name: '글자', size: 20, text: '안내 문구' }
   },
 
@@ -225,9 +232,15 @@ G.DATA = {
       'start_hole', 'goal_jar_empty', 'ink_black', 'ink_red', 'ink_blue', 'ink_yellow', 'ink_green', 'ink_select', 'ui_shelf',
       'fx_bounce', 'fx_boost', 'fx_absorb', 'eraser_edge', 'ui_arrow', 'goal_jar_dark',
       'eraser_body', 'eraser_crumb_1', 'eraser_crumb_2', 'eraser_crumb_3', 'eraser_smudge', 'fx_erase_puff',
-      'obs_shooter', 'proj', 'fx_block', 'proj_white', 'fx_proj_pop'   // proj_white·fx_proj_pop: 7차 이미지 요청 (흰색으로 그려 코드가 투사체 색을 입힘)
+      'obs_shooter', 'proj', 'fx_block', 'proj_white', 'fx_proj_pop',  // proj_white·fx_proj_pop: 7차 이미지 요청 (흰색으로 그려 코드가 투사체 색을 입힘)
+      // 8차 이미지 요청 (2차 데모, 이미지 문서 16장): 월드 배경 · 시작 화면 · 월드 카드 · 스테이지 칸 · 버튼 · 안내 그림. 없으면 코드 모양
+      'bg_w1', 'bg_w2', 'bg_w3', 'bg_w4', 'bg_w5', 'bg_w6', 'title_bg', 'title_logo',
+      'world_card', 'world_icon_1', 'world_icon_2', 'world_icon_3', 'world_icon_4', 'world_icon_5', 'world_icon_6',
+      'ui_lock', 'stage_tile', 'stage_tile_boss', 'ui_button', 'ui_back', 'fx_unlock',
+      'tut_w1', 'tut_w2', 'tut_w3', 'tut_w4', 'tut_w5'
     ],
-    backgrounds: { bg_a: '종이 + 구름', bg_b: '줄 노트', bg_plain: '빈 종이', none: '단색 종이' },
+    backgrounds: { world: '월드 배경 (월드마다)', bg_a: '종이 + 구름', bg_b: '줄 노트', bg_plain: '빈 종이', none: '단색 종이',
+                   bg_w1: '월드 1 모눈종이', bg_w2: '월드 2 줄 노트', bg_w3: '월드 3 여백 줄', bg_w4: '월드 4 방안지', bg_w5: '월드 5 크라프트지', bg_w6: '월드 6 수채화지' },
     decos: ['deco_cloud_1', 'deco_cloud_2', 'deco_cloud_3'],
     charSize: 3.2,
     charFace: { char_run: -1 },  // 그림이 바라보는 방향 (-1 = 왼쪽). 진행 방향에 맞춰 뒤집음 (사용자 요청 2026-10-20)
@@ -282,6 +295,19 @@ G.DATA = {
       sfx_color: [0.5, 0], sfx_click: [0.6, 0]
     }
   },
+
+  // 월드 (사용자 결정 2026-10-23, 업무가이드 11-9): 색이 하나씩 열림. 스테이지는 levels.js 의 world(1~6)·order(1~) 로 묶음
+  //   inks: 이 월드에서 쓸 수 있는 물감 (지금까지 열린 색 모두) — 새 스테이지 기본값, 스테이지마다 levels.js inks 로 바꿈
+  //   color: 월드 색 (카드 테두리·스테이지 칸), bg: 월드 배경 그림 (스테이지 bg 가 'world' 면 이것), 없으면 bg_plain
+  //   이름·설명 글자는 uitext.js world.N.name / world.N.desc (UI 툴)
+  worlds: [
+    { id: 1, color: '#2B2118', inks: ['black'], bg: 'bg_w1' },
+    { id: 2, color: '#1F6FE0', inks: ['black', 'blue'], bg: 'bg_w2' },
+    { id: 3, color: '#E0312B', inks: ['black', 'blue', 'red'], bg: 'bg_w3' },
+    { id: 4, color: '#1FA655', inks: ['black', 'blue', 'red', 'green'], bg: 'bg_w4' },
+    { id: 5, color: '#F2B807', inks: ['black', 'blue', 'red', 'green', 'yellow'], bg: 'bg_w5' },
+    { id: 6, color: '#8A5BD6', inks: ['black', 'blue', 'red', 'green', 'yellow'], bg: 'bg_w6' }
+  ],
 
   save: {
     soundKey: 'stopsketch.swarm.sound.v1',          // 소리 켬/끔 (M 키·위 막대 스피커)
@@ -347,7 +373,35 @@ G.UITEXT = {
     "ink.red": "빨강 · 튕김",
     "ink.blue": "파랑 · 가속",
     "ink.green": "초록 · 떠오름",
-    "ink.yellow": "노랑 · 지우기"
+    "ink.yellow": "노랑 · 지우기",
+    "result.menu": "스테이지 목록 (Esc)",
+    "pause.menu": "스테이지 목록",
+    "title.name": "스톱 앤 스케치",
+    "title.sub": "멈추고, 그리고, 모두 데려가자.",
+    "title.start": "시작",
+    "title.help": "클릭 · 스페이스 · Enter",
+    "menu.back": "← 뒤로 (Esc)",
+    "menu.unlockAll": "모두 열림 (확인용)",
+    "worlds.title": "월드 선택",
+    "worlds.stars": "{got} / {total}",
+    "worlds.locked": "앞 월드의 마지막 스테이지를 깨면 열려요",
+    "world.1.name": "검정 월드",
+    "world.1.desc": "검정 · 다리",
+    "world.2.name": "파랑 월드",
+    "world.2.desc": "+ 파랑 · 가속",
+    "world.3.name": "빨강 월드",
+    "world.3.desc": "+ 빨강 · 튕김",
+    "world.4.name": "초록 월드",
+    "world.4.desc": "+ 초록 · 떠오름",
+    "world.5.name": "노랑 월드",
+    "world.5.desc": "+ 노랑 · 지우기",
+    "world.6.name": "모든 물감",
+    "world.6.desc": "다섯 색 모두",
+    "stages.title": "월드 {n} · {name}",
+    "stages.inks": "쓸 수 있는 물감",
+    "stages.boss": "도전",
+    "stages.purity": "정화 {purity}%",
+    "stages.locked": "앞 스테이지를 깨면 열려요"
   },
   style: {
     "font": "sans-serif",
@@ -434,6 +488,38 @@ G.UITEXT = {
     "pauseResumeY": 380,
     "pauseRetryX": 650,
     "pauseRetryY": 380,
+    "menuRetryX": 535,
+    "menuRetryY": 498,
+    "failMenuX": 532,
+    "failMenuY": 472,
+    "pauseMenuX": 535,
+    "pauseMenuY": 436,
+    "titleY": 230,
+    "titleSize": 84,
+    "titleLogoW": 720,
+    "titleSubY": 350,
+    "titleSubSize": 24,
+    "titleStartY": 460,
+    "menuBtnW": 240,
+    "menuBtnH": 60,
+    "menuBtnSize": 24,
+    "menuSmallSize": 17,
+    "menuTitleY": 80,
+    "menuTitleSize": 40,
+    "menuBackX": 24,
+    "menuBackY": 20,
+    "menuBackW": 150,
+    "menuBackH": 44,
+    "worldCardY": 190,
+    "worldCardW": 172,
+    "worldCardH": 300,
+    "worldCardGap": 24,
+    "worldNameSize": 20,
+    "worldDescSize": 15,
+    "stageTileY": 260,
+    "stageTileSize": 170,
+    "stageTileGap": 44,
+    "stageNumSize": 40,
     "musicVolume": 0.1,
     "sfxVolume": 0.2
   }
@@ -450,6 +536,7 @@ G.LEVELS = [
   {
     "id": "d1",
     "name": "데모 레벨1",
+    "test": true,
     "bg": "bg_plain",
     "ink": 1600,
     "stops": 3,
@@ -516,6 +603,7 @@ G.LEVELS = [
   {
     "id": "d2",
     "name": "데모 레벨2",
+    "test": true,
     "bg": "bg_a",
     "ink": 1800,
     "stops": 3,
@@ -569,6 +657,7 @@ G.LEVELS = [
   {
     "id": "d3",
     "name": "데모 레벨3",
+    "test": true,
     "bg": "bg_b",
     "ink": 3000,
     "stops": 3,
@@ -785,6 +874,631 @@ G.LEVELS = [
       {"type":"wall","x":-160,"y":300,"w":40,"h":300},
       {"type":"drop","x":490,"y":580},
       {"type":"shooter","x":1200,"y":-250,"w":70,"h":70,"aim":90,"periodMs":2000,"speed":5,"firstMs":1000,"shot":"green"}
+    ]
+  },
+  {
+    "id": "s1_1",
+    "name": "1-1 (임시)",
+    "world": 1,
+    "order": 1,
+    "bg": "world",
+    "ink": 1200,
+    "stops": 3,
+    "noEraser": true,
+    "inks": ["black"],
+    "drops": {"heroSpeed":2.5,"smallSpeed":2.5,"collide":false,"follow":true,"gap":30},
+    "eraser": {"speed":0.4,"delayMs":4000},
+    "segments": [{"x":-700,"name":"임시 — 2일차에 다시 만듦"}],
+    "start": {"x":-420,"y":500},
+    "goal": {"x":1500,"y":500},
+    "ground": [
+      {"x0":-700,"x1":560,"top":500,"h":500},
+      {"x0":760,"x1":1800,"top":500,"h":500}
+    ],
+    "props": [
+      {"type":"wall","x":-690,"y":200,"w":40,"h":300},
+      {"type":"drop","x":150,"y":487},
+      {"type":"star","x":660,"y":380,"size":56},
+      {"type":"star","x":1000,"y":380,"size":56},
+      {"type":"star","x":1300,"y":380,"size":56},
+      {"type":"text","x":300,"y":380,"size":20,"text":"임시 스테이지 1-1 : 틈에 검정 다리"}
+    ]
+  },
+  {
+    "id": "s1_2",
+    "name": "1-2 (임시)",
+    "world": 1,
+    "order": 2,
+    "bg": "world",
+    "ink": 1200,
+    "stops": 3,
+    "noEraser": true,
+    "inks": ["black"],
+    "drops": {"heroSpeed":2.5,"smallSpeed":2.5,"collide":false,"follow":true,"gap":30},
+    "eraser": {"speed":0.4,"delayMs":4000},
+    "segments": [{"x":-700,"name":"임시 — 2일차에 다시 만듦"}],
+    "start": {"x":-420,"y":500},
+    "goal": {"x":1500,"y":500},
+    "ground": [
+      {"x0":-700,"x1":560,"top":500,"h":500},
+      {"x0":760,"x1":1800,"top":500,"h":500}
+    ],
+    "props": [
+      {"type":"wall","x":-690,"y":200,"w":40,"h":300},
+      {"type":"drop","x":150,"y":487},
+      {"type":"star","x":660,"y":380,"size":56},
+      {"type":"star","x":1000,"y":380,"size":56},
+      {"type":"star","x":1300,"y":380,"size":56},
+      {"type":"text","x":300,"y":380,"size":20,"text":"임시 스테이지 1-2 : 틈에 검정 다리"}
+    ]
+  },
+  {
+    "id": "s1_3",
+    "name": "1-3 (임시)",
+    "world": 1,
+    "order": 3,
+    "bg": "world",
+    "ink": 1200,
+    "stops": 3,
+    "noEraser": true,
+    "inks": ["black"],
+    "drops": {"heroSpeed":2.5,"smallSpeed":2.5,"collide":false,"follow":true,"gap":30},
+    "eraser": {"speed":0.4,"delayMs":4000},
+    "segments": [{"x":-700,"name":"임시 — 2일차에 다시 만듦"}],
+    "start": {"x":-420,"y":500},
+    "goal": {"x":1500,"y":500},
+    "ground": [
+      {"x0":-700,"x1":560,"top":500,"h":500},
+      {"x0":760,"x1":1800,"top":500,"h":500}
+    ],
+    "props": [
+      {"type":"wall","x":-690,"y":200,"w":40,"h":300},
+      {"type":"drop","x":150,"y":487},
+      {"type":"star","x":660,"y":380,"size":56},
+      {"type":"star","x":1000,"y":380,"size":56},
+      {"type":"star","x":1300,"y":380,"size":56},
+      {"type":"text","x":300,"y":380,"size":20,"text":"임시 스테이지 1-3 : 틈에 검정 다리"}
+    ]
+  },
+  {
+    "id": "s1_4",
+    "name": "1-4 (임시)",
+    "world": 1,
+    "order": 4,
+    "bg": "world",
+    "ink": 1200,
+    "stops": 3,
+    "noEraser": true,
+    "inks": ["black"],
+    "drops": {"heroSpeed":2.5,"smallSpeed":2.5,"collide":false,"follow":true,"gap":30},
+    "eraser": {"speed":0.4,"delayMs":4000},
+    "segments": [{"x":-700,"name":"임시 — 2일차에 다시 만듦"}],
+    "start": {"x":-420,"y":500},
+    "goal": {"x":1500,"y":500},
+    "ground": [
+      {"x0":-700,"x1":560,"top":500,"h":500},
+      {"x0":760,"x1":1800,"top":500,"h":500}
+    ],
+    "props": [
+      {"type":"wall","x":-690,"y":200,"w":40,"h":300},
+      {"type":"drop","x":150,"y":487},
+      {"type":"star","x":660,"y":380,"size":56},
+      {"type":"star","x":1000,"y":380,"size":56},
+      {"type":"star","x":1300,"y":380,"size":56},
+      {"type":"text","x":300,"y":380,"size":20,"text":"임시 스테이지 1-4 : 틈에 검정 다리"}
+    ]
+  },
+  {
+    "id": "s2_1",
+    "name": "2-1 (임시)",
+    "world": 2,
+    "order": 1,
+    "bg": "world",
+    "ink": 1200,
+    "stops": 3,
+    "inks": ["black","blue"],
+    "drops": {"heroSpeed":2.5,"smallSpeed":2.5,"collide":false,"follow":true,"gap":30},
+    "eraser": {"speed":0.4,"delayMs":4000},
+    "segments": [{"x":-700,"name":"임시 — 2일차에 다시 만듦"}],
+    "start": {"x":-420,"y":500},
+    "goal": {"x":1500,"y":500},
+    "ground": [
+      {"x0":-700,"x1":560,"top":500,"h":500},
+      {"x0":760,"x1":1800,"top":500,"h":500}
+    ],
+    "props": [
+      {"type":"wall","x":-690,"y":200,"w":40,"h":300},
+      {"type":"drop","x":150,"y":487},
+      {"type":"star","x":660,"y":380,"size":56},
+      {"type":"star","x":1000,"y":380,"size":56},
+      {"type":"star","x":1300,"y":380,"size":56},
+      {"type":"text","x":300,"y":380,"size":20,"text":"임시 스테이지 2-1 : 틈에 검정 다리"}
+    ]
+  },
+  {
+    "id": "s2_2",
+    "name": "2-2 (임시)",
+    "world": 2,
+    "order": 2,
+    "bg": "world",
+    "ink": 1200,
+    "stops": 3,
+    "inks": ["black","blue"],
+    "drops": {"heroSpeed":2.5,"smallSpeed":2.5,"collide":false,"follow":true,"gap":30},
+    "eraser": {"speed":0.4,"delayMs":4000},
+    "segments": [{"x":-700,"name":"임시 — 2일차에 다시 만듦"}],
+    "start": {"x":-420,"y":500},
+    "goal": {"x":1500,"y":500},
+    "ground": [
+      {"x0":-700,"x1":560,"top":500,"h":500},
+      {"x0":760,"x1":1800,"top":500,"h":500}
+    ],
+    "props": [
+      {"type":"wall","x":-690,"y":200,"w":40,"h":300},
+      {"type":"drop","x":150,"y":487},
+      {"type":"star","x":660,"y":380,"size":56},
+      {"type":"star","x":1000,"y":380,"size":56},
+      {"type":"star","x":1300,"y":380,"size":56},
+      {"type":"text","x":300,"y":380,"size":20,"text":"임시 스테이지 2-2 : 틈에 검정 다리"}
+    ]
+  },
+  {
+    "id": "s2_3",
+    "name": "2-3 (임시)",
+    "world": 2,
+    "order": 3,
+    "bg": "world",
+    "ink": 1200,
+    "stops": 3,
+    "inks": ["black","blue"],
+    "drops": {"heroSpeed":2.5,"smallSpeed":2.5,"collide":false,"follow":true,"gap":30},
+    "eraser": {"speed":0.4,"delayMs":4000},
+    "segments": [{"x":-700,"name":"임시 — 2일차에 다시 만듦"}],
+    "start": {"x":-420,"y":500},
+    "goal": {"x":1500,"y":500},
+    "ground": [
+      {"x0":-700,"x1":560,"top":500,"h":500},
+      {"x0":760,"x1":1800,"top":500,"h":500}
+    ],
+    "props": [
+      {"type":"wall","x":-690,"y":200,"w":40,"h":300},
+      {"type":"drop","x":150,"y":487},
+      {"type":"star","x":660,"y":380,"size":56},
+      {"type":"star","x":1000,"y":380,"size":56},
+      {"type":"star","x":1300,"y":380,"size":56},
+      {"type":"text","x":300,"y":380,"size":20,"text":"임시 스테이지 2-3 : 틈에 검정 다리"}
+    ]
+  },
+  {
+    "id": "s2_4",
+    "name": "2-4 (임시)",
+    "world": 2,
+    "order": 4,
+    "bg": "world",
+    "ink": 1200,
+    "stops": 3,
+    "inks": ["black","blue"],
+    "drops": {"heroSpeed":2.5,"smallSpeed":2.5,"collide":false,"follow":true,"gap":30},
+    "eraser": {"speed":0.4,"delayMs":4000},
+    "segments": [{"x":-700,"name":"임시 — 2일차에 다시 만듦"}],
+    "start": {"x":-420,"y":500},
+    "goal": {"x":1500,"y":500},
+    "ground": [
+      {"x0":-700,"x1":560,"top":500,"h":500},
+      {"x0":760,"x1":1800,"top":500,"h":500}
+    ],
+    "props": [
+      {"type":"wall","x":-690,"y":200,"w":40,"h":300},
+      {"type":"drop","x":150,"y":487},
+      {"type":"star","x":660,"y":380,"size":56},
+      {"type":"star","x":1000,"y":380,"size":56},
+      {"type":"star","x":1300,"y":380,"size":56},
+      {"type":"text","x":300,"y":380,"size":20,"text":"임시 스테이지 2-4 : 틈에 검정 다리"}
+    ]
+  },
+  {
+    "id": "s3_1",
+    "name": "3-1 (임시)",
+    "world": 3,
+    "order": 1,
+    "bg": "world",
+    "ink": 1200,
+    "stops": 3,
+    "inks": ["black","blue","red"],
+    "drops": {"heroSpeed":2.5,"smallSpeed":2.5,"collide":false,"follow":true,"gap":30},
+    "eraser": {"speed":0.4,"delayMs":4000},
+    "segments": [{"x":-700,"name":"임시 — 2일차에 다시 만듦"}],
+    "start": {"x":-420,"y":500},
+    "goal": {"x":1500,"y":500},
+    "ground": [
+      {"x0":-700,"x1":560,"top":500,"h":500},
+      {"x0":760,"x1":1800,"top":500,"h":500}
+    ],
+    "props": [
+      {"type":"wall","x":-690,"y":200,"w":40,"h":300},
+      {"type":"drop","x":150,"y":487},
+      {"type":"star","x":660,"y":380,"size":56},
+      {"type":"star","x":1000,"y":380,"size":56},
+      {"type":"star","x":1300,"y":380,"size":56},
+      {"type":"text","x":300,"y":380,"size":20,"text":"임시 스테이지 3-1 : 틈에 검정 다리"}
+    ]
+  },
+  {
+    "id": "s3_2",
+    "name": "3-2 (임시)",
+    "world": 3,
+    "order": 2,
+    "bg": "world",
+    "ink": 1200,
+    "stops": 3,
+    "inks": ["black","blue","red"],
+    "drops": {"heroSpeed":2.5,"smallSpeed":2.5,"collide":false,"follow":true,"gap":30},
+    "eraser": {"speed":0.4,"delayMs":4000},
+    "segments": [{"x":-700,"name":"임시 — 2일차에 다시 만듦"}],
+    "start": {"x":-420,"y":500},
+    "goal": {"x":1500,"y":500},
+    "ground": [
+      {"x0":-700,"x1":560,"top":500,"h":500},
+      {"x0":760,"x1":1800,"top":500,"h":500}
+    ],
+    "props": [
+      {"type":"wall","x":-690,"y":200,"w":40,"h":300},
+      {"type":"drop","x":150,"y":487},
+      {"type":"star","x":660,"y":380,"size":56},
+      {"type":"star","x":1000,"y":380,"size":56},
+      {"type":"star","x":1300,"y":380,"size":56},
+      {"type":"text","x":300,"y":380,"size":20,"text":"임시 스테이지 3-2 : 틈에 검정 다리"}
+    ]
+  },
+  {
+    "id": "s3_3",
+    "name": "3-3 (임시)",
+    "world": 3,
+    "order": 3,
+    "bg": "world",
+    "ink": 1200,
+    "stops": 3,
+    "inks": ["black","blue","red"],
+    "drops": {"heroSpeed":2.5,"smallSpeed":2.5,"collide":false,"follow":true,"gap":30},
+    "eraser": {"speed":0.4,"delayMs":4000},
+    "segments": [{"x":-700,"name":"임시 — 2일차에 다시 만듦"}],
+    "start": {"x":-420,"y":500},
+    "goal": {"x":1500,"y":500},
+    "ground": [
+      {"x0":-700,"x1":560,"top":500,"h":500},
+      {"x0":760,"x1":1800,"top":500,"h":500}
+    ],
+    "props": [
+      {"type":"wall","x":-690,"y":200,"w":40,"h":300},
+      {"type":"drop","x":150,"y":487},
+      {"type":"star","x":660,"y":380,"size":56},
+      {"type":"star","x":1000,"y":380,"size":56},
+      {"type":"star","x":1300,"y":380,"size":56},
+      {"type":"text","x":300,"y":380,"size":20,"text":"임시 스테이지 3-3 : 틈에 검정 다리"}
+    ]
+  },
+  {
+    "id": "s3_4",
+    "name": "3-4 (임시)",
+    "world": 3,
+    "order": 4,
+    "bg": "world",
+    "ink": 1200,
+    "stops": 3,
+    "inks": ["black","blue","red"],
+    "drops": {"heroSpeed":2.5,"smallSpeed":2.5,"collide":false,"follow":true,"gap":30},
+    "eraser": {"speed":0.4,"delayMs":4000},
+    "segments": [{"x":-700,"name":"임시 — 2일차에 다시 만듦"}],
+    "start": {"x":-420,"y":500},
+    "goal": {"x":1500,"y":500},
+    "ground": [
+      {"x0":-700,"x1":560,"top":500,"h":500},
+      {"x0":760,"x1":1800,"top":500,"h":500}
+    ],
+    "props": [
+      {"type":"wall","x":-690,"y":200,"w":40,"h":300},
+      {"type":"drop","x":150,"y":487},
+      {"type":"star","x":660,"y":380,"size":56},
+      {"type":"star","x":1000,"y":380,"size":56},
+      {"type":"star","x":1300,"y":380,"size":56},
+      {"type":"text","x":300,"y":380,"size":20,"text":"임시 스테이지 3-4 : 틈에 검정 다리"}
+    ]
+  },
+  {
+    "id": "s4_1",
+    "name": "4-1 (임시)",
+    "world": 4,
+    "order": 1,
+    "bg": "world",
+    "ink": 1200,
+    "stops": 3,
+    "inks": ["black","blue","red","green"],
+    "drops": {"heroSpeed":2.5,"smallSpeed":2.5,"collide":false,"follow":true,"gap":30},
+    "eraser": {"speed":0.4,"delayMs":4000},
+    "segments": [{"x":-700,"name":"임시 — 2일차에 다시 만듦"}],
+    "start": {"x":-420,"y":500},
+    "goal": {"x":1500,"y":500},
+    "ground": [
+      {"x0":-700,"x1":560,"top":500,"h":500},
+      {"x0":760,"x1":1800,"top":500,"h":500}
+    ],
+    "props": [
+      {"type":"wall","x":-690,"y":200,"w":40,"h":300},
+      {"type":"drop","x":150,"y":487},
+      {"type":"star","x":660,"y":380,"size":56},
+      {"type":"star","x":1000,"y":380,"size":56},
+      {"type":"star","x":1300,"y":380,"size":56},
+      {"type":"text","x":300,"y":380,"size":20,"text":"임시 스테이지 4-1 : 틈에 검정 다리"}
+    ]
+  },
+  {
+    "id": "s4_2",
+    "name": "4-2 (임시)",
+    "world": 4,
+    "order": 2,
+    "bg": "world",
+    "ink": 1200,
+    "stops": 3,
+    "inks": ["black","blue","red","green"],
+    "drops": {"heroSpeed":2.5,"smallSpeed":2.5,"collide":false,"follow":true,"gap":30},
+    "eraser": {"speed":0.4,"delayMs":4000},
+    "segments": [{"x":-700,"name":"임시 — 2일차에 다시 만듦"}],
+    "start": {"x":-420,"y":500},
+    "goal": {"x":1500,"y":500},
+    "ground": [
+      {"x0":-700,"x1":560,"top":500,"h":500},
+      {"x0":760,"x1":1800,"top":500,"h":500}
+    ],
+    "props": [
+      {"type":"wall","x":-690,"y":200,"w":40,"h":300},
+      {"type":"drop","x":150,"y":487},
+      {"type":"star","x":660,"y":380,"size":56},
+      {"type":"star","x":1000,"y":380,"size":56},
+      {"type":"star","x":1300,"y":380,"size":56},
+      {"type":"text","x":300,"y":380,"size":20,"text":"임시 스테이지 4-2 : 틈에 검정 다리"}
+    ]
+  },
+  {
+    "id": "s4_3",
+    "name": "4-3 (임시)",
+    "world": 4,
+    "order": 3,
+    "bg": "world",
+    "ink": 1200,
+    "stops": 3,
+    "inks": ["black","blue","red","green"],
+    "drops": {"heroSpeed":2.5,"smallSpeed":2.5,"collide":false,"follow":true,"gap":30},
+    "eraser": {"speed":0.4,"delayMs":4000},
+    "segments": [{"x":-700,"name":"임시 — 2일차에 다시 만듦"}],
+    "start": {"x":-420,"y":500},
+    "goal": {"x":1500,"y":500},
+    "ground": [
+      {"x0":-700,"x1":560,"top":500,"h":500},
+      {"x0":760,"x1":1800,"top":500,"h":500}
+    ],
+    "props": [
+      {"type":"wall","x":-690,"y":200,"w":40,"h":300},
+      {"type":"drop","x":150,"y":487},
+      {"type":"star","x":660,"y":380,"size":56},
+      {"type":"star","x":1000,"y":380,"size":56},
+      {"type":"star","x":1300,"y":380,"size":56},
+      {"type":"text","x":300,"y":380,"size":20,"text":"임시 스테이지 4-3 : 틈에 검정 다리"}
+    ]
+  },
+  {
+    "id": "s4_4",
+    "name": "4-4 (임시)",
+    "world": 4,
+    "order": 4,
+    "bg": "world",
+    "ink": 1200,
+    "stops": 3,
+    "inks": ["black","blue","red","green"],
+    "drops": {"heroSpeed":2.5,"smallSpeed":2.5,"collide":false,"follow":true,"gap":30},
+    "eraser": {"speed":0.4,"delayMs":4000},
+    "segments": [{"x":-700,"name":"임시 — 2일차에 다시 만듦"}],
+    "start": {"x":-420,"y":500},
+    "goal": {"x":1500,"y":500},
+    "ground": [
+      {"x0":-700,"x1":560,"top":500,"h":500},
+      {"x0":760,"x1":1800,"top":500,"h":500}
+    ],
+    "props": [
+      {"type":"wall","x":-690,"y":200,"w":40,"h":300},
+      {"type":"drop","x":150,"y":487},
+      {"type":"star","x":660,"y":380,"size":56},
+      {"type":"star","x":1000,"y":380,"size":56},
+      {"type":"star","x":1300,"y":380,"size":56},
+      {"type":"text","x":300,"y":380,"size":20,"text":"임시 스테이지 4-4 : 틈에 검정 다리"}
+    ]
+  },
+  {
+    "id": "s5_1",
+    "name": "5-1 (임시)",
+    "world": 5,
+    "order": 1,
+    "bg": "world",
+    "ink": 1200,
+    "stops": 3,
+    "inks": ["black","blue","red","green","yellow"],
+    "drops": {"heroSpeed":2.5,"smallSpeed":2.5,"collide":false,"follow":true,"gap":30},
+    "eraser": {"speed":0.4,"delayMs":4000},
+    "segments": [{"x":-700,"name":"임시 — 2일차에 다시 만듦"}],
+    "start": {"x":-420,"y":500},
+    "goal": {"x":1500,"y":500},
+    "ground": [
+      {"x0":-700,"x1":560,"top":500,"h":500},
+      {"x0":760,"x1":1800,"top":500,"h":500}
+    ],
+    "props": [
+      {"type":"wall","x":-690,"y":200,"w":40,"h":300},
+      {"type":"drop","x":150,"y":487},
+      {"type":"star","x":660,"y":380,"size":56},
+      {"type":"star","x":1000,"y":380,"size":56},
+      {"type":"star","x":1300,"y":380,"size":56},
+      {"type":"text","x":300,"y":380,"size":20,"text":"임시 스테이지 5-1 : 틈에 검정 다리"}
+    ]
+  },
+  {
+    "id": "s5_2",
+    "name": "5-2 (임시)",
+    "world": 5,
+    "order": 2,
+    "bg": "world",
+    "ink": 1200,
+    "stops": 3,
+    "inks": ["black","blue","red","green","yellow"],
+    "drops": {"heroSpeed":2.5,"smallSpeed":2.5,"collide":false,"follow":true,"gap":30},
+    "eraser": {"speed":0.4,"delayMs":4000},
+    "segments": [{"x":-700,"name":"임시 — 2일차에 다시 만듦"}],
+    "start": {"x":-420,"y":500},
+    "goal": {"x":1500,"y":500},
+    "ground": [
+      {"x0":-700,"x1":560,"top":500,"h":500},
+      {"x0":760,"x1":1800,"top":500,"h":500}
+    ],
+    "props": [
+      {"type":"wall","x":-690,"y":200,"w":40,"h":300},
+      {"type":"drop","x":150,"y":487},
+      {"type":"star","x":660,"y":380,"size":56},
+      {"type":"star","x":1000,"y":380,"size":56},
+      {"type":"star","x":1300,"y":380,"size":56},
+      {"type":"text","x":300,"y":380,"size":20,"text":"임시 스테이지 5-2 : 틈에 검정 다리"}
+    ]
+  },
+  {
+    "id": "s5_3",
+    "name": "5-3 (임시)",
+    "world": 5,
+    "order": 3,
+    "bg": "world",
+    "ink": 1200,
+    "stops": 3,
+    "inks": ["black","blue","red","green","yellow"],
+    "drops": {"heroSpeed":2.5,"smallSpeed":2.5,"collide":false,"follow":true,"gap":30},
+    "eraser": {"speed":0.4,"delayMs":4000},
+    "segments": [{"x":-700,"name":"임시 — 2일차에 다시 만듦"}],
+    "start": {"x":-420,"y":500},
+    "goal": {"x":1500,"y":500},
+    "ground": [
+      {"x0":-700,"x1":560,"top":500,"h":500},
+      {"x0":760,"x1":1800,"top":500,"h":500}
+    ],
+    "props": [
+      {"type":"wall","x":-690,"y":200,"w":40,"h":300},
+      {"type":"drop","x":150,"y":487},
+      {"type":"star","x":660,"y":380,"size":56},
+      {"type":"star","x":1000,"y":380,"size":56},
+      {"type":"star","x":1300,"y":380,"size":56},
+      {"type":"text","x":300,"y":380,"size":20,"text":"임시 스테이지 5-3 : 틈에 검정 다리"}
+    ]
+  },
+  {
+    "id": "s5_4",
+    "name": "5-4 (임시)",
+    "world": 5,
+    "order": 4,
+    "bg": "world",
+    "ink": 1200,
+    "stops": 3,
+    "inks": ["black","blue","red","green","yellow"],
+    "drops": {"heroSpeed":2.5,"smallSpeed":2.5,"collide":false,"follow":true,"gap":30},
+    "eraser": {"speed":0.4,"delayMs":4000},
+    "segments": [{"x":-700,"name":"임시 — 2일차에 다시 만듦"}],
+    "start": {"x":-420,"y":500},
+    "goal": {"x":1500,"y":500},
+    "ground": [
+      {"x0":-700,"x1":560,"top":500,"h":500},
+      {"x0":760,"x1":1800,"top":500,"h":500}
+    ],
+    "props": [
+      {"type":"wall","x":-690,"y":200,"w":40,"h":300},
+      {"type":"drop","x":150,"y":487},
+      {"type":"star","x":660,"y":380,"size":56},
+      {"type":"star","x":1000,"y":380,"size":56},
+      {"type":"star","x":1300,"y":380,"size":56},
+      {"type":"text","x":300,"y":380,"size":20,"text":"임시 스테이지 5-4 : 틈에 검정 다리"}
+    ]
+  },
+  {
+    "id": "s6_1",
+    "name": "6-1 (임시)",
+    "world": 6,
+    "order": 1,
+    "bg": "world",
+    "ink": 1200,
+    "stops": 3,
+    "inks": ["black","blue","red","green","yellow"],
+    "drops": {"heroSpeed":2.5,"smallSpeed":2.5,"collide":false,"follow":true,"gap":30},
+    "eraser": {"speed":0.4,"delayMs":4000},
+    "segments": [{"x":-700,"name":"임시 — 2일차에 다시 만듦"}],
+    "start": {"x":-420,"y":500},
+    "goal": {"x":1500,"y":500},
+    "ground": [
+      {"x0":-700,"x1":560,"top":500,"h":500},
+      {"x0":760,"x1":1800,"top":500,"h":500}
+    ],
+    "props": [
+      {"type":"wall","x":-690,"y":200,"w":40,"h":300},
+      {"type":"drop","x":150,"y":487},
+      {"type":"star","x":660,"y":380,"size":56},
+      {"type":"star","x":1000,"y":380,"size":56},
+      {"type":"star","x":1300,"y":380,"size":56},
+      {"type":"text","x":300,"y":380,"size":20,"text":"임시 스테이지 6-1 : 틈에 검정 다리"}
+    ]
+  },
+  {
+    "id": "s6_2",
+    "name": "6-2 (임시)",
+    "world": 6,
+    "order": 2,
+    "bg": "world",
+    "ink": 1200,
+    "stops": 3,
+    "inks": ["black","blue","red","green","yellow"],
+    "drops": {"heroSpeed":2.5,"smallSpeed":2.5,"collide":false,"follow":true,"gap":30},
+    "eraser": {"speed":0.4,"delayMs":4000},
+    "segments": [{"x":-700,"name":"임시 — 2일차에 다시 만듦"}],
+    "start": {"x":-420,"y":500},
+    "goal": {"x":1500,"y":500},
+    "ground": [
+      {"x0":-700,"x1":560,"top":500,"h":500},
+      {"x0":760,"x1":1800,"top":500,"h":500}
+    ],
+    "props": [
+      {"type":"wall","x":-690,"y":200,"w":40,"h":300},
+      {"type":"drop","x":150,"y":487},
+      {"type":"star","x":660,"y":380,"size":56},
+      {"type":"star","x":1000,"y":380,"size":56},
+      {"type":"star","x":1300,"y":380,"size":56},
+      {"type":"text","x":300,"y":380,"size":20,"text":"임시 스테이지 6-2 : 틈에 검정 다리"}
+    ]
+  },
+  {
+    "id": "s6_3",
+    "name": "6-3 (임시)",
+    "world": 6,
+    "order": 3,
+    "bg": "world",
+    "ink": 1200,
+    "stops": 3,
+    "inks": ["black","blue","red","green","yellow"],
+    "drops": {"heroSpeed":2.5,"smallSpeed":2.5,"collide":false,"follow":true,"gap":30},
+    "eraser": {"speed":0.4,"delayMs":4000},
+    "segments": [{"x":-700,"name":"임시 — 2일차에 다시 만듦"}],
+    "start": {"x":-420,"y":500},
+    "goal": {"x":1500,"y":500},
+    "ground": [
+      {"x0":-700,"x1":560,"top":500,"h":500},
+      {"x0":760,"x1":1800,"top":500,"h":500}
+    ],
+    "props": [
+      {"type":"wall","x":-690,"y":200,"w":40,"h":300},
+      {"type":"drop","x":150,"y":487},
+      {"type":"star","x":660,"y":380,"size":56},
+      {"type":"star","x":1000,"y":380,"size":56},
+      {"type":"star","x":1300,"y":380,"size":56},
+      {"type":"text","x":300,"y":380,"size":20,"text":"임시 스테이지 6-3 : 틈에 검정 다리"}
     ]
   }
 ];
@@ -1009,7 +1723,38 @@ G.Rules = (function () {
     return stopped && mode.limitMs > 0 && stoppedMs >= mode.limitMs;
   }
 
+  // ---- 월드 · 스테이지 진행 (사용자 결정 2026-10-23, 업무가이드 11-9) ----
+  // levels: 게임에 나오는 스테이지(테스트용 뺀 것), records: 계정 기록 {id: {clears, stars, ...}}
+  // 순서: world(1~) → order(1~). world 가 없는 스테이지는 맨 뒤 월드 0 으로 (예전 데모 등)
+  function playOrder(levels) {
+    return levels.slice().sort(function (a, b) { return ((a.world || 99) - (b.world || 99)) || ((a.order || 0) - (b.order || 0)); });
+  }
+  function worldStages(levels, w) { return playOrder(levels).filter(function (l) { return l.world === w; }); }
+  function cleared(records, id) { return !!(records[id] && records[id].clears > 0); }
+  // 월드 w 가 열렸나: 1 은 늘, 그 뒤는 앞 월드의 마지막 스테이지를 깼을 때 (앞 월드에 스테이지가 없으면 그 앞을 봄)
+  function worldUnlocked(levels, records, w) {
+    for (var p = w - 1; p >= 1; p--) {
+      var prev = worldStages(levels, p);
+      if (prev.length) return cleared(records, prev[prev.length - 1].id);
+    }
+    return true;
+  }
+  // 스테이지가 열렸나: 월드가 열렸고, 월드 첫 스테이지이거나 바로 앞 스테이지를 깼을 때
+  function stageUnlocked(levels, records, lv) {
+    if (!lv.world) return true;
+    if (!worldUnlocked(levels, records, lv.world)) return false;
+    var list = worldStages(levels, lv.world), i = list.indexOf(lv);
+    return i <= 0 || cleared(records, list[i - 1].id);
+  }
+  // 월드 별 합계: {got, total} (스테이지마다 별 3개로 셈 — 결과 창과 같게 starsTotal 은 스테이지 별 개수)
+  function worldStars(levels, records, w, starsOf) {
+    var got = 0, total = 0;
+    worldStages(levels, w).forEach(function (l) { total += starsOf(l); got += Math.min(starsOf(l), (records[l.id] && records[l.id].stars) || 0); });
+    return { got: got, total: total };
+  }
+
   return {
+    playOrder: playOrder, worldStages: worldStages, worldUnlocked: worldUnlocked, stageUnlocked: stageUnlocked, worldStars: worldStars,
     dist: dist, polylineLength: polylineLength,
     newStroke: newStroke, addSample: addSample, smooth: smooth, finishStroke: finishStroke,
     lineAlpha: lineAlpha, lineExpired: lineExpired,
@@ -1058,7 +1803,8 @@ G.LevelCheck = (function () {
     if (o.drops.follow == null) o.drops.follow = D.drop.follow.on;   // 대열 따라오기 (사용자 결정 2026-10-20)
     if (o.drops.gap == null) o.drops.gap = D.drop.follow.gap;
     o.eraser = o.eraser || {};
-    if (o.eraser.pct == null) o.eraser.pct = D.eraser.pct;
+    if (o.eraser.speed == null) o.eraser.speed = o.eraser.pct != null ? Math.round(o.drops.heroSpeed * o.eraser.pct / 100 * 100) / 100 : D.eraser.speed;   // 예전 pct → speed (2026-10-23)
+    delete o.eraser.pct;
     if (o.eraser.delayMs == null) o.eraser.delayMs = D.eraser.delayMs;
     // 쓸 수 있는 색 (없으면 3색 모두), 색 효과 세기 (빠진 칸만 기본값)
     // 정지 횟수·잉크 무제한 (레벨 툴, 사용자 요청 2026-10-21). 켤 때만 저장
@@ -1200,9 +1946,10 @@ G.LevelCheck = (function () {
       ' · 대열 ' + (lv.drops.follow ? '켬 (간격 ' + lv.drops.gap + ', 작은 물방울 속도는 이탈해 혼자 걸을 때만)' : '끔'));
     if (lv.drops.follow && lv.drops.gap <= 0) add('error', '대열 간격은 0보다 커야 해요');
     if (lv.drops.heroSpeed <= 0 || lv.drops.smallSpeed <= 0) add('error', '물방울 속도는 0보다 커야 해요');
-    if (lv.drops.smallSpeed < lv.drops.heroSpeed * lv.eraser.pct / 100) add('warn', '작은 물방울이 지우개보다 느려요 — ' + (lv.drops.follow ? '대열에서 이탈해 ' : '') + '뒤처진 물방울은 모두 지워져요');
+    if (!lv.noEraser && lv.drops.smallSpeed < lv.eraser.speed) add('warn', '작은 물방울이 지우개보다 느려요 — ' + (lv.drops.follow ? '대열에서 이탈해 ' : '') + '뒤처진 물방울은 모두 지워져요');
     if (lv.noEraser) add('warn', '지우개 꺼짐 (테스트용) — 제출 전에 다시 켜세요');
-    else add('info', '지우개: ' + (lv.eraser.delayMs / 1000) + '초 뒤 출발, 주인공 속도의 ' + lv.eraser.pct + '%');
+    else add('info', '지우개: ' + (lv.eraser.delayMs / 1000) + '초 뒤 출발, 속도 ' + lv.eraser.speed + ' (주인공 ' + lv.drops.heroSpeed + ')');
+    if (!lv.noEraser && lv.eraser.speed >= lv.drops.heroSpeed) add('warn', '지우개가 주인공보다 빠르거나 같아요 — 멈추지 않으면 따라잡혀요');
     add('info', '구간 경계 ' + lv.segments.length + '개');
     return out;
   }
@@ -1613,11 +2360,40 @@ G.Drop = {
       }
     } else d.pinchMs = 0;
     d.turnCdMs = Math.max(0, d.turnCdMs - gameMs);
+    d.hopCdMs = Math.max(0, (d.hopCdMs || 0) - gameMs);
+    if (wall && ground && scale > 0 && d.hopCdMs === 0 && this.tryHop(d, engine, stepUp)) wall = false;
+    if (d.hopCdMs > 0) {                           // 뛰는 중: 턱 옆면에 닿아도 되돌아서지 않고, 옆면에 막혀 줄어든 앞으로 가는 속도를 다시 줌
+      wall = false;
+      if (!ground && scale > 0) M.Body.setVelocity(b, { x: d.dir * Math.max(d.speed, Math.abs(b.velocity.x)), y: b.velocity.y });
+    }
     if (wall && d.turnCdMs === 0) {
       d.dir = -d.dir;
       d.turns += 1;
       d.turnCdMs = D.turnCooldownMs;
     }
+  },
+
+  // 낮은 턱 살짝 점프 (사용자 요청 2026-10-23): 가는 쪽 바로 앞이 stepUp~up 높이에서만 막혀 있고 그 위가 비어 있으면 뛰어 넘음
+  tryHop: function (d, engine, stepUp) {
+    var H = G.DATA.drop.hop, M = G.Physics.M, b = d.body, r = d.r;
+    if (!H) return false;
+    var up = Math.max(H.minUp, H.up * r / G.DATA.drop.heroRadius), bottom = b.position.y + r;
+    var solids = G.Physics.allBodies(engine).filter(function (q) { return q.label !== 'drop' && !q.isSensor; });
+    function hit(x, y) { return M.Query.point(solids, { x: x, y: y }).length > 0; }
+    // 앞 옆면 찾기: 발치(3px)와 조금 위(stepUp 의 3/4)에서 앞으로 훑어 처음 막히는 x. 없으면 턱이 아님,
+    //   위쪽이 뒤로 물러나 있으면(비탈, 약 70도보다 완만) 뛰지 않음 — 가파른 비탈은 지금 규칙대로 되돌아섬 (사용자 결정 2026-10-21)
+    function faceX(y) { for (var k = 0; k <= r + H.probe + 8; k++) { var x = b.position.x + d.dir * k; if (hit(x, y)) return k; } return -1; }
+    var k1 = faceX(bottom - 3), k2 = faceX(bottom - stepUp * 0.75);
+    if (k1 < 0 || (k2 >= 0 && k2 - k1 > 3)) return false;   // k2 < 0: 턱이 그보다 낮음 → 뜀
+    var fx = b.position.x + d.dir * (k1 + 2);
+    if (hit(fx, bottom - up - 2) || hit(fx, bottom - up - r * 2) || hit(b.position.x, bottom - up - r * 2)) return false;   // 턱 위·머리 위가 막힘 → 되돌아섬
+    var g = engine.gravity.y * engine.gravity.scale * G.DATA.loop.stepMs * G.DATA.loop.stepMs;
+    M.Body.setVelocity(b, { x: d.dir * Math.max(d.speed, Math.abs(b.velocity.x)), y: -Math.sqrt(2 * g * (up + H.extra)) });
+    d.grounded = false;
+    d.hopCdMs = H.cdMs;
+    d.hops = (d.hops || 0) + 1;
+    d.events.push('hop');
+    return true;
   },
 
   // 대열 물방울: 가시에 닿았는가, 발밑(반지름 + supportTol 안)에 물방울 아닌 몸체가 있는가
@@ -2083,11 +2859,11 @@ G.Game = {
     if (game.heroHome && !this.walking(game).length && !game.goalQueue.length && !game.entering.length) this.clear(game);
   },
 
-  // 지우개: 출발 delay 뒤 주인공 속도의 pct% 로 오른쪽으로 (게임 시간 기준이라 정지 중엔 멈춤)
+  // 지우개: 출발 delay 뒤 eraser.speed 로 오른쪽으로 (게임 시간 기준이라 정지 중엔 멈춤). 주인공 속도와 따로 (사용자 요청 2026-10-23)
   moveEraser: function (game, s) {
     var E = game.level.data.eraser;
     if (game.level.data.noEraser || game.runMs < E.delayMs) return;
-    game.eraserX += game.level.data.drops.heroSpeed * E.pct / 100 * s;
+    game.eraserX += E.speed * s;
     for (var i = game.lines.length - 1; i >= 0; i--) {   // 지우개가 지나간 선도 지움 (잉크는 돌아오지 않음)
       var ln = game.lines[i], pts = G.Draw.worldPts(ln), maxX = -Infinity;
       pts.forEach(function (q) { maxX = Math.max(maxX, q.x); });
@@ -2798,7 +3574,21 @@ G.Sound = (function () {
     loop('sfx_eraser', ev);
   }
 
+  // 메뉴 화면 (2차 데모): 반복 소리는 끄고, 배경 음악은 정지 필터 없이 원래대로
+  function idle() {
+    if (!ctx) return;
+    if (pausedNow) { pausedNow = false; ctx.resume(); unlock(); }
+    var now = ctx.currentTime;
+    if (musicEl) { var tv = muted ? 0 : vol('music'); musicEl.volume = Math.max(0, Math.min(1, musicEl.volume + (tv - musicEl.volume) * 0.15)); }
+    musicFilter.frequency.setTargetAtTime(20000, now, 0.08);
+    musicBus.gain.setTargetAtTime(vol('music'), now, 0.08);
+    sfxBus.gain.setTargetAtTime(vol('sfx'), now, 0.05);
+    loop('sfx_draw', 0); loop('sfx_eraser', 0);
+    prev = null;                                   // 플레이로 돌아가면 처음부터 비교
+  }
+
   return {
+    idle: idle,
     init: function () { if (typeof window !== 'undefined' && !ctx) init(); },
     unlock: unlock, watch: watch, toggle: toggle, isMuted: function () { return muted; },
     click: function () { play('sfx_click'); }, plan: plan,
@@ -2990,7 +3780,23 @@ G.Props = (function () {
   }
 
   // opts: { editor: true } 이면 그림이 없는 장식도 자리 표시. angle(도)이 있으면 돌려서 그림 (배치된 선은 자기 방식)
+  // 점선 힌트 (2차 데모, 사용자 결정 2026-10-23): 그 색의 굵은 점선 + 끝 화살표, 천천히 깜빡임. 가운데 기준으로 angle 만큼 돌림
+  function drawHint(ctx, p) {
+    var C = G.DATA.colors, cx = p.x + p.w / 2, cy = p.y + p.h / 2, half = p.w / 2, th = Math.max(3, p.h);
+    var a = 0.45 + 0.25 * Math.sin(Date.now() / 300);
+    ctx.save();
+    ctx.translate(cx, cy); ctx.rotate((p.angle || 0) * Math.PI / 180);
+    ctx.globalAlpha = a; ctx.strokeStyle = C[p.ink || 'black'] || C.ink; ctx.fillStyle = ctx.strokeStyle;
+    ctx.lineWidth = th; ctx.lineCap = 'round'; ctx.setLineDash([th * 2.2, th * 1.8]);
+    ctx.beginPath(); ctx.moveTo(-half, 0); ctx.lineTo(half - th * 1.5, 0); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(half + th * 0.5, 0); ctx.lineTo(half - th * 2.2, -th * 1.6); ctx.lineTo(half - th * 2.2, th * 1.6); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.arc(-half, 0, th * 0.9, 0, 6.283); ctx.fill();
+    ctx.restore();
+  }
+
   function draw(ctx, p, opts) {
+    if (p.type === 'hint') { drawHint(ctx, p); return; }
     if (p.type === 'shooter') { drawShooter(ctx, p); return; }   // 상자는 안 돌리고 그림만 쏘는 방향으로
     if (!p.angle || p.type === 'crystal') { drawRaw(ctx, p, opts); return; }
     var c = pivot(p);
@@ -3270,6 +4076,13 @@ G.UI = (function () {
     }
   }
 
+  // 스테이지 배경 이름: 'world' 면 그 월드의 배경(data.js worlds[].bg), 그림이 아직 없으면 빈 종이 (2차 데모, 2026-10-23)
+  function bgName(lv) {
+    if (lv.bg !== 'world') return lv.bg;
+    var w = G.DATA.worlds.filter(function (q) { return q.id === lv.world; })[0];
+    return w && G.Assets.get(w.bg) ? w.bg : 'bg_plain';
+  }
+
   // 시작 구멍 (스케치북을 뚫고 나온 구멍)
   function drawStart(ctx, sx, gy) {
     if (gy == null) return;
@@ -3517,7 +4330,7 @@ G.UI = (function () {
     ctx.scale(cam.z, cam.z);
     ctx.translate(-cam.x, -cam.y);
     var lv = game.level.data;
-    lv.props.forEach(function (p) { if (p.type === 'deco' || p.type === 'text') G.Props.draw(ctx, p); });
+    lv.props.forEach(function (p) { if (p.type === 'deco' || p.type === 'text' || p.type === 'hint') G.Props.draw(ctx, p); });
     G.Props.drawGrounds(ctx, lv.ground);
     lv.props.forEach(function (p) { var d = G.Props.def(p.type); if (d && d.solid && p.type !== 'crystal') G.Props.draw(ctx, p); });
     game.level.crystals.forEach(function (c) { G.Props.drawCrystal(ctx, c); });
@@ -3976,12 +4789,18 @@ G.UI = (function () {
   }
   function resultBtns(game) {
     var S = G.TS, w = S('resultBtnW'), h = S('resultBtnH'), next = game.status === 'clear' && game.hasNext, rk = retryKeys(game), out = [];
+    // 스테이지 목록 버튼 (2차 데모, 사용자 결정 2026-10-23): 레벨 툴 테스트 플레이(메뉴 없음)에서는 안 보임
+    var menu = !(G.app && G.app.testMode);
     if (game.paused) return [
       { act: 'resume', x: S('pauseResumeX'), y: S('pauseResumeY'), w: w, h: h, label: G.T('pause.resume'), keys: ['pauseResumeX', 'pauseResumeY'] },
       { act: 'retry', x: S('pauseRetryX'), y: S('pauseRetryY'), w: w, h: h, label: G.T('pause.retry'), keys: ['pauseRetryX', 'pauseRetryY'] }
-    ];
+    ].concat(menu ? [{ act: 'menu', x: S('pauseMenuX'), y: S('pauseMenuY'), w: w, h: h, label: G.T('pause.menu'), keys: ['pauseMenuX', 'pauseMenuY'] }] : []);
     out.push({ act: 'retry', x: S(rk[0]), y: S(rk[1]), w: w, h: h, label: G.T('result.retry'), keys: rk });
     if (next) out.push({ act: 'next', x: S('nextBtnX'), y: S('nextBtnY'), w: w, h: h, label: G.T('result.next'), keys: ['nextBtnX', 'nextBtnY'] });
+    if (menu) {
+      var mk = game.status === 'fail' ? ['failMenuX', 'failMenuY'] : ['menuRetryX', 'menuRetryY'];
+      out.push({ act: 'menu', x: S(mk[0]), y: S(mk[1]), w: w, h: h, label: G.T('result.menu'), keys: mk });
+    }
     return out;
   }
   function drawButton(ctx, b) {
@@ -3995,7 +4814,7 @@ G.UI = (function () {
     say(ctx, b.label, b.x + b.w / 2, b.y + b.h / 2 - (n - 1) * lh / 2);
     ctx.restore();
   }
-  // 화면 좌표 → 누른 결과 창·일시 정지 창 버튼 ('retry' / 'next' / 'resume' / null). 창이 보일 때만
+  // 화면 좌표 → 누른 결과 창·일시 정지 창 버튼 ('retry' / 'next' / 'resume' / 'menu' / null). 창이 보일 때만
   function resultAt(game, sx, sy) {
     if (!resultShown || (game.status !== 'clear' && game.status !== 'fail' && !game.paused)) return null;
     var hit = null;
@@ -4020,7 +4839,7 @@ G.UI = (function () {
     lastT = now;
     updateCamera(game, dt);
     updateJar(game, dt);
-    drawBackground(ctx, game.level.data.bg, cam.x);
+    drawBackground(ctx, bgName(game.level.data), cam.x);
     drawWorld(ctx, game, debug);
     drawArrows(ctx, game);
     drawStopOverlay(ctx, game);
@@ -4032,8 +4851,218 @@ G.UI = (function () {
   }
 
   return { render: render, toWorld: toWorld, toScreen: toScreen, cam: cam, wheel: wheel, resetCamera: resetCamera,
-           drawBackground: drawBackground, drawGoal: drawGoal, drawStart: drawStart,
+           drawBackground: drawBackground, bgName: bgName, drawGoal: drawGoal, drawStart: drawStart,
            inkAt: inkAt, skipAt: skipAt, resultAt: resultAt, soundAt: soundAt, hover: hover, resultLayout: resultLayout, drawInkLine: drawInkLine };
+})();
+
+</script>
+<script>
+// menu.js
+// 시작 화면 → 월드 선택 → 스테이지 선택 (사용자 결정 2026-10-23, 업무가이드 11-9: 클릭하는 판, 월드 → 번호 칸 구조)
+//   그림(이미지 문서 16장)이 있으면 그림으로, 없으면 코드로 그린 임시 모양. 글자는 uitext.js (UI 툴), 위치·크기도 uitext.js style
+//   열림: 스테이지를 깨면 다음 스테이지, 월드 마지막을 깨면 다음 월드 (rules.js worldUnlocked / stageUnlocked)
+var G = G || {};
+
+G.Menu = (function () {
+  var V = G.DATA.view, C = G.DATA.colors, R = G.Rules, hoverPt = null, btns = [], t0 = Date.now();
+
+  function S(k) { return G.TS(k); }
+  function img(n) { return G.Assets.get(n); }
+  function inside(b, x, y) { return x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h; }
+  function hot(b) { return hoverPt && inside(b, hoverPt.x, hoverPt.y); }
+  function worldOf(id) { return G.DATA.worlds.filter(function (w) { return w.id === id; })[0]; }
+  function starsOf(lv) { return lv.props.filter(function (p) { return p.type === 'star'; }).length || G.DATA.level.starsPerStage; }
+  function unlockedW(app, w) { return app.unlockAll || R.worldUnlocked(app.levels, app.account.records, w); }
+  function unlockedS(app, lv) { return app.unlockAll || R.stageUnlocked(app.levels, app.account.records, lv); }
+
+  function rr(ctx, x, y, w, h, r) { ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(x, y, w, h, r); else ctx.rect(x, y, w, h); }
+  function text(ctx, s, x, y, size, color, bold, align) {
+    ctx.font = (bold ? 'bold ' : '') + size + 'px ' + S('font');
+    ctx.fillStyle = color || S('textColor'); ctx.textAlign = align || 'center'; ctx.textBaseline = 'middle';
+    String(s).split('\n').forEach(function (l, i) { ctx.fillText(l, x, y + i * size * 1.25); });
+  }
+  // 9분할 없이 늘려 그리는 버튼 (ui_button 이 있으면 양 끝을 살려 세 조각으로)
+  function drawButton(ctx, b) {
+    var im = img('ui_button'), h = hot(b);
+    ctx.save();
+    if (h) { ctx.translate(b.x + b.w / 2, b.y + b.h / 2); ctx.scale(1.04, 1.04); ctx.translate(-b.x - b.w / 2, -b.y - b.h / 2); }
+    if (im) {
+      var e = Math.min(im.width / 3, im.height * 0.5), eh = b.h * e / im.height;
+      ctx.drawImage(im, 0, 0, e, im.height, b.x, b.y, eh, b.h);
+      ctx.drawImage(im, e, 0, im.width - 2 * e, im.height, b.x + eh, b.y, b.w - 2 * eh, b.h);
+      ctx.drawImage(im, im.width - e, 0, e, im.height, b.x + b.w - eh, b.y, eh, b.h);
+    } else {
+      rr(ctx, b.x, b.y, b.w, b.h, 12); ctx.fillStyle = h ? S('resultBtnHot') : S('resultBtnBg'); ctx.fill();
+      ctx.lineWidth = 3; ctx.strokeStyle = C.outline; ctx.stroke();
+    }
+    text(ctx, b.label, b.x + b.w / 2, b.y + b.h / 2, b.size || S('menuBtnSize'), null, true);
+    ctx.restore();
+  }
+  function drawLock(ctx, cx, cy, s) {
+    var im = img('ui_lock');
+    if (im) { ctx.drawImage(im, cx - s / 2, cy - s / 2, s, s); return; }
+    ctx.save(); ctx.lineWidth = Math.max(3, s * 0.08); ctx.strokeStyle = C.outline; ctx.fillStyle = '#C9C2B8';
+    ctx.beginPath(); ctx.arc(cx, cy - s * 0.12, s * 0.22, Math.PI, 0); ctx.stroke();
+    rr(ctx, cx - s * 0.32, cy - s * 0.12, s * 0.64, s * 0.5, s * 0.08); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = C.outline; ctx.beginPath(); ctx.arc(cx, cy + s * 0.08, s * 0.07, 0, 6.283); ctx.fill();
+    ctx.restore();
+  }
+  function drawStar(ctx, x, y, r, on) {
+    var im = img(on ? 'star_full' : 'star_empty');
+    if (im) { ctx.drawImage(im, x - r, y - r, r * 2, r * 2); return; }
+    ctx.save(); ctx.beginPath();
+    for (var k = 0; k < 10; k++) { var a = -Math.PI / 2 + k * Math.PI / 5, q = k % 2 ? r * 0.45 : r; ctx.lineTo(x + Math.cos(a) * q, y + Math.sin(a) * q); }
+    ctx.closePath(); ctx.fillStyle = on ? C.star : 'rgba(43,33,24,0.12)'; ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = C.outline; ctx.stroke(); ctx.restore();
+  }
+  function inkDot(ctx, x, y, r, color) {
+    ctx.beginPath(); ctx.arc(x, y, r, 0, 6.283); ctx.fillStyle = color; ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = C.outline; ctx.stroke();
+  }
+  // 월드 아이콘: 그림이 없으면 월드 색 물감 방울 (월드 6 은 다섯 색)
+  function drawWorldIcon(ctx, w, cx, cy, s) {
+    var im = img('world_icon_' + w.id);
+    if (im) { ctx.drawImage(im, cx - s / 2, cy - s / 2, s, s); return; }
+    if (w.id === 6) {
+      w.inks.forEach(function (c, i) { var a = -Math.PI / 2 + i * 2 * Math.PI / w.inks.length; inkDot(ctx, cx + Math.cos(a) * s * 0.26, cy + Math.sin(a) * s * 0.26, s * 0.13, C[c]); });
+      return;
+    }
+    ctx.save(); ctx.beginPath();
+    ctx.moveTo(cx, cy - s * 0.38);
+    ctx.bezierCurveTo(cx + s * 0.3, cy - s * 0.02, cx + s * 0.3, cy + s * 0.34, cx, cy + s * 0.34);
+    ctx.bezierCurveTo(cx - s * 0.3, cy + s * 0.34, cx - s * 0.3, cy - s * 0.02, cx, cy - s * 0.38);
+    ctx.fillStyle = w.color; ctx.fill(); ctx.lineWidth = 4; ctx.strokeStyle = C.outline; ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.beginPath(); ctx.ellipse(cx - s * 0.09, cy + s * 0.06, s * 0.05, s * 0.09, -0.4, 0, 6.283); ctx.fill();
+    ctx.restore();
+  }
+  function paperBg(ctx, name) {
+    var bg = name && img(name);
+    if (bg) { ctx.drawImage(bg, 0, 0, V.w, V.h); return; }
+    G.UI.drawBackground(ctx, 'bg_plain', (Date.now() - t0) * 0.02);
+  }
+  function backButton() {
+    return { act: 'back', x: S('menuBackX'), y: S('menuBackY'), w: S('menuBackW'), h: S('menuBackH'), label: G.T('menu.back'), size: S('menuSmallSize') };
+  }
+
+  // ---- 화면 셋 ----
+  function drawTitle(ctx, app) {
+    paperBg(ctx, 'title_bg');
+    var logo = img('title_logo'), ty = S('titleY');
+    if (logo) { var lw = S('titleLogoW'), lh = lw * logo.height / logo.width; ctx.drawImage(logo, V.w / 2 - lw / 2, ty - lh / 2, lw, lh); }
+    else {
+      ctx.save(); ctx.lineJoin = 'round'; ctx.font = 'bold ' + S('titleSize') + 'px ' + S('font'); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.lineWidth = 10; ctx.strokeStyle = '#FFFDF6'; ctx.strokeText(G.T('title.name'), V.w / 2, ty);
+      ctx.fillStyle = S('textColor'); ctx.fillText(G.T('title.name'), V.w / 2, ty); ctx.restore();
+      // 제목 아래 다섯 색 물감 줄
+      var cols = ['black', 'blue', 'red', 'green', 'yellow'], lw2 = 90;
+      cols.forEach(function (c, i) {
+        ctx.save(); ctx.strokeStyle = C[c]; ctx.lineWidth = 9; ctx.lineCap = 'round';
+        var x0 = V.w / 2 - (cols.length * lw2) / 2 + i * lw2 + 8, y0 = ty + S('titleSize') * 0.62 + Math.sin(i * 1.7) * 4;
+        ctx.beginPath(); ctx.moveTo(x0, y0); ctx.quadraticCurveTo(x0 + lw2 / 2, y0 + (i % 2 ? 8 : -8), x0 + lw2 - 16, y0); ctx.stroke(); ctx.restore();
+      });
+    }
+    text(ctx, G.T('title.sub'), V.w / 2, S('titleSubY'), S('titleSubSize'), null, false);
+    btns = [{ act: 'start', x: V.w / 2 - S('menuBtnW') / 2, y: S('titleStartY'), w: S('menuBtnW'), h: S('menuBtnH'), label: G.T('title.start') }];
+    btns.forEach(function (b) { drawButton(ctx, b); });
+    text(ctx, G.T('title.help'), V.w / 2, S('titleStartY') + S('menuBtnH') + 30, S('menuSmallSize'), 'rgba(43,33,24,0.6)');
+  }
+
+  function cardRects() {
+    var n = G.DATA.worlds.length, w = S('worldCardW'), h = S('worldCardH'), gap = S('worldCardGap'), x0 = (V.w - (n * w + (n - 1) * gap)) / 2;
+    return G.DATA.worlds.map(function (wd, i) { return { act: 'world:' + wd.id, x: x0 + i * (w + gap), y: S('worldCardY'), w: w, h: h, world: wd }; });
+  }
+  function drawWorlds(ctx, app) {
+    paperBg(ctx, 'bg_plain');
+    text(ctx, G.T('worlds.title'), V.w / 2, S('menuTitleY'), S('menuTitleSize'), null, true);
+    btns = [backButton()];
+    cardRects().forEach(function (b) {
+      var w = b.world, open = unlockedW(app, w.id), list = R.worldStages(app.levels, w.id), h = open && hot(b);
+      ctx.save();
+      var tilt = ((w.id * 37) % 7 - 3) * 0.006;
+      ctx.translate(b.x + b.w / 2, b.y + b.h / 2); ctx.rotate(tilt); if (h) ctx.scale(1.05, 1.05); ctx.translate(-b.x - b.w / 2, -b.y - b.h / 2);
+      var card = img('world_card');
+      if (card) ctx.drawImage(card, b.x, b.y, b.w, b.h);
+      else {
+        rr(ctx, b.x, b.y, b.w, b.h, 14); ctx.fillStyle = '#FFFDF6'; ctx.fill();
+        ctx.lineWidth = 4; ctx.strokeStyle = C.outline; ctx.stroke();
+        ctx.fillStyle = 'rgba(255,233,168,0.85)'; ctx.fillRect(b.x + b.w / 2 - 34, b.y - 10, 68, 22);   // 테이프
+      }
+      ctx.fillStyle = w.color; ctx.fillRect(b.x + 14, b.y + 14, b.w - 28, 8);   // 월드 색 띠
+      drawWorldIcon(ctx, w, b.x + b.w / 2, b.y + b.h * 0.36, b.w * 0.62);
+      text(ctx, G.T('world.' + w.id + '.name'), b.x + b.w / 2, b.y + b.h * 0.66, S('worldNameSize'), null, true);
+      text(ctx, G.T('world.' + w.id + '.desc'), b.x + b.w / 2, b.y + b.h * 0.76, S('worldDescSize'), 'rgba(43,33,24,0.7)');
+      var st = R.worldStars(app.levels, app.account.records, w.id, starsOf);
+      drawStar(ctx, b.x + b.w / 2 - 34, b.y + b.h * 0.89, 11, st.got > 0);
+      text(ctx, G.T('worlds.stars', { got: st.got, total: st.total, n: list.length }), b.x + b.w / 2 + 10, b.y + b.h * 0.89, S('worldDescSize'), null, true);
+      if (!open) {
+        rr(ctx, b.x, b.y, b.w, b.h, 14); ctx.fillStyle = 'rgba(120,112,104,0.55)'; ctx.fill();
+        drawLock(ctx, b.x + b.w / 2, b.y + b.h * 0.42, b.w * 0.42);
+      }
+      ctx.restore();
+      btns.push(b);
+    });
+    drawButton(ctx, btns[0]);
+    var hb = btns.filter(function (b) { return b.world && hot(b); })[0];
+    if (hb && !unlockedW(app, hb.world.id)) text(ctx, G.T('worlds.locked'), V.w / 2, S('worldCardY') + S('worldCardH') + 46, S('menuSmallSize'), C.outline);
+  }
+
+  function tileRects(app) {
+    var list = R.worldStages(app.levels, app.menuWorld), s = S('stageTileSize'), gap = S('stageTileGap'), x0 = (V.w - (list.length * s + (list.length - 1) * gap)) / 2;
+    return list.map(function (lv, i) { return { act: 'stage:' + lv.id, x: x0 + i * (s + gap), y: S('stageTileY'), w: s, h: s, lv: lv, n: i + 1, last: i === list.length - 1 && list.length > 1 }; });
+  }
+  function drawStages(ctx, app) {
+    var w = worldOf(app.menuWorld);
+    paperBg(ctx, w.bg && img(w.bg) ? w.bg : 'bg_plain');
+    text(ctx, G.T('stages.title', { n: w.id, name: G.T('world.' + w.id + '.name') }), V.w / 2, S('menuTitleY'), S('menuTitleSize'), null, true);
+    // 쓸 수 있는 물감
+    var iy = S('menuTitleY') + 58, gapI = 44, ix = V.w / 2 - ((w.inks.length - 1) * gapI) / 2 + 60;
+    text(ctx, G.T('stages.inks'), ix - 80, iy, S('menuSmallSize'), null, false, 'right');
+    w.inks.forEach(function (c, i) { inkDot(ctx, ix + i * gapI - 40, iy, 13, C[c]); });
+    btns = [backButton()];
+    tileRects(app).forEach(function (b) {
+      var open = unlockedS(app, b.lv), rec = app.account.records[b.lv.id], h = open && hot(b), cx = b.x + b.w / 2;
+      ctx.save();
+      ctx.translate(cx, b.y + b.h / 2); ctx.rotate(((b.n * 53) % 5 - 2) * 0.012); if (h) ctx.scale(1.07, 1.07); ctx.translate(-cx, -b.y - b.h / 2);
+      var tile = img(b.last ? 'stage_tile_boss' : 'stage_tile') || (b.last && img('stage_tile'));
+      if (tile) ctx.drawImage(tile, b.x, b.y, b.w, b.h);
+      else {
+        rr(ctx, b.x, b.y, b.w, b.h, 10); ctx.fillStyle = '#FFFDF6'; ctx.fill();
+        ctx.lineWidth = b.last ? 6 : 4; ctx.strokeStyle = b.last ? w.color : C.outline; ctx.stroke();
+        ctx.fillStyle = 'rgba(43,33,24,0.08)'; ctx.beginPath(); ctx.moveTo(b.x + b.w - 30, b.y + b.h); ctx.lineTo(b.x + b.w, b.y + b.h - 30); ctx.lineTo(b.x + b.w, b.y + b.h); ctx.fill();
+      }
+      text(ctx, w.id + '-' + b.n, cx, b.y + b.h * 0.42, S('stageNumSize'), b.last ? w.color : null, true);
+      if (b.last) text(ctx, G.T('stages.boss'), cx, b.y + b.h * 0.16, S('worldDescSize'), w.color, true);
+      var total = starsOf(b.lv), got = rec ? Math.min(total, rec.stars || 0) : 0, sr = 13;
+      for (var k = 0; k < total; k++) drawStar(ctx, cx + (k - (total - 1) / 2) * (sr * 2.3), b.y + b.h * 0.74, sr, k < got);
+      if (rec && rec.clears) text(ctx, G.T('stages.purity', { purity: Math.round((rec.bestPurity || 0) * 100) }), cx, b.y + b.h + 22, S('worldDescSize'), 'rgba(43,33,24,0.7)');
+      if (!open) { rr(ctx, b.x, b.y, b.w, b.h, 10); ctx.fillStyle = 'rgba(120,112,104,0.55)'; ctx.fill(); drawLock(ctx, cx, b.y + b.h / 2, b.w * 0.5); }
+      ctx.restore();
+      btns.push(b);
+    });
+    drawButton(ctx, btns[0]);
+    var hb = btns.filter(function (b) { return b.lv && hot(b); })[0];
+    if (hb) text(ctx, unlockedS(app, hb.lv) ? hb.lv.name : G.T('stages.locked'), V.w / 2, S('stageTileY') + S('stageTileSize') + 70, S('menuSmallSize'), C.outline);
+  }
+
+  function render(ctx, app) {
+    if (app.scene === 'title') drawTitle(ctx, app);
+    else if (app.scene === 'worlds') drawWorlds(ctx, app);
+    else drawStages(ctx, app);
+    if (app.unlockAll) text(ctx, G.T('menu.unlockAll'), V.w - 16, V.h - 18, S('worldDescSize'), C.outline, false, 'right');
+  }
+
+  // 누른 것: 'start' · 'back' · 'world:N' · 'stage:id' (잠긴 것은 null)
+  function click(app, x, y) {
+    var hit = null;
+    btns.forEach(function (b) { if (inside(b, x, y)) hit = b; });
+    if (!hit) return null;
+    if (hit.world && !unlockedW(app, hit.world.id)) return null;
+    if (hit.lv && !unlockedS(app, hit.lv)) return null;
+    return hit.act;
+  }
+  function hover(x, y) { hoverPt = { x: x, y: y }; }
+
+  return { render: render, click: click, hover: hover, worldOf: worldOf };
 })();
 
 </script>
@@ -4062,6 +5091,7 @@ G.Debug = {
       if (a.indexOf('level:') === 0) app.goLevel(+a.slice(6));
       if (a === 'boxes') { self.state.showBoxes = !self.state.showBoxes; }
       if (a === 'reset') { app.restart(); }
+      if (a === 'unlock') { app.unlockAll = !app.unlockAll; }
       if (a === 'clear') { app.save.stats = {}; G.Save.write(app.save); }
       if (a === 'account' && confirm('스테이지 기록(별·정화)을 지울까요?')) app.resetAccount();
       self.refresh(app);
@@ -4099,6 +5129,7 @@ G.Debug = {
     html += '<button data-act="ink">잉크 충전</button>';
     html += '<button data-act="boxes"' + (s.showBoxes ? ' class="on"' : '') + '>충돌 박스</button>';
     html += '<button data-act="reset">구간 다시 (R)</button>';
+    html += '<button data-act="unlock"' + (app.unlockAll ? ' class="on"' : '') + '>모든 월드·스테이지 열기</button>';
     html += '</div><div class="row">모드별 기록 (이 브라우저에 저장)</div>';
     html += '<table><tr><th>모드</th><th>시도</th><th>도착</th><th>실패</th><th>평균 정지</th></tr>';
     Object.keys(modes).forEach(function (k) {
@@ -4122,6 +5153,8 @@ G.Debug = {
 // 조작 (사용자 결정 2026-10-20): 왼쪽 드래그 그리기 · 스페이스 시간 정지 · 우클릭 선 빨아들이기 · 1~5/병 클릭 색 · 휠 줌 · Enter 스킵
 //   Esc 일시 정지 (사용자 결정 2026-10-21): 달리는 중에만, 창이 포커스를 잃어도 자동으로. 일시 정지 중엔 Esc·R·D·창 버튼만
 //   M 키·위 막대 스피커 = 소리 켬/끔 (사용자 결정 2026-10-22). 소리는 첫 클릭·키에서 깨움 (브라우저 규칙)
+//   화면 (2차 데모, 사용자 결정 2026-10-23): 시작 화면(title) → 월드 선택(worlds) → 스테이지 선택(stages) → 플레이(play). 메뉴에서 Esc = 뒤로
+//   주소에 ?unlock 을 붙이면 모든 월드·스테이지가 열림 (확인용, 기록은 그대로). 레벨 툴 테스트 플레이(#test=)는 바로 플레이
 var G = G || {};
 
 (function () {
@@ -4145,12 +5178,15 @@ var G = G || {};
     },
     restart: function () { G.Game.reset(app.game); G.UI.resetCamera(); },
     // 구간 목록: 보통은 levels.js, 레벨 툴의 "테스트 플레이"는 주소 #test= 로 구간 하나를 넘겨준다
-    levels: G.LEVELS.filter(function (l) { return !l.test; }),   // 테스트용 스테이지(test: true)는 게임·제출본에서 숨김 (사용자 결정 2026-10-20)
+    levels: G.Rules.playOrder(G.LEVELS.filter(function (l) { return !l.test; })),   // 테스트용 스테이지(test: true)는 게임·제출본에서 숨김 (사용자 결정 2026-10-20). 월드 → 순서대로
     levelIndex: 0,
     testMode: false,
+    scene: 'title', menuWorld: 1, unlockAll: /[?&]unlock/.test(location.search),
     goLevel: function (i) {
       if (!app.levels[i]) return;
+      app.scene = 'play';
       app.levelIndex = i;
+      if (app.levels[i].world) app.menuWorld = app.levels[i].world;
       G.Game.setLevel(app.game, app.levels[i]);
       G.UI.resetCamera();
       app.game.hasNext = !!app.levels[i + 1];
@@ -4159,7 +5195,7 @@ var G = G || {};
   };
   var m = /#test=(.+)$/.exec(location.hash);
   if (m) {
-    try { app.levels = [JSON.parse(decodeURIComponent(m[1]))]; app.testMode = true; } catch (e) { /* 잘못된 주소면 무시 */ }
+    try { app.levels = [JSON.parse(decodeURIComponent(m[1]))]; app.testMode = true; app.scene = 'play'; } catch (e) { /* 잘못된 주소면 무시 */ }
   }
   // 계정: 잉크 성장(inkBonus·먹은 병)과 구간 기록. 레벨 툴 테스트는 계정을 건드리지 않게 복사본으로 (저장 안 함)
   app.account = app.testMode ? JSON.parse(JSON.stringify(app.save)) : app.save;
@@ -4190,6 +5226,22 @@ var G = G || {};
     app.restart();
     app.game.toast('계정 초기화: 스테이지 기록을 지웠어요');
   };
+  // 메뉴 이동: 'title' · 'worlds' · 'stages' (스테이지 목록은 app.menuWorld 의 것)
+  app.toMenu = function (scene) {
+    if (app.game.paused) G.Game.unpause(app.game);
+    app.scene = scene;
+  };
+  function menuAct(act) {
+    if (!act) return;
+    G.Sound.click();
+    if (act === 'start') app.toMenu('worlds');
+    else if (act === 'back') app.toMenu(app.scene === 'stages' ? 'worlds' : 'title');
+    else if (act.indexOf('world:') === 0) { app.menuWorld = +act.slice(6); app.toMenu('stages'); }
+    else if (act.indexOf('stage:') === 0) {
+      var id = act.slice(6);
+      app.levels.forEach(function (l, i) { if (l.id === id) app.goLevel(i); });
+    }
+  }
   G.Debug.init(app);
   G.app = app;
 
@@ -4205,6 +5257,13 @@ var G = G || {};
     var g = app.game;
     G.Sound.unlock();
     if (e.code === 'KeyM' && !e.repeat) { toggleSound(); return; }
+    if (app.scene !== 'play') {                    // 메뉴: Esc·Backspace 뒤로, 시작 화면은 스페이스·Enter 로 시작
+      if (e.code === 'Space' || e.code === 'Enter') { e.preventDefault(); if (app.scene === 'title' && !e.repeat) menuAct('start'); }
+      else if ((e.code === 'Escape' || e.code === 'Backspace') && !e.repeat) { e.preventDefault(); if (app.scene !== 'title') menuAct('back'); }
+      else if (e.code === 'KeyD') G.Debug.toggle(app);
+      return;
+    }
+    if (e.code === 'Escape' && !e.repeat && !app.testMode && (g.status === 'clear' || g.status === 'fail')) { e.preventDefault(); app.toMenu('stages'); return; }   // 결과 창: Esc = 스테이지 목록
     if (e.code === 'Escape') { e.preventDefault(); if (!e.repeat) G.Game.togglePause(g); return; }
     if (g.paused) {
       if (e.code === 'Space' || e.code === 'Enter') e.preventDefault();
@@ -4226,19 +5285,21 @@ var G = G || {};
   });
 
   canvas.addEventListener('contextmenu', function (e) { e.preventDefault(); });
-  canvas.addEventListener('wheel', function (e) { e.preventDefault(); if (e.deltaY && !app.game.paused) G.UI.wheel(e.deltaY); }, { passive: false });
+  canvas.addEventListener('wheel', function (e) { e.preventDefault(); if (app.scene === 'play' && e.deltaY && !app.game.paused) G.UI.wheel(e.deltaY); }, { passive: false });
   // 다른 창·탭으로 가면 자동 일시 정지 (사용자 결정 2026-10-21)
   window.addEventListener('blur', function () { G.Game.pause(app.game); });
   document.addEventListener('visibilitychange', function () { if (document.hidden) G.Game.pause(app.game); });
   canvas.addEventListener('mousedown', function (e) {
     var g = app.game, sp = mouseScreen(e);
     G.Sound.unlock();
+    if (app.scene !== 'play') { if (e.button === 0) menuAct(G.Menu.click(app, sp.x, sp.y)); return; }
     if (e.button === 0 && G.UI.soundAt(sp.x, sp.y)) { toggleSound(); return; }   // 위 막대 스피커
     if (g.paused) {                                // 일시 정지 창: 버튼만
       var pa = e.button === 0 && G.UI.resultAt(g, sp.x, sp.y);
       if (pa) G.Sound.click();
       if (pa === 'resume') G.Game.unpause(g);
       else if (pa === 'retry') app.restart();
+      else if (pa === 'menu') app.toMenu('stages');
       return;
     }
     if (e.button === 2) {                          // 우클릭: 선 빨아들이기 (달리는 중에도)
@@ -4255,12 +5316,13 @@ var G = G || {};
       if (act) G.Sound.click();
       if (act === 'retry') app.restart();
       else if (act === 'next' && g.status === 'clear' && g.hasNext) app.goLevel(app.levelIndex + 1);
+      else if (act === 'menu') app.toMenu('stages');
       return;
     }
     if (g.ink <= 0 && !g.level.data.infInk) { g.toast(G.T('toast.noInk')); return; }
     G.Draw.begin(g, G.UI.toWorld(sp.x, sp.y));
   });
-  window.addEventListener('mousemove', function (e) { G.UI.hover(mouseScreen(e).x, mouseScreen(e).y); if (app.game.stroke) { var sp = mouseScreen(e); G.Draw.move(app.game, G.UI.toWorld(sp.x, sp.y)); } });
+  window.addEventListener('mousemove', function (e) { G.UI.hover(mouseScreen(e).x, mouseScreen(e).y); G.Menu.hover(mouseScreen(e).x, mouseScreen(e).y); if (app.game.stroke) { var sp = mouseScreen(e); G.Draw.move(app.game, G.UI.toWorld(sp.x, sp.y)); } });
   window.addEventListener('mouseup', function (e) { if (e.button === 0) G.Draw.end(app.game); });
 
   // ---- 루프 (고정 타임스텝) ----
@@ -4271,13 +5333,13 @@ var G = G || {};
     acc += dt;
     var n = 0;
     while (acc >= D.loop.stepMs && n < D.loop.maxStepsPerFrame) {
-      G.Game.update(app.game, D.loop.stepMs);
+      if (app.scene === 'play') G.Game.update(app.game, D.loop.stepMs);
       acc -= D.loop.stepMs;
       n++;
     }
     if (n === D.loop.maxStepsPerFrame) acc = 0;   // 너무 밀리면 버린다 (탭 전환 등)
-    G.UI.render(ctx, app.game, G.Debug.state);
-    G.Sound.watch(app.game);
+    if (app.scene === 'play') { G.UI.render(ctx, app.game, G.Debug.state); G.Sound.watch(app.game); }
+    else { G.Menu.render(ctx, app); G.Sound.idle(); }
 
     frames++; fpsT += dt;
     if (fpsT >= 500) {
