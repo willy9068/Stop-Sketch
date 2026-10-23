@@ -262,13 +262,15 @@ G.DATA = {
   //   inks: 이 월드에서 쓸 수 있는 물감 (지금까지 열린 색 모두) — 새 스테이지 기본값, 스테이지마다 levels.js inks 로 바꿈
   //   color: 월드 색 (카드 테두리·스테이지 칸), bg: 월드 배경 그림 (스테이지 bg 가 'world' 면 이것), 없으면 bg_plain
   //   이름·설명 글자는 uitext.js world.N.name / world.N.desc (UI 툴)
+  //   tint (4일차, Claude 2026-10-23): 월드 색 입히기 — paper = 배경 그림(bg_wN)이 없을 때 종이에 곱하는 색,
+  //   ground = 땅·벽·발판 그림에 곱하는 색, a = 그 세기(0~1). 곱하기라 밝은 곳은 그 색, 어두운 테두리는 그대로
   worlds: [
-    { id: 1, color: '#2B2118', inks: ['black'], bg: 'bg_w1' },
-    { id: 2, color: '#1F6FE0', inks: ['black', 'blue'], bg: 'bg_w2' },
-    { id: 3, color: '#E0312B', inks: ['black', 'blue', 'red'], bg: 'bg_w3' },
-    { id: 4, color: '#1FA655', inks: ['black', 'blue', 'red', 'green'], bg: 'bg_w4' },
-    { id: 5, color: '#F2B807', inks: ['black', 'blue', 'red', 'green', 'yellow'], bg: 'bg_w5' },
-    { id: 6, color: '#8A5BD6', inks: ['black', 'blue', 'red', 'green', 'yellow'], bg: 'bg_w6' }
+    { id: 1, color: '#2B2118', inks: ['black'], bg: 'bg_w1', tint: { paper: '#ECEAE6', ground: '#9C9A96', a: 0.45 } },
+    { id: 2, color: '#1F6FE0', inks: ['black', 'blue'], bg: 'bg_w2', tint: { paper: '#E3EDF9', ground: '#8FB4E8', a: 0.4 } },
+    { id: 3, color: '#E0312B', inks: ['black', 'blue', 'red'], bg: 'bg_w3', tint: { paper: '#F9E6E1', ground: '#E8A196', a: 0.4 } },
+    { id: 4, color: '#1FA655', inks: ['black', 'blue', 'red', 'green'], bg: 'bg_w4', tint: { paper: '#E5F3E2', ground: '#9ED2A0', a: 0.4 } },
+    { id: 5, color: '#F2B807', inks: ['black', 'blue', 'red', 'green', 'yellow'], bg: 'bg_w5', tint: { paper: '#F1E1BE', ground: '#E3C46C', a: 0.45 } },
+    { id: 6, color: '#8A5BD6', inks: ['black', 'blue', 'red', 'green', 'yellow'], bg: 'bg_w6', tint: { paper: '#F1EAF8', ground: '#C3AEE6', a: 0.35 } }
   ],
 
   save: {

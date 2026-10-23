@@ -103,6 +103,16 @@ G.UI = (function () {
     }
   }
 
+  // 월드 색 입히기 (2차 데모 4일차, 2026-10-23): 스테이지가 속한 월드의 tint (월드 없으면 null)
+  function worldTint(lv) {
+    var w = lv.world && G.DATA.worlds.filter(function (q) { return q.id === lv.world; })[0];
+    return w && w.tint ? w.tint : null;
+  }
+  // 곱하기로 색 입히기: path(ctx) 가 그린 모양 안만
+  function multiply(ctx, color, alpha, path) {
+    ctx.save(); ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = alpha; ctx.fillStyle = color;
+    ctx.beginPath(); path(); ctx.fill(); ctx.restore();
+  }
   // 스테이지 배경 이름: 'world' 면 그 월드의 배경(data.js worlds[].bg), 그림이 아직 없으면 빈 종이 (2차 데모, 2026-10-23)
   function bgName(lv) {
     if (lv.bg !== 'world') return lv.bg;
@@ -360,6 +370,19 @@ G.UI = (function () {
     lv.props.forEach(function (p) { if (p.type === 'deco' || p.type === 'text' || p.type === 'hint') G.Props.draw(ctx, p); });
     G.Props.drawGrounds(ctx, lv.ground);
     lv.props.forEach(function (p) { var d = G.Props.def(p.type); if (d && d.solid && p.type !== 'crystal') G.Props.draw(ctx, p); });
+    var wt = worldTint(lv);
+    if (wt) {                                      // 땅·벽·발판에 월드 색 (가시·발사기는 그대로)
+      multiply(ctx, wt.ground, wt.a, function () {
+        lv.ground.forEach(function (g) { var s = G.LevelCheck.groundShape(g); ctx.moveTo(g.x0, s.l); ctx.lineTo(g.x1, s.r); ctx.lineTo(g.x1, s.b); ctx.lineTo(g.x0, s.b); ctx.closePath(); });
+      });
+      lv.props.forEach(function (p) {
+        if (p.type !== 'wall' && p.type !== 'platform') return;
+        var c = G.Props.pivot(p), a = (p.angle || 0) * Math.PI / 180;
+        ctx.save(); ctx.translate(c.x, c.y); ctx.rotate(a); ctx.translate(-c.x, -c.y);
+        multiply(ctx, wt.ground, wt.a, function () { ctx.rect(p.x, p.y, p.w, p.h); });
+        ctx.restore();
+      });
+    }
     game.level.crystals.forEach(function (c) { G.Props.drawCrystal(ctx, c); });
     game.fallen.forEach(function (f) {             // 잘려 떨어진 배치된 선 조각
       ctx.save(); ctx.translate(f.body.position.x, f.body.position.y); ctx.rotate(f.body.angle);
@@ -900,6 +923,8 @@ G.UI = (function () {
     updateCamera(game, dt);
     updateJar(game, dt);
     drawBackground(ctx, bgName(game.level.data), cam.x);
+    var lvd = game.level.data, wtp = lvd.bg === 'world' && bgName(lvd) === 'bg_plain' && worldTint(lvd);   // 월드 배경 그림이 아직 없으면 종이에 월드 색
+    if (wtp) multiply(ctx, wtp.paper, 1, function () { ctx.rect(0, 0, V.w, V.h); });
     drawWorld(ctx, game, debug);
     drawArrows(ctx, game);
     drawStopOverlay(ctx, game);
@@ -911,6 +936,6 @@ G.UI = (function () {
   }
 
   return { render: render, toWorld: toWorld, toScreen: toScreen, cam: cam, wheel: wheel, resetCamera: resetCamera,
-           drawBackground: drawBackground, bgName: bgName, drawGoal: drawGoal, drawStart: drawStart,
+           drawBackground: drawBackground, bgName: bgName, worldTint: worldTint, drawGoal: drawGoal, drawStart: drawStart,
            inkAt: inkAt, skipAt: skipAt, resultAt: resultAt, soundAt: soundAt, hover: hover, resultLayout: resultLayout, drawInkLine: drawInkLine };
 })();

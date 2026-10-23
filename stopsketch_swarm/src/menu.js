@@ -153,6 +153,7 @@ G.Menu = (function () {
   function drawStages(ctx, app) {
     var w = worldOf(app.menuWorld);
     paperBg(ctx, w.bg && img(w.bg) ? w.bg : 'bg_plain');
+    if (!img(w.bg) && w.tint) { ctx.save(); ctx.globalCompositeOperation = 'multiply'; ctx.fillStyle = w.tint.paper; ctx.fillRect(0, 0, V.w, V.h); ctx.restore(); }   // 월드 배경 그림이 없으면 종이에 월드 색
     text(ctx, G.T('stages.title', { n: w.id, name: G.T('world.' + w.id + '.name') }), V.w / 2, S('menuTitleY'), S('menuTitleSize'), null, true);
     // 쓸 수 있는 물감
     var iy = S('menuTitleY') + 58, gapI = 44, ix = V.w / 2 - ((w.inks.length - 1) * gapI) / 2 + 60;

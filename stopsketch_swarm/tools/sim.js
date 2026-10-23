@@ -178,6 +178,42 @@ PLANS.s4_4 = [
   { what: '구덩이 초록', color: 'green', when: function (g) { return G.Game.walking(g).filter(function (d) { return d.body.position.y > 700; }).length >= 5; }, pts: P([[520, 796], [885, 796]]) },
   { what: '파랑 + 빨강 멀리뛰기', strokes: [{ color: 'blue', pts: P([[1000, 494], [1295, 494]]) }, { color: 'red', pts: P([[1300, 496], [1350, 496]]) }], when: function (g) { return hx(g) > 920 && hy(g) < 520; } }
 ];
+// 2차 데모 월드 5(노랑)·6(모든 물감) 스테이지 초안 풀이 (Claude 2026-10-23, 4일차)
+PLANS.s5_1 = [
+  { what: '첫 결정 지우기', color: 'yellow', when: function (g) { return hx(g) > -350; }, pts: P([[555, 488], [645, 488]]) },
+  { what: '두 결정 한 번에', color: 'yellow', when: function (g) { return hx(g) > 700; }, pts: P([[1000, 488], [1300, 488]]) }
+];
+PLANS.s5_2 = [
+  { what: '우리 아래 지우기', color: 'yellow', when: function (g) { return hx(g) > -350; }, pts: P([[460, 488], [940, 488]]) },
+  { what: '틈 다리', color: 'black', when: function (g) { return hx(g) > 300; }, pts: P([[1110, 494], [1490, 494]]) }
+];
+PLANS.s5_3 = [
+  { what: '결정 비탈 지우고 오르막', strokes: [{ color: 'yellow', pts: P([[620, 470], [790, 310]]) }, { color: 'black', pts: P([[440, 496], [800, 294], [850, 294]]) }], when: function (g) { return hx(g) > -350; } },
+  { what: '천장 기둥 지우기', color: 'yellow', when: function (g) { return hx(g) > 850 && hy(g) < 320; }, pts: P([[1120, 285], [1180, 285]]) }
+];
+PLANS.s5_4 = [
+  { what: '우리 지우기', color: 'yellow', when: function (g) { return hx(g) > -400; }, pts: P([[260, 488], [600, 488]]) },
+  { what: '가시 덮기', color: 'black', when: function (g) { return hx(g) > -100; }, pts: P([[650, 496], [715, 464], [935, 464], [1000, 496]]) },
+  { what: '결정 문 지우고 빨강', strokes: [{ color: 'yellow', pts: P([[1210, 488], [1290, 488]]) }, { color: 'red', pts: P([[1290, 496], [1390, 496]]) }], when: function (g) { return hx(g) > 700; } },
+  { what: '위 결정 지우기', color: 'yellow', when: function (g) { return hx(g) > 1420 && hy(g) < 300; }, pts: P([[1760, 268], [1840, 268]]) }
+];
+PLANS.s6_1 = [
+  { what: '파랑 + 빨강 멀리뛰기', strokes: [{ color: 'blue', pts: P([[300, 444], [640, 444]]) }, { color: 'red', pts: P([[645, 446], [700, 446]]) }], when: function (g) { return hx(g) > -350; } },
+  { what: '결정 문 지우기', color: 'yellow', when: function (g) { return hx(g) > 1160 && hy(g) < 470; }, pts: P([[1410, 438], [1490, 438]]) },
+  { what: '구덩이 초록', color: 'green', when: function (g) { return G.Game.walking(g).filter(function (d) { return d.body.position.y > 700; }).length >= 5; }, pts: P([[1620, 796], [1985, 796]]) }
+];
+PLANS.s6_2 = [
+  { what: '초록 + 파랑 방패', strokes: [{ color: 'green', pts: P([[420, 330], [580, 330]]) }, { color: 'blue', pts: P([[420, 318], [580, 318]]) }], when: function (g) { return hx(g) > -400; } },
+  { what: '초록 + 빨강 방패', strokes: [{ color: 'green', pts: P([[920, 330], [1080, 330]]) }, { color: 'red', pts: P([[920, 318], [1080, 318]]) }], when: function (g) { return hx(g) > -390; } },
+  { what: '가시 덮기 + 결정 지우기', strokes: [{ color: 'black', pts: P([[1350, 496], [1415, 464], [1685, 464], [1750, 496]]) }, { color: 'yellow', pts: P([[1860, 488], [1940, 488]]) }], when: function (g) { return hx(g) > 600; } }
+];
+PLANS.s6_3 = [
+  { what: '구덩이 초록', color: 'green', when: function (g) { return hx(g) > 380; }, pts: P([[465, 760], [885, 760]]) },
+  { what: '우리 지우기', color: 'yellow', when: function (g) { return hx(g) > 400; }, pts: P([[960, 488], [1240, 488]]) },
+  { what: '비탈 앞 파랑', color: 'blue', when: function (g) { return hx(g) > 1000 && hy(g) < 520; }, pts: P([[1140, 494], [1300, 494]]) },
+  { what: '파랑 + 빨강 멀리뛰기', strokes: [{ color: 'blue', pts: P([[1550, 344], [1845, 344]]) }, { color: 'red', pts: P([[1850, 346], [1900, 346]]) }], when: function (g) { return hx(g) > 1320 && hy(g) < 420; } },
+  { what: '턱 앞 빨강', color: 'red', when: function (g) { return hx(g) > 2360 && hy(g) < 370; }, pts: P([[2690, 346], [2790, 346]]) }
+];
 
 console.log('1 아무것도 안 함');
 G.LEVELS.forEach(function (lv) { report('  ' + lv.name, play(lv, [], -1, 60)); });

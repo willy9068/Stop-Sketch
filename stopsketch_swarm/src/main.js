@@ -30,7 +30,7 @@ var G = G || {};
     levels: G.Rules.playOrder(G.LEVELS.filter(function (l) { return !l.test; })),   // 테스트용 스테이지(test: true)는 게임·제출본에서 숨김 (사용자 결정 2026-10-20). 월드 → 순서대로
     levelIndex: 0,
     testMode: false,
-    scene: 'title', menuWorld: 1, unlockAll: /[?&]unlock/.test(location.search),
+    scene: 'title', menuWorld: 1, unlockAll: /[?&]unlock(&|=|$)/.test(location.search),
     goLevel: function (i) {
       if (!app.levels[i]) return;
       app.scene = 'play';
