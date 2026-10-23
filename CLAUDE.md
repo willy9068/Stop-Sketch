@@ -20,7 +20,7 @@
 - 무리판 `stopsketch_swarm/tools/ui_editor.html` + `ui_editor.js` = UI·글자 툴 (게임 화면 글자·크기·색·위치 → `src/uitext.js`, 사용자 요청 2026-10-21). 게임 글자는 코드에 직접 쓰지 말고 `uitext.js` + `G.T()`
 - `stopsketch/tools/level_editor.html` + `editor.js` 레벨 툴, `test.js` 순수 계산 테스트, `sim.js` 물리 시뮬레이션, `build_single.py` 제출본 빌드
 - `stopsketch/assets/` 게임이 쓰는 이미지(파일명 = 이미지 문서 3장 표). 없으면 코드로 그린 임시 모양
-- `stopsketch/assets/sound/` 게임이 쓰는 소리(파일명 = 사운드 문서 4장 표, 2026-10-22). **2026-10-23부터 배경 음악 `bgm_main` 만** (효과음은 `data.js sound.useSfx: false`). 없으면 그 소리만 안 남. 소리 장치는 `stopsketch_swarm/src/sound.js` (게임 상태 변화를 보고 소리를 냄, node 시뮬레이션과 무관)
+- `stopsketch/assets/sound/` 게임이 쓰는 소리(파일명 = 사운드 문서 4장 표, 2026-10-22). 배경 음악 `bgm_main` + 효과음 22개 (10/23 오전 배경 음악만 → 오후 효과음 다시 넣음, `data.js sound.useSfx: true`). 없으면 그 소리만 안 남. 소리 장치는 `stopsketch_swarm/src/sound.js` (게임 상태 변화를 보고 소리를 냄, node 시뮬레이션과 무관)
 - `stopsketch_Image/` 사용자가 만든 원본 이미지
 - `스톱앤스케치_제안서.pptx` 제안서 — **사용자가 PowerPoint 로 직접 고친 파일, 덮어쓰지 않는다.** 양식은 `업무가이드_통합.md` 5-6 (사용자 수정본 기준, 2026-10-23). 같은 양식으로 새로 만들기: `stopsketch_swarm/tools/proposal/` 에서 `npm install` → `node make_proposal.js` → `스톱앤스케치_제안서_생성.pptx` (그림은 `tools/proposal/images/` 와 `데모제출/2_대표이미지/`)
 - `데모제출/` 제출 폴더 (필수 6가지 번호 폴더, 2026-10-22). 다시 만들기: `python stopsketch_swarm/tools/make_submission.py` (먼저 제출본 빌드). 대표 이미지(2번)·영상(6번)은 손으로 넣는 것이라 스크립트가 지우지 않음
