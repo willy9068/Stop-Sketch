@@ -635,3 +635,27 @@ G.LEVELS.forEach(function (lv) {
     ' · 대열 작은 물방울과 함께 ' + run([{ x: 505, y: 596 }, { x: 895, y: 596 }], true) +
     '\n   (맨 가시·45px 빔(틈으로 빠짐)만 찔리고 나머지는 안전이어야 정상. 예전엔 가시 그림 아래쪽 절반에 그은 선이 땅으로 밀려 내려가 찔렸음)');
 })();
+
+// 30. 낮은 턱 살짝 점프 (사용자 요청 2026-10-23: 애매하게 낮은 턱에서 억울하게 되돌아가지 않게)
+//     stepUp(주인공 16) 이하는 그냥 넘고, hop.up(주인공 30) 이하는 살짝 뛰어 넘고, 그보다 높으면 되돌아섬. 작은 물방울은 반지름 비율
+(function () {
+  function run(h, who, ceil) {
+    var lv = { id: 't', name: '시험', ink: 3000, stops: 9, start: { x: 300 }, goal: { x: 3000 }, inks: ['black'], noEraser: true,
+      drops: { follow: who === 'line' },
+      ground: [{ x0: -400, x1: 800, top: 600 }, { x0: 800, x1: 3400, top: 600 - h }],
+      props: (who !== 'hero' ? [{ type: 'drop', x: 360, y: 587 }] : []).concat(ceil ? [{ type: 'wall', x: 700, y: 600 - h - 60, w: 400, h: 20 }] : []) };
+    var g = G.Game.create('A', lv); G.Game.start(g);
+    var d = who === 'hero' ? g.hero : null;
+    for (var i = 0; i < 60 * 6 && g.status === 'run'; i++) {
+      G.Game.update(g, STEP);
+      if (!d) d = g.drops.filter(function (q) { return !q.hero && q.body; })[0] || null;
+    }
+    if (!d || !d.body) return h + '?';
+    return h + (d.body.position.x > 900 ? '넘음' + (d.hops ? '(점프' + d.hops + ')' : '') : '돌아섬');
+  }
+  var hs = [10, 16, 20, 26, 30, 34, 44];
+  console.log('30 낮은 턱 점프: 주인공 ' + hs.map(function (h) { return run(h, 'hero'); }).join(' ') +
+    '\n   작은 물방울(혼자) ' + [8, 12, 16, 18, 20, 24].map(function (h) { return run(h, 'free'); }).join(' ') +
+    '\n   대열 작은 물방울 ' + [20, 26].map(function (h) { return run(h, 'line'); }).join(' ') + ' · 위가 막힌 26px 턱(주인공) ' + run(26, 'hero', true) +
+    '\n   (주인공은 30 까지 넘고 34·44 는 돌아섬, 작은 물방울은 20 까지 넘고 24 는 돌아섬, 위가 막히면 돌아서야 정상)');
+})();

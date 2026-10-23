@@ -828,7 +828,8 @@ var G = G || {};
       num('d_gap', '대열 간격', l.drops.gap) + hint('발자국 길이 px') +
       sec('지우개') +
       check('l_noEraser', '지우개 끄기', l.noEraser, '켜면 지우개가 나오지 않음 (테스트용)') +
-      num('e_pct', '속도 % (주인공)', l.eraser.pct) + num('e_delayMs', '출발 ms', l.eraser.delayMs) +
+      num('e_speed', '속도', l.eraser.speed) + num('e_delayMs', '출발 ms', l.eraser.delayMs) +
+      hint('스텝당 px, 주인공 속도와 따로 (주인공 ' + l.drops.heroSpeed + ')') +
       sec('구간 경계', '설계 표시만, "x:이름" 한 줄에 하나') +
       '<div class="f"><label>경계</label><textarea id="l_segments" rows="5">' +
       esc((l.segments || []).map(function (sg) { return sg.x + ':' + sg.name; }).join('\n')) + '</textarea></div>';
@@ -951,7 +952,7 @@ var G = G || {};
     else if (id === 'l_name') l.name = v; else if (id === 'l_id') l.id = v; else if (id === 'l_bg') l.bg = v;
     else if (id === 'l_ink') l.ink = v; else if (id === 'l_stops') l.stops = v;
     else if (id === 'l_start') l.start.x = v; else if (id === 'l_goal') l.goal.x = v;
-    else if (id === 'e_pct') l.eraser.pct = v; else if (id === 'e_delayMs') l.eraser.delayMs = v;
+    else if (id === 'e_speed') l.eraser.speed = Math.max(0, Math.round(+t.value * 100) / 100); else if (id === 'e_delayMs') l.eraser.delayMs = v;
     else if (id === 'd_heroSpeed' || id === 'd_smallSpeed') l.drops[id.slice(2)] = Math.max(0.1, Math.round(+t.value * 10) / 10);
     else if (id === 'd_collide') l.drops.collide = t.checked;
     else if (id === 'd_follow') l.drops.follow = t.checked;

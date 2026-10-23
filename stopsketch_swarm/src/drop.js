@@ -147,11 +147,40 @@ G.Drop = {
       }
     } else d.pinchMs = 0;
     d.turnCdMs = Math.max(0, d.turnCdMs - gameMs);
+    d.hopCdMs = Math.max(0, (d.hopCdMs || 0) - gameMs);
+    if (wall && ground && scale > 0 && d.hopCdMs === 0 && this.tryHop(d, engine, stepUp)) wall = false;
+    if (d.hopCdMs > 0) {                           // 뛰는 중: 턱 옆면에 닿아도 되돌아서지 않고, 옆면에 막혀 줄어든 앞으로 가는 속도를 다시 줌
+      wall = false;
+      if (!ground && scale > 0) M.Body.setVelocity(b, { x: d.dir * Math.max(d.speed, Math.abs(b.velocity.x)), y: b.velocity.y });
+    }
     if (wall && d.turnCdMs === 0) {
       d.dir = -d.dir;
       d.turns += 1;
       d.turnCdMs = D.turnCooldownMs;
     }
+  },
+
+  // 낮은 턱 살짝 점프 (사용자 요청 2026-10-23): 가는 쪽 바로 앞이 stepUp~up 높이에서만 막혀 있고 그 위가 비어 있으면 뛰어 넘음
+  tryHop: function (d, engine, stepUp) {
+    var H = G.DATA.drop.hop, M = G.Physics.M, b = d.body, r = d.r;
+    if (!H) return false;
+    var up = Math.max(H.minUp, H.up * r / G.DATA.drop.heroRadius), bottom = b.position.y + r;
+    var solids = G.Physics.allBodies(engine).filter(function (q) { return q.label !== 'drop' && !q.isSensor; });
+    function hit(x, y) { return M.Query.point(solids, { x: x, y: y }).length > 0; }
+    // 앞 옆면 찾기: 발치(3px)와 조금 위(stepUp 의 3/4)에서 앞으로 훑어 처음 막히는 x. 없으면 턱이 아님,
+    //   위쪽이 뒤로 물러나 있으면(비탈, 약 70도보다 완만) 뛰지 않음 — 가파른 비탈은 지금 규칙대로 되돌아섬 (사용자 결정 2026-10-21)
+    function faceX(y) { for (var k = 0; k <= r + H.probe + 8; k++) { var x = b.position.x + d.dir * k; if (hit(x, y)) return k; } return -1; }
+    var k1 = faceX(bottom - 3), k2 = faceX(bottom - stepUp * 0.75);
+    if (k1 < 0 || (k2 >= 0 && k2 - k1 > 3)) return false;   // k2 < 0: 턱이 그보다 낮음 → 뜀
+    var fx = b.position.x + d.dir * (k1 + 2);
+    if (hit(fx, bottom - up - 2) || hit(fx, bottom - up - r * 2) || hit(b.position.x, bottom - up - r * 2)) return false;   // 턱 위·머리 위가 막힘 → 되돌아섬
+    var g = engine.gravity.y * engine.gravity.scale * G.DATA.loop.stepMs * G.DATA.loop.stepMs;
+    M.Body.setVelocity(b, { x: d.dir * Math.max(d.speed, Math.abs(b.velocity.x)), y: -Math.sqrt(2 * g * (up + H.extra)) });
+    d.grounded = false;
+    d.hopCdMs = H.cdMs;
+    d.hops = (d.hops || 0) + 1;
+    d.events.push('hop');
+    return true;
   },
 
   // 대열 물방울: 가시에 닿았는가, 발밑(반지름 + supportTol 안)에 물방울 아닌 몸체가 있는가

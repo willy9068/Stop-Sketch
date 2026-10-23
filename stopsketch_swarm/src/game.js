@@ -172,11 +172,11 @@ G.Game = {
     if (game.heroHome && !this.walking(game).length && !game.goalQueue.length && !game.entering.length) this.clear(game);
   },
 
-  // 지우개: 출발 delay 뒤 주인공 속도의 pct% 로 오른쪽으로 (게임 시간 기준이라 정지 중엔 멈춤)
+  // 지우개: 출발 delay 뒤 eraser.speed 로 오른쪽으로 (게임 시간 기준이라 정지 중엔 멈춤). 주인공 속도와 따로 (사용자 요청 2026-10-23)
   moveEraser: function (game, s) {
     var E = game.level.data.eraser;
     if (game.level.data.noEraser || game.runMs < E.delayMs) return;
-    game.eraserX += game.level.data.drops.heroSpeed * E.pct / 100 * s;
+    game.eraserX += E.speed * s;
     for (var i = game.lines.length - 1; i >= 0; i--) {   // 지우개가 지나간 선도 지움 (잉크는 돌아오지 않음)
       var ln = game.lines[i], pts = G.Draw.worldPts(ln), maxX = -Infinity;
       pts.forEach(function (q) { maxX = Math.max(maxX, q.x); });
