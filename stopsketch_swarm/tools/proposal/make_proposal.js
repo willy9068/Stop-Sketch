@@ -73,7 +73,7 @@ function content(title) {
   t(s, '스톱 앤 스케치', { x: M, y: 1.75, w: 5.2, h: 1.0, fontFace: F.head, fontSize: 44, bold: true });
   t(s, 'Stop & Sketch (가제)', { x: M, y: 2.75, w: 5, h: 0.4, fontFace: F.head, fontSize: 16, italic: true, color: C.muted });
   t(s, '멈추고, 그리고,\n모두 데려가자.', { x: M, y: 3.5, w: 5, h: 1.1, fontFace: F.head, fontSize: 22 });
-  t(s, '물리 그리기 퍼즐 액션 · 물방울 무리 이끌기\n웹 데모 스테이지 3개 · ' + TODAY, { x: M, y: 5.2, w: 5, h: 0.7, fontSize: 12, color: C.muted });
+  t(s, '물리 드로잉 퍼즐 플랫포머 · 물방울 무리 이끌기\n웹 데모 스테이지 3개 · ' + TODAY, { x: M, y: 5.2, w: 5, h: 0.7, fontSize: 12, color: C.muted });
 }
 
 // ── 2. 개요 ──
@@ -83,7 +83,7 @@ function content(title) {
   t(s, 'HIGH CONCEPT', { x: M + 0.3, y: 1.42, w: 3, h: 0.25, fontSize: 10, bold: true, color: C.blue });
   t(s, '시간을 멈추고 색 물감으로 길을 그려, 스스로 걷는 물방울 무리를 검은 잉크병까지 데려간다.', { x: M + 0.3, y: 1.7, w: W - 2 * M - 0.6, h: 0.4, fontFace: F.head, fontSize: 18 });
   const rows = [
-    ['장르', '물리 그리기 퍼즐 액션 (2D 횡스크롤)'],
+    ['장르', '물리 드로잉 퍼즐 플랫포머 (2D 횡스크롤)'],   // 장르명 사용자 결정 2026-10-23
     ['플레이어', '그림으로 길을 만든다. 물방울은 스스로 걷고 벽에 도달하면 뒤로 돈다.'],
     ['목표', '주인공이 깨운 작은 물방울들을 최대한 많이 검은 잉크병에 데려가 정화한다.'],
     ['조작', '드래그 = 그리기 / 스페이스 = 시간 정지 / 우클릭 = 선 빨아들이기 / 1~5 = 물감'],
