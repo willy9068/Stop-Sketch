@@ -203,7 +203,7 @@ t('levels.js 의 모든 스테이지에 오류가 없음', function () {
 });
 
 console.log('물감 5색 (사용자 결정 2026-10-20)');
-t('키 1~5 = 검정·빨강·파랑·초록·노랑', function () { eq(D.inks.order.join(), 'black,red,blue,green,yellow'); });
+t('키 1~5 = 검정·파랑·빨강·초록·노랑 (월드 순서, 2026-10-23)', function () { eq(D.inks.order.join(), 'black,blue,red,green,yellow'); });
 t('평평한 빨강: 바로 위로 튕기고 가로 속도 유지', function () {
   var v = R.bounceVelocity(0, 15, { x: 5, y: 3 });
   near(v.x, 5, 1e-9); near(v.y, -15, 1e-9);
