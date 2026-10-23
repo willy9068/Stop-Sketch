@@ -139,7 +139,7 @@ G.UITEXT = {
     "pauseResumeY": 380,
     "pauseRetryX": 650,
     "pauseRetryY": 380,
-    "musicVolume": 0.05,
-    "sfxVolume": 0.3
+    "musicVolume": 0.1,
+    "sfxVolume": 0.2
   }
 };

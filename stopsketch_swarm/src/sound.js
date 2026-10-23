@@ -153,12 +153,17 @@ G.Sound = (function () {
     src.start(ctx.currentTime + Math.max(0, (o.at || 0) / 1000));
   }
   // 몰리는 소리: 간격을 두고 차례로 + 음을 조금씩 올림
-  function burst(name, small) {
+  // 발사기 소리 크기: 주인공과 가까우면 1, 멀면 0 (사이는 점점 작게)
+  function near(o, hx, hy) {
+    var N = S.shooter, d = Math.sqrt((o.x - hx) * (o.x - hx) + (o.y - hy) * (o.y - hy));
+    return d >= N.far ? 0 : Math.min(1, (N.far - d) / (N.far - N.near));
+  }
+  function burst(name, small, v) {
     if (!ctx) return;
     var st = bursts[name] || (bursts[name] = { next: 0, n: 0, last: -1e9 }), now = performance.now();
     var p = plan(st, now, S.burst);
     if (!p) return;
-    play(name, { at: p.at - now, pitch: p.pitch * (small ? S.small.pitch : 1), vol: small ? S.small.vol : 1 });
+    play(name, { at: p.at - now, pitch: p.pitch * (small ? S.small.pitch : 1), vol: (small ? S.small.vol : 1) * (v == null ? 1 : v) });
   }
   // 반복 소리(그리기·지우개): 켜고 끄고 음량
   function loop(name, v) {
@@ -230,7 +235,8 @@ G.Sound = (function () {
     c.drops.forEach(function (d, i) { if (p.drops[i] === d && p.modes[i] === 'join' && d.mode === 'line') burst('sfx_join', !d.hero); });
     // 새 투사체: 주인공과 멀수록 작게
     var hx = game.hero.body ? game.hero.body.position.x : game.eraserX;
-    c.projs.forEach(function (q) { if (p.projs.indexOf(q) < 0) { var dv = 1 - Math.min(1, Math.abs(q.x - hx) / 1400); if (dv > 0.05) play('sfx_shoot', { vol: dv }); } });
+    var hy = game.hero.body ? game.hero.body.position.y : 0;
+    c.projs.forEach(function (q) { if (p.projs.indexOf(q) < 0) { var dv = near(q, hx, hy); if (dv > 0) play('sfx_shoot', { vol: dv }); } });
     // 효과(fx): 튕김·가속·빨아들이기·지우기·흡수·막힘
     game.fx.forEach(function (f) {
       if (!seenFx || seenFx.has(f)) return;
@@ -240,7 +246,7 @@ G.Sound = (function () {
       else if (f.type === 'suck') play('sfx_suck');
       else if (f.type === 'cut') play('sfx_erase');
       else if (f.type === 'absorb') burst('sfx_plop');
-      else if (f.type === 'block') burst('sfx_block');
+      else if (f.type === 'block') { var bv = near(f, hx, hy); if (bv > 0) burst('sfx_block', false, bv); }
     });
     // 선: 초록이 떠오르기 시작 · 떨어지던 선이 닿음
     game.lines.forEach(function (ln) {

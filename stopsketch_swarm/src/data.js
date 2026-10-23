@@ -231,6 +231,8 @@ G.DATA = {
     burst: { gapMs: 80, pitchStep: 0.05, pitchMax: 1.5, maxQueue: 12 },
     small: { vol: 0.6, pitch: 1.18 },
     eraser: { near: 200, far: 1000, vol: 0.7 },
+    // 발사기 쏘는 소리·투사체 터지는 소리: 주인공과의 거리(px) near 이하면 다 들리고, far 이상이면 아예 안 들림 (사용자 요청 2026-10-23: 가까이 가야만 들리게)
+    shooter: { near: 300, far: 650 },
     jingleDuck: 0.35,                                // 클리어·실패 음악이 나오는 동안 배경 음악 음량 배율
     // 이름: [음량 0~1, 음 높이 흔들림(±), 반복(loop)]. 우선순위 ★ 꼭 · ☆ 있으면 좋음 · ○ 나중 (사운드 문서 표와 같음)
     sfx: {
