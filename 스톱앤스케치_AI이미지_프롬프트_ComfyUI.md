@@ -757,3 +757,160 @@ spikes around the border, thick dark brown line, empty inside, plain white backg
 
 > 7차 이미지 2장 적용 완료 (2026-10-22). `proj_white` 는 흰 몸에 색을 곱함 — 검정은 그대로 곱하면 얼굴이 묻혀서 진한 회색(`data.js art.projTint`)으로 곱함.
 > `fx_proj_pop` 은 속이 빈 **갈색 선 그림**이라 곱하면 색이 안 보여서, **선을 투사체 색으로 덮어 칠함**(선 그림이면 흰색이 아니어도 됨). `fx_block` 은 이제 `fx_proj_pop` 이 없을 때만 씀
+
+## 16. 8차 이미지 요청 — 2차 데모: 시작 화면 · 월드 · 스테이지 선택 · 월드 배경 · 안내 카드 (2026-10-23)
+
+> 2차 데모 계획(업무가이드 11-9, 사용자 결정 2026-10-23)에 필요한 이미지입니다. 월드 순서 **검정 → 파랑 → 빨강 → 초록 → 노랑 → 모든 물감**.
+> 진입 구조: **시작 화면 → 월드 카드 6장 → 스테이지 번호 칸 → 스테이지**. 월드 첫 판에는 **새 색 안내 카드**가 한 번 뜹니다.
+> 1일차에 화면은 **코드로 그린 임시 모양**으로 먼저 만들고, 파일을 `stopsketch/assets/` 에 넣으면 바로 바뀌게 연결합니다. 모든 프롬프트 앞에 2장 스타일 블록을 붙입니다.
+> **글자는 그림에 넣지 않습니다** (AI가 글자를 잘 못 그림). 게임 제목·월드 이름·스테이지 번호·안내 문장은 모두 코드가 씀 (`uitext.js`, UI 툴로 수정).
+> 땅·벽·발판은 **지금 그림에 월드 색을 코드로 살짝 입힙니다** (새로 그리지 않음, 사용자 결정 2026-10-23).
+
+### 16-1. 월드 배경 (6장) ★
+
+| 우선 | 파일 | 크기 | 월드 | 느낌 (종이 종류 + 그 색의 낙서 몇 개) |
+|---|---|---|---|---|
+| ★ | `bg_w1.png` | 1920×1080, **좌우 이음매 없음** | 1 검정 | 연필 회색 **모눈종이**, 가장자리에 연필 자국·작은 지운 흔적. 가장 차분하게 |
+| ★ | `bg_w2.png` | 1920×1080, 좌우 이음매 없음 | 2 파랑 | 파란 가로줄 **줄 노트**, 파란 볼펜으로 그린 바람 줄·속도선 낙서 몇 개 |
+| ★ | `bg_w3.png` | 1920×1080, 좌우 이음매 없음 | 3 빨강 | 따뜻한 연분홍 기운의 종이, 왼쪽에 빨간 **여백 세로줄**, 빨간 색연필 용수철·튀는 공 낙서 몇 개 |
+| ★ | `bg_w4.png` | 1920×1080, 좌우 이음매 없음 | 4 초록 | 연초록 **방안지**(큰 격자), 초록 색연필 덩굴·풍선 낙서 몇 개, 위로 올라가는 느낌 |
+| ★ | `bg_w5.png` | 1920×1080, 좌우 이음매 없음 | 5 노랑 | 누런 **크라프트지**, 노란 형광펜 줄 몇 개와 지우개로 반쯤 지운 연필 낙서 |
+| ★ | `bg_w6.png` | 1920×1080, 좌우 이음매 없음 | 6 모든 물감 | 흰 **수채화지**, 다섯 색 물감 얼룩이 가장자리에 연하게 번짐 |
+
+- 공통: 기존 `bg_a` 처럼 **가운데(캐릭터가 다니는 높이)는 비워 두고**, 낙서는 위쪽·가장자리에 작게. 진하면 선·물방울이 안 보이므로 **채도를 낮게**, 땅보다 밝게
+- 좌우 이음매: 가로로 이어 붙이므로 왼쪽 끝과 오른쪽 끝이 맞아야 함 (ComfyUI 의 tiling/seamless 설정, 또는 생성 뒤 반을 잘라 바꿔 붙이고 이음매를 고침)
+- 줄·격자는 **수평·수직이 반듯하게** (기울면 땅과 어긋나 보임)
+
+```
+(bg_w1) a clean sheet of light gray graph paper with a faint pencil grid, a few soft pencil
+        smudges and tiny eraser marks near the edges, calm and quiet, empty middle area,
+        low saturation, seamless tileable left to right, flat, no objects in the center
+(bg_w2) a sheet of lined notebook paper with light blue horizontal ruled lines, a few small blue
+        ballpoint doodles of wind swirls and speed lines near the top, empty middle area, low
+        saturation, seamless tileable left to right, flat
+(bg_w3) a sheet of warm off-white paper with a faint pink tint and a red vertical margin line
+        near the left, a few small red colored-pencil doodles of springs and bouncing balls near
+        the top, empty middle area, low saturation, seamless tileable left to right, flat
+(bg_w4) a sheet of pale green large-grid paper, a few small green colored-pencil doodles of
+        curling vines and balloons floating upward near the top and edges, empty middle area,
+        low saturation, seamless tileable left to right, flat
+(bg_w5) a sheet of light brown kraft paper with a few faded yellow highlighter strokes and half
+        erased pencil scribbles near the top, empty middle area, low saturation, seamless
+        tileable left to right, flat
+(bg_w6) a sheet of white watercolor paper with soft faint stains of black, blue, red, green and
+        yellow watercolor bleeding in from the edges, empty middle area, low saturation,
+        seamless tileable left to right, flat
+```
+- 네거티브에 `characters, creatures, objects in center, text, numbers, high contrast, dark` 추가
+
+### 16-2. 시작 화면 · 월드 선택 · 스테이지 선택
+
+| 우선 | 파일 | 크기 | 쓰이는 곳 | 만들 때 주의 |
+|---|---|---|---|---|
+| ★ | `title_bg.png` | 1920×1080 | **시작 화면 배경**. 위쪽 가운데에 코드가 게임 제목을, 아래에 "시작" 버튼을 씀 | 펼친 스케치북 위에서 주인공 물방울(char_idle 참조)이 연필 옆에서 다섯 색 물감 선을 그리는 장면, 작은 물방울 몇 마리가 따라옴. **위쪽 1/3 과 아래 가운데는 비워 둠**(제목·버튼 자리). 대표 이미지와 같은 분위기 |
+| ★ | `world_card.png` | 384×480, 투명 | **월드 카드 틀** (6장에 같이 씀). 코드가 안에 월드 아이콘·이름·별 합계를 그림, 잠긴 월드는 회색 + 자물쇠 | 마스킹 테이프로 붙인 **종이 쪽지 카드**, 위쪽 가운데에 테이프 한 조각, 안쪽은 **불투명 흰 종이**(무늬 없음), 굵은 외곽선. 살짝 비뚤어도 됨 |
+| ★ | `world_icon_1.png` ~ `world_icon_6.png` | 256×256, 투명 (6장) | **월드 아이콘** (카드 안 가운데) | 아래 프롬프트. 각 월드의 새 색이 하는 일을 **물감 한 방울 + 낙서 하나**로. 6장 모두 같은 크기·같은 위치·같은 굵기 (시드 고정) |
+| ★ | `ui_lock.png` | 128×128, 투명 | 잠긴 월드·스테이지 위 **자물쇠** | 둥근 낙서 자물쇠, 진한 갈색 외곽선, 몸은 연한 회색. 열쇠 구멍만 |
+| ★ | `stage_tile.png` | 192×192, 투명 | **스테이지 번호 칸** (월드마다 4칸, 마지막 월드 3칸). 코드가 번호·별 3개·월드 색 테두리를 그림 | 정사각 **종이 메모 조각**, 귀퉁이 하나가 살짝 접힘, 안쪽 불투명 흰색, 굵은 외곽선. 글자·숫자 없음 |
+| ☆ | `stage_tile_boss.png` | 192×192, 투명 | 월드 **마지막(조금 어려운) 스테이지 칸** | stage_tile 과 같은 메모에 **가장자리가 톱니처럼 뜯긴** 모양 + 작은 별 테두리 장식 |
+| ☆ | `ui_button.png` | 384×128, 투명, **9분할 가로형**(테두리 약 32px) | **버튼** (시작 · 뒤로 · 다시 하기 · 다음 스테이지). 코드가 글자를 씀 | 가로로 긴 **두꺼운 종이 테이프 조각**, 양 끝이 살짝 찢긴 모양, 안쪽 연노랑 단색, 굵은 외곽선. 가운데는 고르게(늘어남) |
+| ☆ | `ui_back.png` | 96×96, 투명 | 왼쪽 위 **뒤로 가기** 아이콘 | 왼쪽을 가리키는 굵은 낙서 화살표, 진한 갈색 |
+| ○ | `fx_unlock.png` | 512×512, 투명 | **새 월드·새 물감이 열릴 때** 카드 위에 퍼지는 효과 (코드가 월드 색으로 물들임) | 흰색 물감이 둥글게 **팡 터지며 퍼지는** 모양, 작은 반짝임, 가운데 비어 있게 |
+| ○ | `title_logo.png` (선택) | 1024×384, 투명 | 게임 제목 그림 글자. **없으면 코드가 글꼴로 씀** | AI 는 한글을 잘 못 쓰므로 **직접 손글씨로 그려 넣는 것을 권장**. 만든다면 "스톱 앤 스케치" 굵은 손글씨 + 물감 번짐 |
+
+```
+(title_bg)      [char_idle 참조] an open sketchbook seen from above, the same round mochi doodle
+                creature drawing long colorful lines of black, blue, red, green and yellow ink with
+                a pencil beside it, a few tiny droplet creatures following in a line, warm and
+                cute, the top third and the bottom center left empty, low clutter, wide 16:9
+(world_card)    a small rectangular paper note card stuck on with a piece of masking tape at the
+                top center, plain opaque white inside with no pattern, thick dark outline, slightly
+                tilted, flat 2D, plain background
+(world_icon)    a single big round ink drop of [COLOR] with a small doodle of [SYMBOL] beside it,
+                thick dark outline, flat colors, centered, same size and position for every
+                variation, plain white background, isolated
+                1 [BLACK ink | a short bridge over a gap]
+                2 [BLUE ink | speed lines and an arrow pointing right]
+                3 [RED ink | a coiled spring bouncing upward]
+                4 [GREEN ink | a small balloon floating upward]
+                5 [YELLOW ink | an X mark erasing a dark crystal bar]
+                6 [five small drops of black, blue, red, green and yellow ink in a circle | a tiny star]
+(ui_lock)       a round chubby doodle padlock, light gray body with a keyhole, thick dark brown
+                outline, flat, centered, plain white background
+(stage_tile)    a square paper memo sticky note with one corner slightly folded, plain opaque white
+                inside, thick dark outline, flat 2D, no text, no numbers, plain background
+(stage_tile_boss) [stage_tile 참조] the same square memo note with jagged torn edges and a tiny
+                doodle star border around it, plain opaque white inside, no text, plain background
+(ui_button)     a long horizontal strip of thick paper tape with slightly torn ends, flat pale
+                yellow inside, thick dark outline, even texture in the middle so it can stretch,
+                no text, plain background
+(ui_back)       a thick doodle arrow pointing left, dark brown, rounded ends, plain background
+(fx_unlock)     a round burst of white paint splashing outward with small sparkles, empty center,
+                thick doodle lines, plain background
+```
+- 네거티브에 `text, letters, numbers, logo` 추가 (숫자·글자는 모두 코드가 씀)
+- `world_icon` 6장은 **시드를 고정하고 [ ] 안만 바꿔** 뽑습니다. 크기·위치가 다르면 카드 안에서 들쭉날쭉해 보임
+- 카드·칸·버튼의 **안쪽은 불투명**해야 뒤 배경이 비치지 않음 (배경 제거 때 안쪽 흰색이 지워지지 않게 주의)
+
+### 16-3. 새 색 안내 카드 그림 (월드 첫 판) ☆
+
+> 월드 첫 스테이지 시작 때 한 번 뜨는 카드 안 그림. 카드 틀은 지금 `ui_panel.png`, 글은 코드가 씀 (예: "파랑으로 그으면 물방울이 빨라져요"). 새 장애물도 같은 카드에서 한 줄로 소개 (그림은 이 장면에 같이).
+> 장면은 **왼쪽에서 오른쪽으로 일어나는 일 한 컷**. 주인공은 char_run 참조, 선은 그 색의 굵은 펜 선.
+
+| 우선 | 파일 | 크기 | 월드 | 장면 |
+|---|---|---|---|---|
+| ☆ | `tut_w1.png` | 640×360, 투명 | 1 검정 | 두 땅 사이 틈에 **검은 선 다리**가 걸쳐 있고 물방울이 그 위를 걸어 건넘 |
+| ☆ | `tut_w2.png` | 640×360, 투명 | 2 파랑 | **파란 선** 위를 달리는 물방울 뒤로 속도선, 왼쪽 뒤의 지우개는 멀어짐 |
+| ☆ | `tut_w3.png` | 640×360, 투명 | 3 빨강 | **빨간 선**에 닿은 물방울이 높이 튀어 올라 아래 **가시**를 넘음 (점선 궤적) |
+| ☆ | `tut_w4.png` | 640×360, 투명 | 4 초록 | **초록 선**이 물방울들을 태우고 위로 떠오름, 옆에서 발사기 투사체가 같은 색 선에 막힘 |
+| ☆ | `tut_w5.png` | 640×360, 투명 | 5 노랑 | **노란 선**을 그은 자리의 검은 결정 막대가 가루가 되어 지워지고, 길이 열림 |
+
+```
+(tut_w1) [char_run 참조] a simple side-view doodle scene: two ground blocks with a gap between,
+         a thick black ink line bridging the gap, the same round mochi creature walking across
+         it from left to right, thick dark outline, flat colors, plain white background
+(tut_w2) [char_run 참조] a side-view doodle scene: the same creature dashing right along a thick
+         blue ink line with speed lines behind it, a pink rubber eraser far behind on the left
+         falling back, thick dark outline, flat colors, plain white background
+(tut_w3) [char_run 참조] a side-view doodle scene: the same creature bouncing high off a thick red
+         ink line, a dotted arc showing the jump over a row of gray-purple floor spikes, thick
+         dark outline, flat colors, plain white background
+(tut_w4) [char_run 참조] a side-view doodle scene: a thick green ink line rising upward carrying
+         the same creature and two tiny droplet friends, a small cannon's spiky ball stopped by a
+         green line beside it, thick dark outline, flat colors, plain white background
+(tut_w5) [char_run 참조] a side-view doodle scene: a thick yellow ink stroke over a dark crystal
+         bar that is crumbling away into dust, the path ahead now open for the same creature,
+         thick dark outline, flat colors, plain white background
+```
+- 캐릭터·지우개·가시·발사기·결정은 지금 게임 그림과 **같은 모양**이어야 합니다 (참조 이미지로 넣기). 많이 다르면 Claude에게 말해 주세요 — 안내 카드는 게임 그림을 코드로 조합해서 만들 수도 있음
+- 네거티브에 `text, letters, numbers` 추가
+
+### 16-4. 코드로 하는 것 (이미지 필요 없음)
+
+| 항목 | 방법 |
+|---|---|
+| 게임 제목 · 월드 이름 · 스테이지 번호 · 안내 문장 · 버튼 글자 | `uitext.js` 글자 (UI 툴로 수정) |
+| 땅 · 벽 · 발판 월드 색 | 지금 그림(`ground_top` · `ground_fill` · `prop_wall` · `prop_platform`)에 월드 색을 살짝 섞음 |
+| 잠긴 카드 · 칸 | 회색으로 흐리게 + `ui_lock` |
+| 별 표시 (칸 · 카드) | 지금 `star_full` · `star_empty` 를 작게 |
+| "여기에 그려 보세요" 점선 힌트 | 코드로 점선 (레벨 툴로 배치) |
+| 낮은 턱 살짝 점프 | 지금 `char_jump` 그림 |
+
+### 16-5. 3장 전체 표에 추가
+
+| # | 구분 | 파일명 | 크기 | 배경 | 우선 |
+|---|---|---|---|---|---|
+| 65~70 | 월드 배경 1~6 | bg_w1~bg_w6.png | 1920×1080 (좌우 이음매 없음) | 있음 | ★ 2차 데모 |
+| 71 | 시작 화면 배경 | title_bg.png | 1920×1080 | 있음 | ★ 2차 데모 |
+| 72 | 월드 카드 틀 | world_card.png | 384×480 | 투명(안쪽 불투명) | ★ 2차 데모 |
+| 73~78 | 월드 아이콘 1~6 | world_icon_1~6.png | 256×256 | 투명 | ★ 2차 데모 |
+| 79 | 자물쇠 | ui_lock.png | 128×128 | 투명 | ★ 2차 데모 |
+| 80 | 스테이지 칸 | stage_tile.png | 192×192 | 투명(안쪽 불투명) | ★ 2차 데모 |
+| 81 | 마지막 스테이지 칸 | stage_tile_boss.png | 192×192 | 투명(안쪽 불투명) | ☆ 2차 데모 |
+| 82 | 버튼 (9분할 가로형) | ui_button.png | 384×128 | 투명 | ☆ 2차 데모 |
+| 83 | 뒤로 가기 | ui_back.png | 96×96 | 투명 | ☆ 2차 데모 |
+| 84~88 | 새 색 안내 그림 1~5 | tut_w1~tut_w5.png | 640×360 | 투명 | ☆ 2차 데모 |
+| 89 | 열림 효과 | fx_unlock.png | 512×512 | 투명 | ○ 2차 데모 |
+| 90 | 게임 제목 글자 (선택, 손글씨 권장) | title_logo.png | 1024×384 | 투명 | ○ 2차 데모 |
+
+> ★ 16장(배경 7 · 카드 틀 · 아이콘 6 · 자물쇠 · 칸)만 있으면 2차 데모의 새 화면이 모두 그림으로 바뀝니다. ☆·○ 는 없으면 코드 모양으로 동작
