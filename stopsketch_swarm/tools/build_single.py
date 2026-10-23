@@ -44,7 +44,8 @@ def used_sounds():
     if not m:
         return []
     b = re.search(r"bgm:\s*'([^']+)'", m.group(1))
-    return ([b.group(1)] if b else []) + re.findall(r"\b(sfx_\w+):", m.group(1))
+    use_sfx = re.search(r"useSfx:\s*true", m.group(1)) is not None   # 효과음 끔이면 배경 음악만 (2026-10-23)
+    return ([b.group(1)] if b else []) + (re.findall(r"\b(sfx_\w+):", m.group(1)) if use_sfx else [])
 
 
 def encode_sound(name):

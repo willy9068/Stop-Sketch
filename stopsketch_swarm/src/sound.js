@@ -35,7 +35,7 @@ G.Sound = (function () {
     musicBus = ctx.createGain(); musicBus.gain.value = vol('music');
     musicFilter.connect(musicBus); musicBus.connect(master);
     sfxBus = ctx.createGain(); sfxBus.gain.value = vol('sfx'); sfxBus.connect(master);
-    Object.keys(S.sfx).concat([S.bgm]).forEach(load);
+    (S.useSfx ? Object.keys(S.sfx) : []).concat([S.bgm]).forEach(load);   // 효과음 끔이면 배경 음악만 (사용자 결정 2026-10-23)
   }
 
   function decode(name, arr) {

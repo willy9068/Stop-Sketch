@@ -220,6 +220,7 @@ G.DATA = {
   sound: {
     dir: '../../stopsketch/assets/sound/', exts: ['mp3', 'ogg', 'wav', 'flac'],
     bgm: 'bgm_main',
+    useSfx: false,                                   // 효과음 끔 — 배경 음악만 씀 (사용자 결정 2026-10-23: 효과음 파일을 모두 뺌). 다시 쓰려면 true + 파일을 assets/sound 에
     stopMuffle: { freq: 650, gain: 0.55, ms: 250 },
     burst: { gapMs: 80, pitchStep: 0.05, pitchMax: 1.5, maxQueue: 12 },
     small: { vol: 0.6, pitch: 1.18 },
