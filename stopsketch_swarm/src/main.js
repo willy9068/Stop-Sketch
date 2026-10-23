@@ -39,6 +39,7 @@ var G = G || {};
       G.Game.setLevel(app.game, app.levels[i]);
       G.UI.resetCamera();
       app.game.hasNext = !!app.levels[i + 1];
+      showTutorial();
       G.Debug.refresh(app);
     }
   };
@@ -51,6 +52,7 @@ var G = G || {};
   app.game = G.Game.create(D.defaultTimeMode, app.levels[0], app.account);
   app.game.hasNext = !!app.levels[1];
   if (app.testMode) app.game.toast(G.T('toast.test', { name: app.levels[0].name }));
+  if (app.testMode) setTimeout(function () { showTutorial(); }, 0);   // 레벨 툴 테스트: 월드 첫 판이면 안내 카드도 (계정 복사본이라 저장 안 됨)
   function persist() { if (!app.testMode) G.Save.write(app.save); }
   app.game.onAccountChange = function () { persist(); G.Debug.refresh(app); };
   app.game.onFinish = function (g) {
@@ -70,11 +72,23 @@ var G = G || {};
   };
   // 계정 초기화 (스테이지 기록, 예전 잉크 성장 값도 0으로). 시간 정지 방식 설정과 모드별 기록은 남김
   app.resetAccount = function () {
-    app.account.inkBonus = 0; app.account.bottles = {}; app.account.records = {};
+    app.account.inkBonus = 0; app.account.bottles = {}; app.account.records = {}; app.account.tutSeen = {};
     persist();
     app.restart();
     app.game.toast('계정 초기화: 스테이지 기록을 지웠어요');
   };
+  // 월드 첫 판 안내 카드 (2차 데모, 사용자 결정 2026-10-23): 월드 1~5 의 order 1 스테이지에 처음 들어갈 때 한 번 (본 것은 계정에 저장)
+  function showTutorial() {
+    var lv = app.game.level.data, w = lv.world;
+    app.game.tutorial = w && w <= 5 && lv.order === 1 && !(app.account.tutSeen || {})[w] ? w : null;
+  }
+  function closeTutorial() {
+    var w = app.game.tutorial;
+    app.game.tutorial = null;
+    (app.account.tutSeen || (app.account.tutSeen = {}))[w] = true;
+    persist();
+    G.Sound.click();
+  }
   // 메뉴 이동: 'title' · 'worlds' · 'stages' (스테이지 목록은 app.menuWorld 의 것)
   app.toMenu = function (scene) {
     if (app.game.paused) G.Game.unpause(app.game);
@@ -112,6 +126,10 @@ var G = G || {};
       else if (e.code === 'KeyD') G.Debug.toggle(app);
       return;
     }
+    if (g.tutorial) {                              // 안내 카드: 스페이스·Enter·Esc 로 닫음
+      if (e.code === 'Space' || e.code === 'Enter' || e.code === 'Escape') { e.preventDefault(); if (!e.repeat) closeTutorial(); }
+      return;
+    }
     if (e.code === 'Escape' && !e.repeat && !app.testMode && (g.status === 'clear' || g.status === 'fail')) { e.preventDefault(); app.toMenu('stages'); return; }   // 결과 창: Esc = 스테이지 목록
     if (e.code === 'Escape') { e.preventDefault(); if (!e.repeat) G.Game.togglePause(g); return; }
     if (g.paused) {
@@ -142,6 +160,7 @@ var G = G || {};
     var g = app.game, sp = mouseScreen(e);
     G.Sound.unlock();
     if (app.scene !== 'play') { if (e.button === 0) menuAct(G.Menu.click(app, sp.x, sp.y)); return; }
+    if (g.tutorial) { if (e.button === 0) closeTutorial(); return; }
     if (e.button === 0 && G.UI.soundAt(sp.x, sp.y)) { toggleSound(); return; }   // 위 막대 스피커
     if (g.paused) {                                // 일시 정지 창: 버튼만
       var pa = e.button === 0 && G.UI.resultAt(g, sp.x, sp.y);

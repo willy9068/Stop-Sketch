@@ -714,9 +714,42 @@ G.UI = (function () {
     return Date.now() - jarDoneAt >= G.DATA.goalEnter.resultDelayMs;
   }
 
+  // 월드 첫 판 안내 카드 (2차 데모, 사용자 결정 2026-10-23): 새 물감 그림(tut_wN, 없으면 코드로 그린 선 견본) + 설명. 클릭·스페이스로 닫음
+  function drawTutorial(ctx, game) {
+    var w = game.tutorial, wd = G.DATA.worlds[w - 1], S = G.TS, cw = S('tutW'), ch = S('tutH'), x = (V.w - cw) / 2, y = (V.h - ch) / 2;
+    ctx.save();
+    ctx.fillStyle = 'rgba(43,33,24,0.45)'; ctx.fillRect(0, 0, V.w, V.h);
+    ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(x, y, cw, ch, 18); else ctx.rect(x, y, cw, ch);
+    ctx.fillStyle = '#FFFDF6'; ctx.fill(); ctx.lineWidth = 5; ctx.strokeStyle = C.outline; ctx.stroke();
+    ctx.fillStyle = wd.color; ctx.fillRect(x + 24, y + 22, cw - 48, 10);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = 'bold ' + S('tutTitleSize') + 'px ' + S('font'); ctx.fillStyle = wd.color === '#2B2118' ? C.outline : wd.color;
+    ctx.fillText(G.T('tut.w' + w + '.title'), V.w / 2, y + 70);
+    var pic = G.Assets.get('tut_w' + w), ph = 160, pw = ph * 16 / 9, py = y + 100;
+    if (pic) ctx.drawImage(pic, V.w / 2 - pw / 2, py, pw, ph);
+    else {                                         // 그림이 없을 때: 땅 두 덩이 + 새 색 선 견본 + 물방울
+      var gx = V.w / 2 - pw / 2, gy = py + ph - 40, col = C[G.DATA.inks.order[Math.min(w, 5) - 1]];
+      ctx.fillStyle = C.ground; ctx.fillRect(gx, gy, pw * 0.38, 40); ctx.fillRect(gx + pw * 0.62, gy, pw * 0.38, 40);
+      ctx.strokeStyle = C.outline; ctx.lineWidth = 3; ctx.strokeRect(gx, gy, pw * 0.38, 40); ctx.strokeRect(gx + pw * 0.62, gy, pw * 0.38, 40);
+      ctx.strokeStyle = col; ctx.lineWidth = 10; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(gx + pw * 0.3, gy - 5); ctx.quadraticCurveTo(gx + pw * 0.5, gy - 30 * (w === 3 ? 2 : 0.4), gx + pw * 0.7, gy - 5); ctx.stroke();
+      var t = (Date.now() / 1600) % 1, hx = gx + 30 + t * (pw - 60), hy = gy - 22 - (hx > gx + pw * 0.3 && hx < gx + pw * 0.7 ? Math.sin((hx - gx - pw * 0.3) / (pw * 0.4) * Math.PI) * (w === 3 ? 50 : 10) : 0);
+      var hero = G.Assets.get('char_run');
+      if (hero) ctx.drawImage(hero, hx - 26, hy - 30, 52, 52); else { ctx.fillStyle = '#CDEFF7'; ctx.beginPath(); ctx.arc(hx, hy, 18, 0, 6.283); ctx.fill(); ctx.stroke(); }
+    }
+    ctx.fillStyle = S('textColor'); ctx.font = S('tutBodySize') + 'px ' + S('font');
+    G.T('tut.w' + w + '.body').split('\n').forEach(function (l, i) { ctx.fillText(l, V.w / 2, py + ph + 36 + i * S('tutBodySize') * 1.4); });
+    ctx.font = S('tutMoreSize') + 'px ' + S('font'); ctx.fillStyle = 'rgba(43,33,24,0.75)';
+    ctx.fillText(G.T('tut.w' + w + '.more'), V.w / 2, y + ch - 62);
+    ctx.font = 'bold ' + S('tutMoreSize') + 'px ' + S('font'); ctx.fillStyle = S('textColor');
+    ctx.fillText(G.T('tut.go'), V.w / 2, y + ch - 30);
+    ctx.restore();
+  }
+
   function drawResult(ctx, game) {
     var ink = G.TS('textColor');
     resultShown = false;
+    if (game.tutorial) { drawTutorial(ctx, game); return; }
     if (game.status === 'run') { if (game.paused) drawPause(ctx, game); return; }
     if (game.status === 'ready') {
       var ry = G.TS('readyY');

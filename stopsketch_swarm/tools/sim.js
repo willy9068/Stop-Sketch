@@ -87,6 +87,45 @@ var PLANS = {
 };
 function hy(g) { return g.hero.body ? g.hero.body.position.y : -Infinity; }
 
+// 2차 데모 월드 1(검정)·2(파랑) 스테이지 초안 풀이 (Claude 2026-10-23, 2일차). 사용자가 레벨 툴로 다듬으면 여기도 맞춰 고칠 것
+function P(pts) { return pts.map(function (p) { return { x: p[0], y: p[1] }; }); }
+PLANS.s1_1 = [
+  { what: '첫 틈 다리', color: 'black', when: function (g) { return hx(g) > -350; }, pts: P([[260, 494], [520, 494]]) },
+  { what: '작은 틈 다리', color: 'black', when: function (g) { return hx(g) > 700; }, pts: P([[1070, 494], [1250, 494]]) }
+];
+PLANS.s1_2 = [
+  { what: '첫 오르막', color: 'black', when: function (g) { return hx(g) > 300; }, pts: P([[420, 496], [700, 394], [760, 394]]) },
+  { what: '둘째 오르막', color: 'black', when: function (g) { return hx(g) > 760 && hy(g) < 420; }, pts: P([[920, 396], [1100, 324], [1150, 324]]) }
+];
+PLANS.s1_3 = [
+  { what: '구덩이 오르막', color: 'black', when: function (g) { return hy(g) > 600 && hx(g) > 500; }, pts: P([[640, 636], [1000, 496], [1060, 496]]) },
+  { what: '벽 넘는 오르막', color: 'black', when: function (g) { return hx(g) > 1020 && hy(g) < 520; }, pts: P([[1150, 496], [1480, 346], [1540, 346], [1780, 496]]) }
+];
+PLANS.s1_4 = [
+  { what: '위로 휜 다리', color: 'black', when: function (g) { return hx(g) > -350; }, pts: P([[220, 494], [300, 470], [360, 462], [420, 470], [500, 494]]) },
+  { what: '첫 오르막', color: 'black', when: function (g) { return hx(g) > 520; }, pts: P([[640, 496], [900, 384], [950, 384]]) },
+  { what: '둘째 오르막', color: 'black', when: function (g) { return hx(g) > 1320 && hy(g) > 500; }, pts: P([[1440, 556], [1700, 414], [1750, 414]]) }
+];
+PLANS.s2_1 = [
+  { what: '첫 비탈 앞 파랑', color: 'blue', when: function (g) { return hx(g) > -300; }, pts: P([[210, 494], [395, 494]]) },
+  { what: '둘째 비탈 앞 파랑', color: 'blue', when: function (g) { return hx(g) > 650; }, pts: P([[840, 354], [995, 354]]) }
+];
+PLANS.s2_2 = [
+  { what: '긴 파랑 1', color: 'blue', when: function (g) { return hx(g) > -400; }, pts: P([[-300, 494], [380, 494]]) },
+  { what: '틈 다리', color: 'black', when: function (g) { return hx(g) > 400; }, pts: P([[1060, 494], [1300, 494]]) },
+  { what: '긴 파랑 2', color: 'blue', when: function (g) { return hx(g) > 1250; }, pts: P([[1400, 494], [2050, 494]]) }
+];
+PLANS.s2_3 = [
+  { what: '파랑 다리', color: 'blue', when: function (g) { return hx(g) > -350; }, pts: P([[260, 494], [540, 494]]) },
+  { what: '턱 앞 파랑 오르막', color: 'blue', when: function (g) { return hx(g) > 700; }, pts: P([[930, 396], [1100, 326], [1150, 326]]) }
+];
+PLANS.s2_4 = [
+  { what: '긴 파랑', color: 'blue', when: function (g) { return hx(g) > -400; }, pts: P([[-250, 494], [400, 494]]) },
+  { what: '파랑 다리', color: 'blue', when: function (g) { return hx(g) > -100; }, pts: P([[440, 494], [760, 494]]) },
+  { what: '비탈 앞 파랑', color: 'blue', when: function (g) { return hx(g) > 600; }, pts: P([[800, 494], [1000, 494]]) },
+  { what: '턱 넘는 파랑', color: 'blue', when: function (g) { return hx(g) > 1250; }, pts: P([[1420, 346], [1640, 246], [1700, 246], [1820, 354]]) }
+];
+
 console.log('1 아무것도 안 함');
 G.LEVELS.forEach(function (lv) { report('  ' + lv.name, play(lv, [], -1, 60)); });
 

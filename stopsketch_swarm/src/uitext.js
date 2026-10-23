@@ -80,7 +80,23 @@ G.UITEXT = {
     "stages.inks": "쓸 수 있는 물감",
     "stages.boss": "도전",
     "stages.purity": "정화 {purity}%",
-    "stages.locked": "앞 스테이지를 깨면 열려요"
+    "stages.locked": "앞 스테이지를 깨면 열려요",
+    "tut.w1.title": "검정 물감",
+    "tut.w1.body": "스페이스로 시간을 멈추고 드래그해서 그려요.\n검정 선은 다리가 되고, 비스듬히 그리면 오르막이 돼요.\n선은 재생하면 떨어지니 양쪽 땅에 걸쳐 주세요.",
+    "tut.w1.more": "높은 턱 앞에서는 되돌아서요 · 우클릭으로 선을 빨아들여 잉크를 돌려받아요",
+    "tut.w2.title": "새 물감: 파랑",
+    "tut.w2.body": "파랑을 밟으면 빨라져요.\n빨라진 동안은 가파른 비탈(35도)도 올라가요.",
+    "tut.w2.more": "새 위험: 지우개 — 뒤에서 따라와 닿는 것을 지워요 (멈춘 동안엔 지우개도 멈춰요)",
+    "tut.w3.title": "새 물감: 빨강",
+    "tut.w3.body": "빨강을 밟으면 튕겨 올라요.\n세워서 그리면 옆으로 튕기고 방향이 바뀌어요.",
+    "tut.w3.more": "새 위험: 가시 — 닿으면 사라져요. 위에 선을 깔면 지나갈 수 있어요",
+    "tut.w4.title": "새 물감: 초록",
+    "tut.w4.body": "초록은 떨어지지 않고 천천히 떠올라요.\n위에 탄 물방울과 선을 들어 올려요.",
+    "tut.w4.more": "새 위험: 발사기 — 같은 색으로 그린 선에만 막혀요",
+    "tut.w5.title": "새 물감: 노랑",
+    "tut.w5.body": "노랑으로 칠한 자리의 검은 결정 막대가 지워져요.\n노랑 선은 바로 사라지고 잉크는 절반만 써요.",
+    "tut.w5.more": "길을 막은 결정을 지우고, 필요하면 다시 그려요",
+    "tut.go": "클릭 · 스페이스: 시작하기"
   },
   style: {
     "font": "sans-serif",
@@ -199,6 +215,11 @@ G.UITEXT = {
     "stageTileSize": 170,
     "stageTileGap": 44,
     "stageNumSize": 40,
+    "tutW": 820,
+    "tutH": 470,
+    "tutTitleSize": 34,
+    "tutBodySize": 20,
+    "tutMoreSize": 16,
     "musicVolume": 0.1,
     "sfxVolume": 0.2
   }

@@ -176,7 +176,8 @@ G.LevelCheck = (function () {
     if (lv.drops.follow && lv.drops.gap <= 0) add('error', '대열 간격은 0보다 커야 해요');
     if (lv.drops.heroSpeed <= 0 || lv.drops.smallSpeed <= 0) add('error', '물방울 속도는 0보다 커야 해요');
     if (!lv.noEraser && lv.drops.smallSpeed < lv.eraser.speed) add('warn', '작은 물방울이 지우개보다 느려요 — ' + (lv.drops.follow ? '대열에서 이탈해 ' : '') + '뒤처진 물방울은 모두 지워져요');
-    if (lv.noEraser) add('warn', '지우개 꺼짐 (테스트용) — 제출 전에 다시 켜세요');
+    if (lv.noEraser && lv.world === 1) add('info', '지우개 없음 (월드 1 검정: 지우개는 월드 2 부터, 2026-10-23)');
+    else if (lv.noEraser) add('warn', '지우개 꺼짐 (테스트용) — 제출 전에 다시 켜세요');
     else add('info', '지우개: ' + (lv.eraser.delayMs / 1000) + '초 뒤 출발, 속도 ' + lv.eraser.speed + ' (주인공 ' + lv.drops.heroSpeed + ')');
     if (!lv.noEraser && lv.eraser.speed >= lv.drops.heroSpeed) add('warn', '지우개가 주인공보다 빠르거나 같아요 — 멈추지 않으면 따라잡혀요');
     add('info', '구간 경계 ' + lv.segments.length + '개');
