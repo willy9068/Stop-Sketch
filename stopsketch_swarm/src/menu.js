@@ -22,8 +22,9 @@ G.Menu = (function () {
     String(s).split('\n').forEach(function (l, i) { ctx.fillText(l, x, y + i * size * 1.25); });
   }
   // 9분할 없이 늘려 그리는 버튼 (ui_button 이 있으면 양 끝을 살려 세 조각으로)
+  //   b.icon 이 있고 그 그림도 있으면 글자 앞에 그림 (뒤로 가기 ui_back — 이때 글자의 ← 는 뺌)
   function drawButton(ctx, b) {
-    var im = img('ui_button'), h = hot(b);
+    var im = img('ui_button'), h = hot(b), ic = b.icon && img(b.icon), label = b.label, size = b.size || S('menuBtnSize'), tx = b.x + b.w / 2;
     ctx.save();
     if (h) { ctx.translate(b.x + b.w / 2, b.y + b.h / 2); ctx.scale(1.04, 1.04); ctx.translate(-b.x - b.w / 2, -b.y - b.h / 2); }
     if (im) {
@@ -35,8 +36,44 @@ G.Menu = (function () {
       rr(ctx, b.x, b.y, b.w, b.h, 12); ctx.fillStyle = h ? S('resultBtnHot') : S('resultBtnBg'); ctx.fill();
       ctx.lineWidth = 3; ctx.strokeStyle = C.outline; ctx.stroke();
     }
-    text(ctx, b.label, b.x + b.w / 2, b.y + b.h / 2, b.size || S('menuBtnSize'), null, true);
+    if (ic) {
+      label = label.replace(/^←\s*/, '');
+      ctx.font = 'bold ' + size + 'px ' + S('font');
+      var is = b.h * 0.62, tw = ctx.measureText(label).width, x0 = b.x + (b.w - is - 6 - tw) / 2;
+      ctx.drawImage(ic, x0, b.y + (b.h - is) / 2, is, is);
+      tx = x0 + is + 6 + tw / 2;
+    }
+    text(ctx, label, tx, b.y + b.h / 2, size, null, true);
     ctx.restore();
+  }
+  // 월드 카드 그림: 실제 카드 영역(data.js art.cardCrop)만 잘라 위(테이프)·아래는 비율대로, 가운데만 늘려 세로 칸에 맞춤
+  function drawCard(ctx, im, b) {
+    var A = G.DATA.art, c = A.cardCrop || [0, 0, im.width, im.height], e = A.cardEnds || [0, 0], k = b.w / c[2], top = e[0] * k, bot = e[1] * k;
+    ctx.drawImage(im, c[0], c[1], c[2], e[0], b.x, b.y, b.w, top);
+    ctx.drawImage(im, c[0], c[1] + e[0], c[2], c[3] - e[0] - e[1], b.x, b.y + top, b.w, b.h - top - bot);
+    ctx.drawImage(im, c[0], c[1] + c[3] - e[1], c[2], e[1], b.x, b.y + b.h - bot, b.w, bot);
+  }
+  // 새 월드 열림 효과 (fx_unlock, 이미지 문서 16장): 월드 색으로 물들여 카드 아이콘 위에서 커지며 사라짐. 그림이 없으면 안 그림
+  var bursts = {}, burstCv = {};
+  function unlockFxImage(color) {
+    var im = img('fx_unlock');
+    if (!im) return null;
+    if (burstCv[color] && burstCv[color].src === im) return burstCv[color].cv;
+    var cv = document.createElement('canvas'), x = cv.getContext('2d');
+    cv.width = im.width; cv.height = im.height;
+    x.drawImage(im, 0, 0); x.globalCompositeOperation = 'source-in'; x.fillStyle = color; x.fillRect(0, 0, cv.width, cv.height);
+    burstCv[color] = { src: im, cv: cv };
+    return cv;
+  }
+  function drawBurst(ctx, b) {
+    var w = b.world, start = bursts[w.id], F = G.DATA.art.unlockFx;
+    if (!start) return;
+    var p = (Date.now() - start) / F.ms;
+    if (p >= 1) { delete bursts[w.id]; return; }
+    var fx = unlockFxImage(w.color), s = b.w * F.size * (0.55 + 0.45 * Math.sqrt(p)), cx = b.x + b.w / 2, cy = b.y + b.h * 0.36;
+    if (!fx) return;
+    ctx.save(); ctx.globalAlpha = p < 0.15 ? p / 0.15 : 1 - (p - 0.15) / 0.85;
+    ctx.drawImage(fx, cx - s / 2, cy - s / 2, s, s); ctx.restore();
   }
   function drawLock(ctx, cx, cy, s) {
     var im = img('ui_lock');
@@ -81,7 +118,7 @@ G.Menu = (function () {
     G.UI.drawBackground(ctx, 'bg_plain', (Date.now() - t0) * 0.02);
   }
   function backButton() {
-    return { act: 'back', x: S('menuBackX'), y: S('menuBackY'), w: S('menuBackW'), h: S('menuBackH'), label: G.T('menu.back'), size: S('menuSmallSize') };
+    return { act: 'back', x: S('menuBackX'), y: S('menuBackY'), w: S('menuBackW'), h: S('menuBackH'), label: G.T('menu.back'), size: S('menuSmallSize'), icon: 'ui_back' };
   }
 
   // ---- 화면 셋 ----
@@ -121,13 +158,13 @@ G.Menu = (function () {
       var tilt = ((w.id * 37) % 7 - 3) * 0.006;
       ctx.translate(b.x + b.w / 2, b.y + b.h / 2); ctx.rotate(tilt); if (h) ctx.scale(1.05, 1.05); ctx.translate(-b.x - b.w / 2, -b.y - b.h / 2);
       var card = img('world_card');
-      if (card) ctx.drawImage(card, b.x, b.y, b.w, b.h);
+      if (card) drawCard(ctx, card, b);
       else {
         rr(ctx, b.x, b.y, b.w, b.h, 14); ctx.fillStyle = '#FFFDF6'; ctx.fill();
         ctx.lineWidth = 4; ctx.strokeStyle = C.outline; ctx.stroke();
         ctx.fillStyle = 'rgba(255,233,168,0.85)'; ctx.fillRect(b.x + b.w / 2 - 34, b.y - 10, 68, 22);   // 테이프
       }
-      ctx.fillStyle = w.color; ctx.fillRect(b.x + 14, b.y + 14, b.w - 28, 8);   // 월드 색 띠
+      ctx.fillStyle = w.color; ctx.fillRect(b.x + 14, b.y + (card ? 34 : 14), b.w - 28, 8);   // 월드 색 띠 (카드 그림이면 테이프 아래)
       drawWorldIcon(ctx, w, b.x + b.w / 2, b.y + b.h * 0.36, b.w * 0.62);
       text(ctx, G.T('world.' + w.id + '.name'), b.x + b.w / 2, b.y + b.h * 0.66, S('worldNameSize'), null, true);
       text(ctx, G.T('world.' + w.id + '.desc'), b.x + b.w / 2, b.y + b.h * 0.76, S('worldDescSize'), 'rgba(43,33,24,0.7)');
@@ -140,7 +177,11 @@ G.Menu = (function () {
       }
       ctx.restore();
       btns.push(b);
+      // 처음 열린 월드(월드 1 제외)를 이 화면에서 처음 보면 열림 효과 한 번 (본 것은 계정 worldSeen 에 저장, ?unlock 확인 모드는 제외)
+      var seen = app.account.worldSeen || (app.account.worldSeen = {});
+      if (open && w.id > 1 && !app.unlockAll && !seen[w.id]) { seen[w.id] = true; bursts[w.id] = Date.now(); if (app.persist) app.persist(); }
     });
+    btns.forEach(function (b) { if (b.world) drawBurst(ctx, b); });
     drawButton(ctx, btns[0]);
     var hb = btns.filter(function (b) { return b.world && hot(b); })[0];
     if (hb && !unlockedW(app, hb.world.id)) text(ctx, G.T('worlds.locked'), V.w / 2, S('worldCardY') + S('worldCardH') + 46, S('menuSmallSize'), C.outline);
@@ -173,8 +214,8 @@ G.Menu = (function () {
       }
       text(ctx, w.id + '-' + b.n, cx, b.y + b.h * 0.42, S('stageNumSize'), b.last ? w.color : null, true);
       if (b.last) text(ctx, G.T('stages.boss'), cx, b.y + b.h * 0.16, S('worldDescSize'), w.color, true);
-      var total = starsOf(b.lv), got = rec ? Math.min(total, rec.stars || 0) : 0, sr = 13;
-      for (var k = 0; k < total; k++) drawStar(ctx, cx + (k - (total - 1) / 2) * (sr * 2.3), b.y + b.h * 0.74, sr, k < got);
+      var total = starsOf(b.lv), got = rec ? Math.min(total, rec.stars || 0) : 0, sr = 13, ts = tile ? G.DATA.art.tileStars : { y: 0.74, dx: 0 };   // 그림 칸이면 접힌 귀퉁이를 피해서
+      for (var k = 0; k < total; k++) drawStar(ctx, cx + b.w * ts.dx + (k - (total - 1) / 2) * (sr * 2.3), b.y + b.h * ts.y, sr, k < got);
       if (rec && rec.clears) text(ctx, G.T('stages.purity', { purity: Math.round((rec.bestPurity || 0) * 100) }), cx, b.y + b.h + 22, S('worldDescSize'), 'rgba(43,33,24,0.7)');
       if (!open) { rr(ctx, b.x, b.y, b.w, b.h, 10); ctx.fillStyle = 'rgba(120,112,104,0.55)'; ctx.fill(); drawLock(ctx, cx, b.y + b.h / 2, b.w * 0.5); }
       ctx.restore();

@@ -17,9 +17,10 @@ G.makeRng = function (seed) {
 //   inkBonus: 잉크 병으로 늘어난 최대량(영구) / bottles: 먹은 잉크 병 { "구간id:병id": true }
 //   records: 스테이지별 기록 { id: { starKeys{별key:true}, stars(모은 별 수), bestPurity(0~1), bestMs, clears, tries } }
 //   tutSeen: 본 월드 안내 카드 { 월드 번호: true } (2차 데모, 2026-10-23)
+//   worldSeen: 열림 효과(fx_unlock)를 본 월드 { 월드 번호: true } (2026-10-24)
 G.Save = {
   blank: function () {
-    return { v: G.DATA.version, timeMode: G.DATA.defaultTimeMode, stats: {}, inkBonus: 0, bottles: {}, records: {}, tutSeen: {} };
+    return { v: G.DATA.version, timeMode: G.DATA.defaultTimeMode, stats: {}, inkBonus: 0, bottles: {}, records: {}, tutSeen: {}, worldSeen: {} };
   },
 
   // 빠진 칸을 채운다 (예전 저장에는 inkBonus 등이 없음)

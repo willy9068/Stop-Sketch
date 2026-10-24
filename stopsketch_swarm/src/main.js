@@ -54,6 +54,7 @@ var G = G || {};
   if (app.testMode) app.game.toast(G.T('toast.test', { name: app.levels[0].name }));
   if (app.testMode) setTimeout(function () { showTutorial(); }, 0);   // 레벨 툴 테스트: 월드 첫 판이면 안내 카드도 (계정 복사본이라 저장 안 됨)
   function persist() { if (!app.testMode) G.Save.write(app.save); }
+  app.persist = persist;   // 메뉴가 worldSeen(열림 효과 본 월드)을 저장할 때
   app.game.onAccountChange = function () { persist(); G.Debug.refresh(app); };
   app.game.onFinish = function (g) {
     var st = app.save.stats[g.modeKey] || (app.save.stats[g.modeKey] = { tries: 0, clears: 0, fails: 0, stopsUsed: 0 });
@@ -72,7 +73,7 @@ var G = G || {};
   };
   // 계정 초기화 (스테이지 기록, 예전 잉크 성장 값도 0으로). 시간 정지 방식 설정과 모드별 기록은 남김
   app.resetAccount = function () {
-    app.account.inkBonus = 0; app.account.bottles = {}; app.account.records = {}; app.account.tutSeen = {};
+    app.account.inkBonus = 0; app.account.bottles = {}; app.account.records = {}; app.account.tutSeen = {}; app.account.worldSeen = {};
     persist();
     app.restart();
     app.game.toast('계정 초기화: 스테이지 기록을 지웠어요');
