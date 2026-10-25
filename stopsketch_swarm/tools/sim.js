@@ -189,7 +189,9 @@ PLANS.s5_2 = [
 ];
 PLANS.s5_3 = [
   { what: '결정 비탈 지우고 오르막', strokes: [{ color: 'yellow', pts: P([[620, 470], [790, 310]]) }, { color: 'black', pts: P([[440, 496], [800, 294], [850, 294]]) }], when: function (g) { return hx(g) > -350; } },
-  { what: '천장 기둥 지우기', color: 'yellow', when: function (g) { return hx(g) > 850 && hy(g) < 320; }, pts: P([[1120, 285], [1180, 285]]) }
+  // 천장 결정 위로 오르는 검정 오르막 (2026-10-25: 예전 풀이 "천장 기둥 지우기"는 잘린 밑동 + 조각 ≈25px 을 뛰어 천장 위로 올라갔는데,
+  //   낮은 턱 점프를 22px 로 줄여 막힘. 천장과 바닥 사이 35px 은 주인공(44)이 못 지나가고, 세 번째 별이 천장 위에 있음)
+  { what: '천장 오르막', color: 'black', when: function (g) { return hx(g) > 850 && hy(g) < 320; }, pts: P([[960, 299], [1190, 249]]) }
 ];
 PLANS.s5_4 = [
   { what: '우리 지우기', color: 'yellow', when: function (g) { return hx(g) > -400; }, pts: P([[260, 488], [600, 488]]) },
@@ -765,7 +767,8 @@ G.LEVELS.forEach(function (lv) {
 })();
 
 // 30. 낮은 턱 살짝 점프 (사용자 요청 2026-10-23: 애매하게 낮은 턱에서 억울하게 되돌아가지 않게)
-//     stepUp(주인공 16) 이하는 그냥 넘고, hop.up(주인공 30) 이하는 살짝 뛰어 넘고, 그보다 높으면 되돌아섬. 작은 물방울은 반지름 비율
+//     stepUp(주인공 16) 이하는 그냥 넘고, hop.up(주인공 22, 2026-10-25 에 30 에서 줄임) 이하는 살짝 뛰어 넘고, 그보다 높으면 되돌아섬. 작은 물방울은 minUp 16
+//     세운 Λ 선 (2026-10-25): 높이 50 은 위쪽이 살짝 뒤로 기울어도 뛰지 않고 되돌아섬
 (function () {
   function run(h, who, ceil) {
     var lv = { id: 't', name: '시험', ink: 3000, stops: 9, start: { x: 300 }, goal: { x: 3000 }, inks: ['black'], noEraser: true,
@@ -781,9 +784,19 @@ G.LEVELS.forEach(function (lv) {
     if (!d || !d.body) return h + '?';
     return h + (d.body.position.x > 900 ? '넘음' + (d.hops ? '(점프' + d.hops + ')' : '') : '돌아섬');
   }
-  var hs = [10, 16, 20, 26, 30, 34, 44];
-  console.log('30 낮은 턱 점프: 주인공 ' + hs.map(function (h) { return run(h, 'hero'); }).join(' ') +
+  // 세운 Λ 선 (사진처럼 거의 수직, 높이 h): 평지 위에 그려 떨어뜨린 뒤 주인공이 넘는지
+  function steep(h) {
+    var lv = { id: 't', name: '시험', ink: 3000, stops: 9, start: { x: 300 }, goal: { x: 3000 }, inks: ['black'], noEraser: true,
+      ground: [{ x0: -400, x1: 3400, top: 600 }], props: [{ type: 'wall', x: -400, y: 300, w: 40, h: 300 }] };   // 돌아서면 왼쪽 끝에서 떨어지지 않게
+    var g = G.Game.create('A', lv); G.Game.start(g);
+    drawLine(g, [{ x: 600, y: 598 }, { x: 600 + h / 5.5, y: 600 - h }, { x: 600 + h / 2.75, y: 598 }], 'black');
+    for (var i = 0; i < 60 * 6 && g.status === 'run'; i++) G.Game.update(g, STEP);
+    if (!g.hero.body) return 'Λ' + h + '?(' + g.status + ' ' + g.failReason + ' t' + (g.timeMs / 1000).toFixed(1) + ')';
+    return 'Λ' + h + (g.hero.body.position.x > 700 ? '넘음' + (g.hero.hops ? '(점프' + g.hero.hops + ')' : '') : '돌아섬');
+  }
+  var hs = [10, 16, 20, 24, 30, 44];
+  console.log('30 낮은 턱 점프: 주인공 ' + hs.map(function (h) { return run(h, 'hero'); }).join(' ') + ' · ' + [40, 55].map(steep).join(' ') +
     '\n   작은 물방울(혼자) ' + [8, 12, 16, 18, 20, 24].map(function (h) { return run(h, 'free'); }).join(' ') +
-    '\n   대열 작은 물방울 ' + [20, 26].map(function (h) { return run(h, 'line'); }).join(' ') + ' · 위가 막힌 26px 턱(주인공) ' + run(26, 'hero', true) +
-    '\n   (주인공은 30 까지 넘고 34·44 는 돌아섬, 작은 물방울은 20 까지 넘고 24 는 돌아섬, 위가 막히면 돌아서야 정상)');
+    '\n   대열 작은 물방울 ' + [16, 20].map(function (h) { return run(h, 'line'); }).join(' ') + ' · 위가 막힌 20px 턱(주인공) ' + run(20, 'hero', true) +
+    '\n   (주인공은 22 까지 넘고 24 부터 돌아섬, 세운 Λ 는 돌아섬, 작은 물방울은 16 까지 넘고 18 부터 돌아섬, 위가 막히면 돌아서야 정상)');
 })();
