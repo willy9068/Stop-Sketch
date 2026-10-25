@@ -63,3 +63,11 @@ G.applyUiText = function () {
   G.DATA.inks.order.forEach(function (c) { var t = G.UITEXT.text['ink.' + c]; if (t != null && G.DATA.inks[c]) G.DATA.inks[c].name = t; });
 };
 G.applyUiText();
+
+// 게임 전체 설정 (levels.js G.LEVEL_SETTINGS, 레벨 툴이 저장. 사용자 요청 2026-10-25): 그리는 선 굵기
+G.applyLevelSettings = function (s) {
+  if (!s || !G.DATA) return;
+  var t = +s.inkThickness;
+  if (t > 0) G.DATA.ink.thickness = Math.max(G.DATA.ink.thicknessMin, Math.min(G.DATA.ink.thicknessMax, t));
+};
+G.applyLevelSettings(G.LEVEL_SETTINGS);

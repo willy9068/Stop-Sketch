@@ -172,8 +172,13 @@ G.Drop = {
     function faceX(y) { for (var k = 0; k <= r + H.probe + 8; k++) { var x = b.position.x + d.dir * k; if (hit(x, y)) return k; } return -1; }
     var k1 = faceX(bottom - 3), k2 = faceX(bottom - stepUp * 0.75);
     if (k1 < 0 || (k2 >= 0 && k2 - k1 > 3)) return false;   // k2 < 0: 턱이 그보다 낮음 → 뜀
-    var fx = b.position.x + d.dir * (k1 + 2);
-    if (hit(fx, bottom - up - 2) || hit(fx, bottom - up - r * 2) || hit(b.position.x, bottom - up - r * 2)) return false;   // 턱 위·머리 위가 막힘 → 되돌아섬
+    // 턱 위·머리 위가 막힘 → 되돌아섬. 앞 옆면부터 반지름 × clear 폭을 훑음 (사용자 요청 2026-10-25: 앞 한 점만 보면
+    //   뒤로 살짝 기운 높은 선(거의 세운 Λ)의 위쪽을 놓쳐 50px 선도 뛰어넘었음)
+    for (var s = 0; s <= r * H.clear; s += 2) {
+      var fx = b.position.x + d.dir * (k1 + 2 + s);
+      if (hit(fx, bottom - up - 2) || hit(fx, bottom - up - r)) return false;
+    }
+    if (hit(b.position.x, bottom - up - r * 2)) return false;
     var g = engine.gravity.y * engine.gravity.scale * G.DATA.loop.stepMs * G.DATA.loop.stepMs;
     M.Body.setVelocity(b, { x: d.dir * Math.max(d.speed, Math.abs(b.velocity.x)), y: -Math.sqrt(2 * g * (up + H.extra)) });
     d.grounded = false;

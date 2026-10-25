@@ -1138,3 +1138,6 @@ G.LEVELS = [
     ]
   }
 ];
+
+// 게임 전체 설정 (레벨 툴 "게임 전체"): inkThickness = 플레이어가 그리는 선 굵기 (물리 두께도 같음)
+G.LEVEL_SETTINGS = {"inkThickness":9};

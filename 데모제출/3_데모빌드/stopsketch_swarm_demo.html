@@ -69,7 +69,9 @@ G.DATA = {
     // 낮은 턱 살짝 점프 (사용자 요청 2026-10-23: 애매하게 낮은 턱에서 억울하게 되돌아가지 않게)
     //   stepUp 보다 높고 up 이하인 턱(작은 물방울은 반지름 비율로 줄이되 minUp 보다 작지 않게) 앞에서는 되돌아서지 않고 그 높이 + extra 만큼 뛰어 넘음
     //   위가 막혀 있으면(천장·더 높은 벽) 뛰지 않고 되돌아섬. cdMs: 뛴 뒤 이만큼은 벽 판정으로 되돌아서지 않음. probe: 앞을 살피는 거리 px
-    hop: { up: 30, minUp: 20, extra: 6, cdMs: 400, probe: 4 },
+    //   clear: 턱 위가 비었는지 앞 옆면부터 반지름 × 이만큼 훑음
+    //   (사용자 결정 2026-10-25: 실수로 평지보다 살짝 높게 그린 선에서 되돌아가지 않게 하는 정도만. up 30 → 22, minUp 20 → 16)
+    hop: { up: 22, minUp: 16, extra: 6, cdMs: 400, probe: 4, clear: 1.5 },
     turnCooldownMs: 250,
     wakeReach: 1.4,        // 잠든 물방울과 걷는 물방울 중심 거리가 (두 반지름 합 × 이 값) 안이면 깨어나 합류
     pinchMs: 120,          // 위·아래로 이만큼 끼어 있으면 가까운 옆으로 밀어냄 (끼여서 죽지 않음, 사용자 결정 2026-10-20)
@@ -134,7 +136,8 @@ G.DATA = {
     minStrokeLen: 30,
     maxStrokeLen: 700,
     smoothPasses: 2,
-    thickness: 9,          // 선 두께 (물리 바디도 같은 두께)
+    thickness: 9,          // 선 두께 (물리 바디도 같은 두께). 기본값 — 실제 값은 levels.js G.LEVEL_SETTINGS.inkThickness (레벨 툴 "게임 전체", 사용자 요청 2026-10-25)
+    thicknessMin: 4, thicknessMax: 20,   // 레벨 툴에서 고를 수 있는 범위
     friction: 0.4,         // 떨어지는 선끼리·땅과의 마찰 (선이 미끄러져 내려가지 않게)
     density: 0.006,        // 선 밀도 (물방울보다 훨씬 무거움 → 걷는 물방울이 밀어도 거의 안 움직임)
     suckReach: 36,         // 우클릭한 곳에서 화면 기준 이 거리(px) 안의 선을 빨아들임. 줌 아웃하면 세계 거리로는 더 넓어짐 (사용자 요청 2026-10-20: 18 → 36)
@@ -1697,6 +1700,9 @@ G.LEVELS = [
   }
 ];
 
+// 게임 전체 설정 (레벨 툴 "게임 전체"): inkThickness = 플레이어가 그리는 선 굵기 (물리 두께도 같음)
+G.LEVEL_SETTINGS = {"inkThickness":9};
+
 </script>
 <script>
 // rules.js
@@ -2224,6 +2230,14 @@ G.applyUiText = function () {
 };
 G.applyUiText();
 
+// 게임 전체 설정 (levels.js G.LEVEL_SETTINGS, 레벨 툴이 저장. 사용자 요청 2026-10-25): 그리는 선 굵기
+G.applyLevelSettings = function (s) {
+  if (!s || !G.DATA) return;
+  var t = +s.inkThickness;
+  if (t > 0) G.DATA.ink.thickness = Math.max(G.DATA.ink.thicknessMin, Math.min(G.DATA.ink.thicknessMax, t));
+};
+G.applyLevelSettings(G.LEVEL_SETTINGS);
+
 </script>
 <script>
 // physics.js
@@ -2582,8 +2596,13 @@ G.Drop = {
     function faceX(y) { for (var k = 0; k <= r + H.probe + 8; k++) { var x = b.position.x + d.dir * k; if (hit(x, y)) return k; } return -1; }
     var k1 = faceX(bottom - 3), k2 = faceX(bottom - stepUp * 0.75);
     if (k1 < 0 || (k2 >= 0 && k2 - k1 > 3)) return false;   // k2 < 0: 턱이 그보다 낮음 → 뜀
-    var fx = b.position.x + d.dir * (k1 + 2);
-    if (hit(fx, bottom - up - 2) || hit(fx, bottom - up - r * 2) || hit(b.position.x, bottom - up - r * 2)) return false;   // 턱 위·머리 위가 막힘 → 되돌아섬
+    // 턱 위·머리 위가 막힘 → 되돌아섬. 앞 옆면부터 반지름 × clear 폭을 훑음 (사용자 요청 2026-10-25: 앞 한 점만 보면
+    //   뒤로 살짝 기운 높은 선(거의 세운 Λ)의 위쪽을 놓쳐 50px 선도 뛰어넘었음)
+    for (var s = 0; s <= r * H.clear; s += 2) {
+      var fx = b.position.x + d.dir * (k1 + 2 + s);
+      if (hit(fx, bottom - up - 2) || hit(fx, bottom - up - r)) return false;
+    }
+    if (hit(b.position.x, bottom - up - r * 2)) return false;
     var g = engine.gravity.y * engine.gravity.scale * G.DATA.loop.stepMs * G.DATA.loop.stepMs;
     M.Body.setVelocity(b, { x: d.dir * Math.max(d.speed, Math.abs(b.velocity.x)), y: -Math.sqrt(2 * g * (up + H.extra)) });
     d.grounded = false;
@@ -5491,7 +5510,8 @@ var G = G || {};
       G.Debug.refresh(app);
     }
   };
-  var m = /#test=(.+)$/.exec(location.hash);
+  var m = /[#&]test=(.+)$/.exec(location.hash), ms = /#set=([^&]+)/.exec(location.hash);
+  if (ms) { try { G.applyLevelSettings(JSON.parse(decodeURIComponent(ms[1]))); } catch (e) { /* 잘못된 주소면 무시 */ } }   // 레벨 툴: 저장 전 게임 전체 설정 (선 굵기)
   if (m) {
     try { app.levels = [JSON.parse(decodeURIComponent(m[1]))]; app.testMode = true; app.scene = 'play'; } catch (e) { /* 잘못된 주소면 무시 */ }
   }

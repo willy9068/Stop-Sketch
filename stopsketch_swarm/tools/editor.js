@@ -11,6 +11,7 @@ var G = G || {};
   // ---------- 상태 ----------
   var S = {
     levels: JSON.parse(JSON.stringify(G.LEVELS)).map(LC.normalize),
+    settings: { inkThickness: (G.LEVEL_SETTINGS && G.LEVEL_SETTINGS.inkThickness) || D.ink.thickness },   // 게임 전체 설정 (levels.js G.LEVEL_SETTINGS)
     cur: 0,
     sel: null,              // {kind: 'prop'|'ground'|'start'|'goal', i}
     tool: 'select',
@@ -37,7 +38,7 @@ var G = G || {};
   function toScreen(wx, wy) { return { x: (wx - S.view.x) * S.view.zoom, y: (wy - S.view.y) * S.view.zoom }; }
 
   // ---------- 되돌리기 · 변경 표시 · 임시 저장 ----------
-  function snapshot() { return JSON.stringify({ levels: S.levels, cur: S.cur }); }
+  function snapshot() { return JSON.stringify({ levels: S.levels, cur: S.cur, settings: S.settings }); }
   function pushUndo() {
     S.undo.push(snapshot());
     if (S.undo.length > 150) S.undo.shift();
@@ -46,6 +47,7 @@ var G = G || {};
   function restore(snap) {
     var o = JSON.parse(snap);
     S.levels = o.levels; S.cur = Math.min(o.cur, S.levels.length - 1); S.sel = null; S.multi = [];
+    if (o.settings) { S.settings = o.settings; G.applyLevelSettings(S.settings); }
     changed();
   }
   function undo() { if (!S.undo.length) return; S.redo.push(snapshot()); restore(S.undo.pop()); }
@@ -56,7 +58,10 @@ var G = G || {};
     S.dirty = true;
     clearTimeout(draftTimer);
     draftTimer = setTimeout(function () {
-      try { localStorage.setItem(D.save.editorDraftKey, JSON.stringify(S.levels)); } catch (e) { /* 무시 */ }
+      try {
+        localStorage.setItem(D.save.editorDraftKey, JSON.stringify(S.levels));
+        localStorage.setItem(D.save.editorDraftKey + '.settings', JSON.stringify(S.settings));
+      } catch (e) { /* 무시 */ }
     }, 300);
     refreshAll(keepForms);
   }
@@ -415,7 +420,7 @@ var G = G || {};
     if (inRect(w, selRect({ kind: 'start' }))) return { kind: 'start' };
     if (inRect(w, selRect({ kind: 'goal' }))) return { kind: 'goal' };
     var order = [function (p) { return p.type === 'drop' || p.type === 'star' || p.type === 'stopup' || p.type === 'inkup'; }, function (p) { var d = P.def(p.type); return d && d.solid; },
-                 function (p) { return p.type === 'text' || p.type === 'deco'; }];
+                 function (p) { return p.type === 'text' || p.type === 'deco' || p.type === 'hint'; }];   // 점선 힌트: 빠져 있어 놓은 뒤 다시 클릭이 안 되던 문제 (사용자 요청 2026-10-25)
     for (var o = 0; o < order.length; o++) {
       for (i = l.props.length - 1; i >= 0; i--) {
         if (order[o](l.props[i]) && hitProp(w, l.props[i])) return { kind: 'prop', i: i };
@@ -808,6 +813,9 @@ var G = G || {};
       num('l_ink', '잉크', l.ink) + check('l_infInk', '잉크 무제한', l.infInk, '켜면 잉크가 줄지 않음') +
       num('l_stops', '정지 횟수', l.stops) + check('l_infStops', '정지 무제한', l.infStops, '켜면 정지 횟수가 줄지 않음') +
       num('l_start', '시작 x', l.start.x) + num('l_goal', '도착 x', l.goal.x) +
+      sec('게임 전체', '모든 스테이지에 같이 적용 · levels.js 에 저장') +
+      num('g_inkThickness', '그리는 선 굵기', S.settings.inkThickness) +
+      hint('플레이어가 그리는 선의 굵기 = 부딪히는 두께 (' + D.ink.thicknessMin + ' ~ ' + D.ink.thicknessMax + ', 기본 9). 물방울이 그냥 넘는 턱이 16(작은 물방울 12)이라 그보다 굵으면 쓰러진 선을 못 넘을 수 있어요') +
       sec('카메라', '사용자 요청 2026-10-21') +
       '<div class="f"><label>기본 줌</label><input type="number" id="c_zoom" step="0.05" value="' + l.camera.zoom + '"></div>' +
       hint('1 = 화면 1280×720 그대로, 작을수록 넓게 보임 (' + D.art.camera.minZoom + ' ~ ' + D.art.camera.maxZoom + '). 휠 줌은 잠시 뒤 이 값으로 돌아옴') +
@@ -950,7 +958,12 @@ var G = G || {};
     if (id === 'file') return;
     if (inputUndoArmed) { pushUndo(); inputUndoArmed = false; }
     if (isChange) inputUndoArmed = true;
-    if (id === 'l_test') l.test = t.checked || undefined;
+    if (id === 'g_inkThickness') {                 // 게임 전체: 그리는 선 굵기 (사용자 요청 2026-10-25)
+      S.settings.inkThickness = Math.max(D.ink.thicknessMin, Math.min(D.ink.thicknessMax, v));
+      G.applyLevelSettings(S.settings);
+      if (isChange) t.value = S.settings.inkThickness;
+    }
+    else if (id === 'l_test') l.test = t.checked || undefined;
     else if (id === 'l_infInk') l.infInk = t.checked || undefined;        // 무제한 (사용자 요청 2026-10-21)
     else if (id === 'l_infStops') l.infStops = t.checked || undefined;
     else if (id === 'l_noEraser') l.noEraser = t.checked || undefined;   // 지우개 끄기 (사용자 요청 2026-10-22)
@@ -1065,7 +1078,9 @@ var G = G || {};
     }).join(',\n');
     return '// 스톱 앤 스케치 — 물방울 무리 시험판 스테이지 데이터. tools/level_editor.html 로 편집해서 이 파일로 저장한다 (직접 고쳐도 됨)\n' +
       '// ground: 땅 {x0, x1, top}  /  props: 벽·발판 {type, x, y(왼쪽 위), w, h}, 별·장식 {type, x, y(가운데), size}, 글자 {type, x, y, size, text}\n' +
-      'var G = G || {};\n\nG.LEVELS = [\n' + body + '\n];\n';
+      'var G = G || {};\n\nG.LEVELS = [\n' + body + '\n];\n\n' +
+      '// 게임 전체 설정 (레벨 툴 "게임 전체"): inkThickness = 플레이어가 그리는 선 굵기 (물리 두께도 같음)\n' +
+      'G.LEVEL_SETTINGS = ' + JSON.stringify(S.settings) + ';\n';
   }
 
   // ---- 최근 저장 위치 기억 ----
@@ -1169,7 +1184,7 @@ var G = G || {};
   function play() {
     var errs = LC.check(lv()).filter(function (w) { return w.lv === 'error'; });
     if (errs.length && !confirm('오류가 있어요:\n' + errs.map(function (w) { return '· ' + w.msg; }).join('\n') + '\n\n그래도 테스트할까요?')) return;
-    window.open('../src/index.html#test=' + encodeURIComponent(JSON.stringify(lv())), 'stopsketch_test');
+    window.open('../src/index.html#set=' + encodeURIComponent(JSON.stringify(S.settings)) + '&test=' + encodeURIComponent(JSON.stringify(lv())), 'stopsketch_test');   // set: 저장 전 게임 전체 설정도 테스트에 반영
   }
 
   window.addEventListener('beforeunload', function (e) { if (S.dirty) { e.preventDefault(); e.returnValue = ''; } });
@@ -1232,13 +1247,16 @@ var G = G || {};
   try {
     var draft = localStorage.getItem(D.save.editorDraftKey);
     for (var di = 0; !draft && di < D.save.oldEditorDraftKeys.length; di++) draft = localStorage.getItem(D.save.oldEditorDraftKeys[di]);
-    if (draft && draft !== JSON.stringify(S.levels) &&
+    var sdraft = localStorage.getItem(D.save.editorDraftKey + '.settings');   // 게임 전체 설정 임시 저장 (2026-10-25)
+    if (((draft && draft !== JSON.stringify(S.levels)) || (sdraft && sdraft !== JSON.stringify(S.settings))) &&
         confirm('저장하지 않은 이전 편집이 있어요. 불러올까요?\n(취소하면 levels.js 내용으로 시작)')) {
-      S.levels = JSON.parse(draft).map(LC.normalize);
+      if (draft) S.levels = JSON.parse(draft).map(LC.normalize);
+      if (sdraft) S.settings = JSON.parse(sdraft);
       S.dirty = true;
     }
   } catch (e) { /* 무시 */ }
 
+  G.applyLevelSettings(S.settings);
   G.Editor = S;   // 디버그용
   S.levelsText = levelsText;
   showLastSave();

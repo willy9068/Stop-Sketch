@@ -43,7 +43,8 @@ var G = G || {};
       G.Debug.refresh(app);
     }
   };
-  var m = /#test=(.+)$/.exec(location.hash);
+  var m = /[#&]test=(.+)$/.exec(location.hash), ms = /#set=([^&]+)/.exec(location.hash);
+  if (ms) { try { G.applyLevelSettings(JSON.parse(decodeURIComponent(ms[1]))); } catch (e) { /* 잘못된 주소면 무시 */ } }   // 레벨 툴: 저장 전 게임 전체 설정 (선 굵기)
   if (m) {
     try { app.levels = [JSON.parse(decodeURIComponent(m[1]))]; app.testMode = true; app.scene = 'play'; } catch (e) { /* 잘못된 주소면 무시 */ }
   }
