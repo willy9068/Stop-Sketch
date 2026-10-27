@@ -916,3 +916,205 @@ spikes around the border, thick dark brown line, empty inside, plain white backg
 | 90 | 게임 제목 글자 (선택, 손글씨 권장) | title_logo.png | 1024×384 | 투명 | ○ 2차 데모 |
 
 > ★ 16장(배경 7 · 카드 틀 · 아이콘 6 · 자물쇠 · 칸)만 있으면 2차 데모의 새 화면이 모두 그림으로 바뀝니다. ☆·○ 는 없으면 코드 모양으로 동작
+
+
+---
+
+## 17. 9차 이미지 요청 — 월드 선택 배경 · 월드 아이콘 통일 · 스테이지 선택 배경 · 플레이 배경 다시 그리기 (2026-10-27, 사용자 요청)
+
+> 사용자가 8차 이미지를 넣은 화면을 찍어 보고 요청한 것입니다 (첨부: 월드 선택 1장, 스테이지 선택 월드 1~6 6장).
+> - 월드 선택 화면 배경이 빈 종이라 허전함 → **새 배경 `bg_worlds`**
+> - 월드 아이콘 1~5 의 낙서(다리·화살표·용수철·X 표시)가 서로 달라 통일감이 없음 → **물방울 모양 + 색만** 으로 다시 (월드 6 은 그대로)
+> - 스테이지 선택 화면과 플레이 화면이 같은 배경(`bg_w1~6`)을 써서, 스테이지 선택 화면에서는 낙서가 UI 에 가리거나 겹치고, 좌우 가운데·아래가 많이 비어 보임 → **스테이지 선택 배경을 따로 `bg_stage_w1~6`** (사용자 결정 2026-10-27)
+> - 플레이 배경 `bg_w1~6` 도 빈 곳이 많음 → **스테이지 장치(기믹)와 어울리는 아기자기한 낙서**를 고르게 깐 배경으로 다시
+>
+> **코드는 준비해 둠 (2026-10-27)**: `bg_worlds.png` · `bg_stage_w1~6.png` 를 `stopsketch/assets/` 에 넣으면 바로 바뀝니다. 없으면 전처럼 (월드 선택 = 빈 종이, 스테이지 선택 = 그 월드의 플레이 배경). 아이콘·플레이 배경은 **같은 파일 이름으로 덮어쓰면** 됩니다.
+> 모든 프롬프트 앞에 2장 스타일 블록을 붙입니다. **글자·숫자는 그림에 넣지 않습니다.** 주인공·작은 물방울을 넣을 때는 `char_idle` 을 참조 이미지로 넣어 같은 모양으로.
+
+### 17-0. 화면에서 UI 가 있는 자리 (그림 1920×1080 기준, 지금 배치)
+
+> 게임 화면은 1280×720 이고 그림은 1.5배(1920×1080)로 그립니다. 아래는 지금 UI 툴 값 기준이라 **UI 툴로 옮기면 달라집니다**. 비워 둘 곳은 큰 그림을 넣지 말고 종이 무늬만.
+
+**월드 선택 (`bg_worlds`)**
+
+| 자리 | x | y | 그림 |
+|---|---|---|---|
+| 뒤로 버튼 (왼쪽 위) | 30 ~ 270 | 25 ~ 100 | 비움 |
+| 제목 "월드 선택" (위 가운데) | 720 ~ 1200 | 60 ~ 180 | 비움 |
+| **월드 카드 6장** (가로 한 줄) | 90 ~ 1830 | 240 ~ 760 | **비움** (카드 사이 틈도 좁아서 비움) |
+| 잠김 안내 글자 | 600 ~ 1320 | 780 ~ 830 | 비움 |
+| **채울 곳** | 위 띠: 280 ~ 700 · 1220 ~ 1920 / 아래 띠: 0 ~ 1920 | 위 0 ~ 230 / **아래 850 ~ 1080** | 아기자기한 그림 |
+
+**스테이지 선택 (`bg_stage_w1~6`)**
+
+| 자리 | x | y | 그림 |
+|---|---|---|---|
+| 뒤로 버튼 | 30 ~ 270 | 25 ~ 100 | 비움 |
+| 제목 + "쓸 수 있는 물감" 줄 (위 가운데) | 520 ~ 1400 | 60 ~ 240 | 비움 |
+| **스테이지 칸** (월드 1~5 는 4칸, 월드 6 은 3칸) | 330 ~ 1590 | 380 ~ 700 (칸 아래 정화 % 포함) | **비움** |
+| 스테이지 이름·잠김 안내 글자 | 600 ~ 1320 | 720 ~ 790 | 비움 |
+| **채울 곳** | 왼쪽 띠 0 ~ 300 · 오른쪽 띠 1620 ~ 1920 · 위 오른쪽 1420 ~ 1920 | 왼쪽·오른쪽 120 ~ 1080 · 위 오른쪽 0 ~ 360 · **아래 띠 820 ~ 1080 (가로 전체)** | 그 월드 장치와 어울리는 그림 |
+
+**플레이 (`bg_w1~6`)**: 화면 높이에 맞춰 늘린 뒤 **가로로 이어 붙여** 스크롤됩니다. 위쪽 약 85px 은 위 막대(잉크·정지), 아래쪽 약 130px 은 물감 선반이 덮습니다. 땅·물방울·플레이어가 그린 선이 화면 어디에나 올 수 있으므로 **한곳을 크게 비우기보다 작은 낙서를 고르게, 아주 연하게** 깝니다.
+
+### 17-1. 월드 선택 배경 `bg_worlds` ★
+
+| 우선 | 파일 | 크기 | 느낌 |
+|---|---|---|---|
+| ★ | `bg_worlds.png` | 1920×1080 (이어 붙이지 않음) | 책상 위에 펼친 따뜻한 베이지 스케치북 한 장. **위 띠와 아래 띠**에만 아기자기한 낙서: 연필·크레용·물감 튜브·붓, 다섯 색(검정·파랑·빨강·초록·노랑) 물감 방울 친구들이 줄지어 걷거나 노는 모습, 작은 별·구름·하트·점선 길. 아래 띠는 **왼쪽(검정)에서 오른쪽(보라·여러 색)으로** 월드 순서처럼 색이 이어지는 물감 길이면 카드 순서와 맞음. 가운데 카드 자리는 빈 종이 |
+
+```
+(bg_worlds) [char_idle 참조] a warm beige sketchbook page seen from above, the whole middle band
+            left completely empty plain paper, small cute doodles only along the top edge and the
+            bottom edge: colored pencils, crayons, little paint tubes and a brush, tiny round droplet
+            creatures in black, blue, red, green and yellow walking in a line along a dotted path,
+            small stars, clouds and hearts, the bottom path changing color from black on the left
+            to blue, red, green, yellow and purple on the right, soft colors, cozy and playful,
+            wide 16:9, no text
+```
+- 네거티브에 `text, letters, numbers, objects in the middle, cluttered center, dark, high contrast` 추가
+- 가운데(카드 자리)에 그림이 들어가면 자르지 말고 **그 부분을 종이색으로 지워서** 쓰셔도 됩니다
+
+### 17-2. 월드 아이콘 1~5 다시 그리기 (물방울 + 색만) ★
+
+| 우선 | 파일 | 크기 | 바꿀 것 |
+|---|---|---|---|
+| ★ | `world_icon_1.png` ~ `world_icon_5.png` | 256×256, 투명 (5장, **같은 이름으로 덮어쓰기**) | 옆의 낙서(다리·화살표·용수철·X 표시)를 모두 빼고 **같은 모양의 물방울 하나 + 월드 색**만. 5장 모두 크기·위치·외곽선 굵기·하이라이트가 똑같아야 함 |
+| — | `world_icon_6.png` | — | **그대로 둠** (다섯 색 팔레트) |
+
+| 월드 | 색 | 게임 색값 (참고) |
+|---|---|---|
+| 1 검정 | 검정 (외곽선이 보이게 아주 진한 회갈색) | `#2B2118` |
+| 2 파랑 | 파랑 | `#1F6FE0` |
+| 3 빨강 | 빨강 | `#E0312B` |
+| 4 초록 | 초록 | `#1FA655` |
+| 5 노랑 | 노랑 | `#F2B807` |
+
+```
+(world_icon) a single plump round ink drop of [COLOR] ink, pointed tip on top, glossy white
+             highlight on the upper left, thick dark brown outline, flat colors, nothing else
+             around it, centered, the same shape, size and position for every variation,
+             plain white background, isolated
+             1 [very dark charcoal black]   2 [bright blue]   3 [bright red]
+             4 [fresh green]                5 [warm yellow]
+```
+- **가장 쉬운 방법 (권장)**: 물방울 **한 장만** 뽑아 잘 된 것을 고르고, 나머지 4장은 그 그림의 **색만 바꿔서**(이미지 편집 프로그램의 색조·색 바꾸기) 만듭니다. 모양이 완전히 같아져서 통일감이 가장 좋습니다
+- AI 로 5장을 뽑는다면 **시드를 고정하고 [COLOR] 만 바꿉니다**
+- 게임에서는 카드 안에 약 107px 로 작게 나옵니다. 하이라이트·외곽선이 작게 줄어도 보이게 굵게
+- 네거티브에 `text, letters, symbols, arrows, extra doodles, face` 추가 (얼굴을 넣으면 캐릭터와 헷갈림)
+
+### 17-3. 스테이지 선택 배경 `bg_stage_w1~6` (월드마다 1장) ★
+
+> 플레이 배경과 **같은 종이**(월드 1 모눈종이, 2 줄 노트, 3 여백 줄 종이, 4 방안지, 5 크라프트지, 6 수채화지)로 이어지게 하고, 17-0 의 **채울 곳(왼쪽·오른쪽 띠, 위 오른쪽, 아래 띠)** 에만 그 월드 장치와 어울리는 아기자기한 그림을 그립니다. 플레이 배경보다 **조금 진하고 크게** 그려도 됩니다 (게임 플레이를 가리지 않음).
+
+| 우선 | 파일 | 크기 | 월드 | 채울 그림 (아기자기하게) |
+|---|---|---|---|---|
+| ★ | `bg_stage_w1.png` | 1920×1080 | 1 검정 | 연필 회색 모눈종이. 연필로 그린 **다리·징검다리·사다리**, 틈을 뛰어넘는 작은 물방울들, 연필과 자, 작은 구덩이 옆 "여기!" 같은 화살표(글자 없이 화살표만) |
+| ★ | `bg_stage_w2.png` | 1920×1080 | 2 파랑 | 파란 줄 노트. 파란 볼펜 **바람·속도선**, 종이비행기, 달리는 작은 물방울, 뒤쪽 아래에 졸린 듯 따라오는 **분홍 지우개**와 지우개 가루 |
+| ★ | `bg_stage_w3.png` | 1920×1080 | 3 빨강 | 연분홍 종이 + 왼쪽 빨간 여백 줄. 빨간 색연필 **용수철·트램펄린·튀는 공의 점선 궤적**, 높이 튀어 오른 물방울, 아래 띠에 작고 귀여운 **가시 풀**(위협적이지 않게, 둥근 끝) |
+| ★ | `bg_stage_w4.png` | 1920×1080 | 4 초록 | 연초록 방안지. 초록 색연필 **풍선·덩굴·떠오르는 비눗방울**, 풍선에 매달려 올라가는 물방울, 오른쪽 위에 작은 **발사기**와 초록 선 방패에 튕겨 나가는 공 |
+| ★ | `bg_stage_w5.png` | 1920×1080 | 5 노랑 | 크라프트지. 노란 **형광펜 줄**, 반쯤 지워진 **검은 결정 막대**와 반짝이 가루, 작은 지우개·연필, 결정이 지워진 자리로 지나가는 물방울 |
+| ★ | `bg_stage_w6.png` | 1920×1080 | 6 모든 물감 | 흰 수채화지. **팔레트·붓·다섯 색 물감 번짐**, 다섯 색 물방울 친구들이 손잡고 줄지어 감, 마지막 월드 느낌의 작은 깃발·별 |
+
+```
+(bg_stage_w1) [char_idle 참조] a sheet of light gray graph paper, the center area and the top
+              center left empty, cute pencil doodles only along the left edge, the right edge,
+              the top right corner and the bottom band: little bridges, stepping stones and a
+              ladder over small gaps, tiny round droplet creatures hopping across, a pencil and a
+              ruler, simple arrows, soft gray and brown, playful, wide 16:9, no text
+(bg_stage_w2) [char_idle 참조] a sheet of lined notebook paper with light blue ruled lines, the
+              center area and the top center left empty, cute blue ballpoint doodles only along
+              the left edge, the right edge, the top right corner and the bottom band: wind
+              swirls, speed lines, a paper airplane, tiny droplet creatures running fast, a sleepy
+              pink rubber eraser with crumbs far behind, playful, wide 16:9, no text
+(bg_stage_w3) [char_idle 참조] warm off-white paper with a faint pink tint and a red vertical margin
+              line on the left, the center area and the top center left empty, cute red colored
+              pencil doodles only along the edges and the bottom band: coiled springs, a small
+              trampoline, bouncing balls with dotted arcs, a droplet creature bouncing high, tiny
+              round-tipped spiky grass along the bottom, playful, wide 16:9, no text
+(bg_stage_w4) [char_idle 참조] pale green large-grid paper, the center area and the top center
+              left empty, cute green colored pencil doodles only along the edges and the bottom
+              band: balloons, curling vines, floating soap bubbles, a droplet creature rising up
+              holding a balloon, a tiny cannon in the top right with a ball bouncing off a green
+              line, playful, wide 16:9, no text
+(bg_stage_w5) [char_idle 참조] light brown kraft paper, the center area and the top center left
+              empty, cute doodles only along the edges and the bottom band: yellow highlighter
+              strokes, a half erased dark crystal bar crumbling into sparkly dust, a small eraser
+              and a pencil, a droplet creature walking through the opened gap, playful, wide 16:9,
+              no text
+(bg_stage_w6) [char_idle 참조] white watercolor paper, the center area and the top center left
+              empty, cute doodles only along the edges and the bottom band: a paint palette, a
+              brush, soft stains of black, blue, red, green and yellow watercolor, five droplet
+              creatures of those colors holding hands in a line, a tiny goal flag and stars,
+              playful, wide 16:9, no text
+```
+- 네거티브에 `text, letters, numbers, objects in the center, cluttered center, dark, high contrast` 추가
+- 6장은 **같은 시드·같은 구도**로 뽑고 종이·색·소품만 바꾸면 화면을 넘길 때 자연스럽습니다
+- 그린 뒤 17-0 표의 비움 자리에 그림이 걸쳤으면 그 부분만 종이색으로 지워 주세요. 게임에 넣은 뒤 겹치는 곳이 있으면 Claude에게 말해 주시면 UI 위치를 옮길 수도 있습니다 (UI 툴)
+
+### 17-4. 플레이 배경 `bg_w1~6` 다시 그리기 (같은 이름으로 덮어쓰기) ★
+
+> 지금 플레이 배경은 낙서가 위쪽에 몇 개뿐이라 빈 곳이 많습니다. **화면 전체에 작은 낙서를 고르게 흩어 놓되, 아주 연하게** 그립니다. 스테이지 선택 배경(17-3)과 같은 종이·같은 소품을 쓰면 두 화면이 이어져 보입니다.
+
+**플레이를 방해하지 않게 지킬 것 (중요)**
+- **연하게**: 낙서는 종이 위 연필·색연필 자국 정도 (채도·진하기 낮게). 플레이어가 그리는 선(굵고 진한 색)과 땅·물방울이 항상 더 눈에 띄어야 합니다
+- **진한 검정 선 금지**: 검정 물감 선(플레이어 다리)과 헷갈립니다. 낙서 선은 연회색·연한 그 월드 색
+- **길게 가로로 뻗은 선·발판처럼 보이는 모양 금지**: 밟을 수 있는 땅으로 오해합니다. 낙서는 작고 동글동글하게 (한 개 크기 약 60~180px)
+- **진짜 장애물처럼 보이는 모양 금지**: 진한 가시·진한 결정·발사기는 실제 장애물과 헷갈리므로, 넣는다면 아주 연하고 귀엽게(둥근 끝)
+- **좌우 이음매 없음**: 가로로 이어 붙이므로 왼쪽 끝과 오른쪽 끝이 맞아야 함 (16-1 과 같음)
+- 위 85px · 아래 130px 은 UI 막대가 덮으므로 그 자리에 중요한 그림을 두지 않음
+
+| 우선 | 파일 | 크기 | 월드 | 흩어 놓을 낙서 (연하게) |
+|---|---|---|---|---|
+| ★ | `bg_w1.png` | 1920×1080, 좌우 이음매 없음 | 1 검정 | 모눈종이 + 연필로 그린 작은 다리·징검다리·사다리, 작은 물방울 발자국, 연필·자, 점선 화살표 |
+| ★ | `bg_w2.png` | 1920×1080, 좌우 이음매 없음 | 2 파랑 | 줄 노트 + 연한 파란 볼펜 바람 소용돌이·속도선·종이비행기, 아주 작은 지우개 가루 |
+| ★ | `bg_w3.png` | 1920×1080, 좌우 이음매 없음 | 3 빨강 | 여백 줄 종이 + 연한 빨간 색연필 용수철·튀는 공 점선 궤적·작은 하트 |
+| ★ | `bg_w4.png` | 1920×1080, 좌우 이음매 없음 | 4 초록 | 방안지 + 연한 초록 풍선·덩굴·비눗방울·위로 향한 작은 화살표 |
+| ★ | `bg_w5.png` | 1920×1080, 좌우 이음매 없음 | 5 노랑 | 크라프트지 + 연한 노란 형광펜 줄·반짝이 가루·반쯤 지운 연필 낙서 |
+| ★ | `bg_w6.png` | 1920×1080, 좌우 이음매 없음 | 6 모든 물감 | 수채화지 + 다섯 색의 연한 물감 점·작은 별·작은 붓 자국 |
+
+```
+(bg_w1) a sheet of light gray graph paper evenly covered with many small faint pencil doodles of
+        tiny bridges, stepping stones, little ladders, droplet footprints, a pencil and a ruler,
+        dotted arrows, all very light and low contrast, small and rounded, no long horizontal
+        lines, no dark black lines, seamless tileable left to right, flat, wide 16:9, no text
+(bg_w2) a sheet of lined notebook paper with light blue ruled lines evenly covered with many small
+        faint light-blue ballpoint doodles of wind swirls, short speed lines, paper airplanes and
+        tiny eraser crumbs, very light and low contrast, small and rounded, no long horizontal
+        lines, seamless tileable left to right, flat, wide 16:9, no text
+(bg_w3) warm off-white paper with a faint pink tint and a red vertical margin line, evenly covered
+        with many small faint light-red colored pencil doodles of springs, bouncing balls with
+        dotted arcs and tiny hearts, very light and low contrast, small and rounded, seamless
+        tileable left to right, flat, wide 16:9, no text
+(bg_w4) pale green large-grid paper evenly covered with many small faint light-green colored
+        pencil doodles of balloons, curling vines, soap bubbles and small upward arrows, very
+        light and low contrast, small and rounded, seamless tileable left to right, flat,
+        wide 16:9, no text
+(bg_w5) light brown kraft paper evenly covered with many small faint doodles of pale yellow
+        highlighter marks, sparkly dust and half erased pencil scribbles, very light and low
+        contrast, small and rounded, seamless tileable left to right, flat, wide 16:9, no text
+(bg_w6) white watercolor paper evenly covered with many small faint dots and splashes of black,
+        blue, red, green and yellow watercolor, tiny stars and small brush marks, very light and
+        low contrast, seamless tileable left to right, flat, wide 16:9, no text
+```
+- 네거티브에 `characters, creatures, dark lines, thick outlines, long horizontal lines, platforms, high contrast, saturated, text, numbers` 추가
+- 넣은 뒤 플레이해 보고 선·물방울이 덜 보이면 그림을 연하게(밝기 올리기·채도 내리기) 다시 저장하거나, Claude에게 "배경을 코드로 연하게" 를 요청하세요 (배경 위에 종이색을 살짝 덮는 방식)
+
+### 17-5. 코드로 한 것 (2026-10-27)
+
+| 항목 | 내용 |
+|---|---|
+| 월드 선택 배경 | `bg_worlds` 가 있으면 그것, 없으면 빈 종이 (`menu.js`) |
+| 스테이지 선택 배경 | `bg_stage_wN` → 없으면 플레이 배경 `bg_wN` → 없으면 빈 종이 + 월드 색 |
+| 그림 목록 | `data.js art.images` 에 `bg_worlds`, `bg_stage_w1~6` 추가 (제출본 빌드 때 있으면 같이 들어감) |
+
+### 17-6. 3장 전체 표에 추가
+
+| # | 구분 | 파일명 | 크기 | 배경 | 우선 |
+|---|---|---|---|---|---|
+| 65~70 | 월드(플레이) 배경 1~6 **다시 그리기** | bg_w1~bg_w6.png | 1920×1080 (좌우 이음매 없음) | 있음 | ★ 9차 |
+| 73~77 | 월드 아이콘 1~5 **다시 그리기** (물방울 + 색만) | world_icon_1~5.png | 256×256 | 투명 | ★ 9차 |
+| 91 | 월드 선택 배경 | bg_worlds.png | 1920×1080 | 있음 | ★ 9차 |
+| 92~97 | 스테이지 선택 배경 1~6 | bg_stage_w1~bg_stage_w6.png | 1920×1080 | 있음 | ★ 9차 |
+
+> 9차는 모두 ★ 지만 없어도 게임은 지금 그림으로 동작합니다. 순서 추천: 아이콘 1~5(색만 바꾸면 빠름) → 월드 선택 배경 → 스테이지 선택 배경 6장 → 플레이 배경 6장 (플레이 배경은 플레이 테스트하며 진하기를 맞춰야 해서 마지막)

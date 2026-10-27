@@ -166,7 +166,7 @@ G.Menu = (function () {
     return G.DATA.worlds.map(function (wd, i) { return { act: 'world:' + wd.id, x: x0 + i * (w + gap), y: S('worldCardY'), w: w, h: h, world: wd }; });
   }
   function drawWorlds(ctx, app) {
-    paperBg(ctx, 'bg_plain');
+    paperBg(ctx, img('bg_worlds') ? 'bg_worlds' : 'bg_plain');   // 월드 선택 배경 (9차 이미지), 없으면 빈 종이
     text(ctx, G.T('worlds.title'), S('worldsTitleX'), S('worldsTitleY'), S('menuTitleSize'), null, true);
     markText(ctx, 'worldsTitleX', 'worldsTitleY', G.T('worlds.title'), S('worldsTitleX'), S('worldsTitleY'), S('menuTitleSize'), true, 'center', ['menuTitleSize']);
     btns = [backButton()];
@@ -228,8 +228,10 @@ G.Menu = (function () {
   }
   function drawStages(ctx, app) {
     var w = worldOf(app.menuWorld);
-    paperBg(ctx, w.bg && img(w.bg) ? w.bg : 'bg_plain');
-    if (!img(w.bg) && w.tint) { ctx.save(); ctx.globalCompositeOperation = 'multiply'; ctx.fillStyle = w.tint.paper; ctx.fillRect(0, 0, V.w, V.h); ctx.restore(); }   // 월드 배경 그림이 없으면 종이에 월드 색
+    // 스테이지 선택 배경: bg_stage_wN (9차 이미지, 플레이 배경과 따로) → 없으면 플레이 배경 bg_wN → 없으면 빈 종이 + 월드 색
+    var sbg = img('bg_stage_w' + w.id) ? 'bg_stage_w' + w.id : w.bg && img(w.bg) ? w.bg : 'bg_plain';
+    paperBg(ctx, sbg);
+    if (sbg === 'bg_plain' && w.tint) { ctx.save(); ctx.globalCompositeOperation = 'multiply'; ctx.fillStyle = w.tint.paper; ctx.fillRect(0, 0, V.w, V.h); ctx.restore(); }   // 월드 배경 그림이 없으면 종이에 월드 색
     var tt = G.T('stages.title', { n: w.id, name: G.T('world.' + w.id + '.name') });
     text(ctx, tt, S('stagesTitleX'), S('stagesTitleY'), S('menuTitleSize'), null, true);
     markText(ctx, 'stagesTitleX', 'stagesTitleY', tt, S('stagesTitleX'), S('stagesTitleY'), S('menuTitleSize'), true, 'center', ['menuTitleSize']);
@@ -294,6 +296,16 @@ G.Menu = (function () {
     else if (app.scene === 'worlds') drawWorlds(ctx, app);
     else drawStages(ctx, app);
     if (app.unlockAll) text(ctx, G.T('menu.unlockAll'), V.w - 16, V.h - 18, S('worldDescSize'), C.outline, false, 'right');
+    drawCheat(ctx, app);
+  }
+  // 치트 켬 표시 + 방금 한 치트 (main.js cheat, 사용자 요청 2026-10-27). UI 툴 미리보기(showHints)에서도 보임
+  function drawCheat(ctx, app) {
+    var ch = app.cheat || {};
+    if (ch.on || app.showHints) {
+      text(ctx, G.T('cheat.help'), S('cheatX'), S('cheatY'), S('cheatSize'), S('cheatColor'), true, 'left');
+      markText(ctx, 'cheatX', 'cheatY', G.T('cheat.help'), S('cheatX'), S('cheatY'), S('cheatSize'), true, 'left', ['cheatSize']);
+    }
+    if (ch.msg && Date.now() < ch.until) text(ctx, ch.msg, V.w / 2, S('cheatY') - 34, S('menuSmallSize'), S('cheatColor'), true);
   }
 
   // 누른 것: 'start' · 'back' · 'world:N' · 'stage:id' (잠긴 것은 null)

@@ -71,6 +71,9 @@ G.DATA = {
 
   // 잉크병에 들어가기 (사용자 요청 2026-10-20): 닿은 순서대로 병 앞에 줄 서고, 맨 앞부터 gapMs 마다 하나씩 enterMs 동안 입구로 뛰어듦.
   //   병은 들어간 만큼 jarFadePerSec 속도로 서서히 밝아짐
+  // 치트키 (사용자 요청 2026-10-27): ` 키로 켜고 끔. 제출본에서 막으려면 enabled: false
+  cheat: { enabled: true },
+
   goalEnter: { gapMs: 420, enterMs: 650, hopHeight: 70, endScale: 0.35, spacing: 26, slide: 0.15, jarFadePerSec: 0.35, resultDelayMs: 1000,   // resultDelayMs: 병이 다 밝아진 뒤 결과 창까지 (사용자 요청 2026-10-20)
     jarCurve: 0.5,
     skip: false },     // 주인공 도착 뒤 Enter·버튼으로 끝내기 (사용자 결정 2026-10-21: 끔. 대신 주인공이 도착하면 이탈한 물방울은 죽은 것으로 → 대열이 다 들어가면 결과 창)   // 정화 색 비율 = 정화 정도 ^ jarCurve (1 이면 그대로, 작을수록 적게 들어가도 많이 밝아짐. 사용자 요청 2026-10-21: 0.5 → 정화 50% 면 색 71%)
@@ -202,7 +205,9 @@ G.DATA = {
       'bg_w1', 'bg_w2', 'bg_w3', 'bg_w4', 'bg_w5', 'bg_w6', 'title_bg', 'title_logo',
       'world_card', 'world_icon_1', 'world_icon_2', 'world_icon_3', 'world_icon_4', 'world_icon_5', 'world_icon_6',
       'ui_lock', 'stage_tile', 'stage_tile_boss', 'ui_button', 'ui_back', 'fx_unlock',
-      'tut_w1', 'tut_w2', 'tut_w3', 'tut_w4', 'tut_w5'
+      'tut_w1', 'tut_w2', 'tut_w3', 'tut_w4', 'tut_w5',
+      // 9차 이미지 요청 (이미지 문서 17장, 2026-10-27): 월드 선택 배경, 스테이지 선택 배경(월드마다, 플레이 배경 bg_wN 과 따로). 없으면 전처럼
+      'bg_worlds', 'bg_stage_w1', 'bg_stage_w2', 'bg_stage_w3', 'bg_stage_w4', 'bg_stage_w5', 'bg_stage_w6'
     ],
     backgrounds: { world: '월드 배경 (월드마다)', bg_a: '종이 + 구름', bg_b: '줄 노트', bg_plain: '빈 종이', none: '단색 종이',
                    bg_w1: '월드 1 모눈종이', bg_w2: '월드 2 줄 노트', bg_w3: '월드 3 여백 줄', bg_w4: '월드 4 방안지', bg_w5: '월드 5 크라프트지', bg_w6: '월드 6 수채화지' },

@@ -23,7 +23,7 @@ var G = G || {};
     ['ready', '출발 전 화면', 'ready'], ['skip', '스킵 버튼 (지금 꺼짐: data.js goalEnter.skip)', 'run'], ['result', '결과 창', 'clear'], ['fail', '실패 이유 (결과 창 제목)', 'fail'],
     ['toast', '알림 문구 (화면 가운데 빨간 글자)', 'toast'],
     ['title', '시작 화면', 'title'], ['menu', '메뉴 공통', 'worlds'], ['worlds', '월드 선택 화면', 'worlds'], ['world', '월드 카드 이름·설명', 'worlds'],
-    ['stages', '스테이지 선택 화면', 'stages']
+    ['stages', '스테이지 선택 화면', 'stages'], ['cheat', '치트키 (` 로 켬, 메뉴에서는 아래 왼쪽 · 플레이에서는 알림 문구)', 'worlds']
   ];
   var LABEL = {
     'hud.ink': '잉크 글자', 'hud.inkInf': '잉크 무제한일 때', 'hud.stop': '정지 글자', 'hud.stopInf': '정지 무제한일 때',
@@ -46,6 +46,8 @@ var G = G || {};
     'world.3.name': '월드 3 이름', 'world.3.desc': '월드 3 설명', 'world.4.name': '월드 4 이름', 'world.4.desc': '월드 4 설명',
     'world.5.name': '월드 5 이름', 'world.5.desc': '월드 5 설명', 'world.6.name': '월드 6 이름', 'world.6.desc': '월드 6 설명',
     'stages.title': '화면 제목', 'stages.inks': '물감 줄 앞 글자', 'stages.boss': '마지막 칸 표시', 'stages.purity': '칸 아래 정화', 'stages.locked': '잠긴 칸 안내 (마우스를 올렸을 때)',
+    'cheat.on': '켰을 때 (플레이 알림)', 'cheat.off': '껐을 때', 'cheat.help': '메뉴 아래 왼쪽 안내', 'cheat.clear': 'C 클리어', 'cheat.full': 'I 잉크·정지 가득',
+    'cheat.stage': 'U 스테이지 열림', 'cheat.world': 'O 월드 열림', 'cheat.all': 'P 모두 열림', 'cheat.none': '더 열 것 없음',
     'ink.black': '검정', 'ink.red': '빨강', 'ink.blue': '파랑', 'ink.green': '초록', 'ink.yellow': '노랑'
   };
   var STYLE = [   // [이름, 설명, 장면]
@@ -117,6 +119,7 @@ var G = G || {};
     ['stagePurityDX', '스테이지: 정화 DX', 'stages'], ['stagePurityY', '스테이지: 정화 Y (칸 아래)', 'stages'], ['stagePuritySize', '스테이지: 정화 크기', 'stages'],
     ['stageLockDX', '스테이지: 자물쇠 DX', 'stages'], ['stageLockY', '스테이지: 자물쇠 Y (가운데)', 'stages'], ['stageLockSize', '스테이지: 자물쇠 크기', 'stages'],
     ['stagesHintX', '스테이지: 이름·잠김 안내 x', 'stages'], ['stagesHintY', '스테이지: 이름·잠김 안내 y', 'stages'],
+    ['cheatX', '치트 안내 x (왼쪽)', 'worlds'], ['cheatY', '치트 안내 y', 'worlds'], ['cheatSize', '치트 안내 크기', 'worlds'], ['cheatColor', '치트 글자 색', 'worlds'],
     // 사운드 (사용자 결정 2026-10-22): 0 ~ 1
     ['musicVolume', '배경 음악 음량 (0~1)', 'run'], ['sfxVolume', '효과음 음량 (0~1)', 'run']
   ];

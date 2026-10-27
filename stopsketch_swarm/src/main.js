@@ -107,6 +107,57 @@ var G = G || {};
       app.levels.forEach(function (l, i) { if (l.id === id) app.goLevel(i); });
     }
   }
+  // 치트키 (사용자 요청 2026-10-27, data.js cheat.enabled): ` 로 켜고 끔. 켠 동안
+  //   C 이 스테이지 클리어(별 모두·정화 100%) · I 잉크·정지 가득 · U 다음 스테이지 열기 · O 다음 월드 열기 · P 모두 열기 · K 기록 초기화
+  //   열기는 앞 스테이지를 "깬 것"으로 기록함 (별 0 · 정화 0%, 기록은 계정에 저장). 레벨 툴 테스트 플레이는 저장 안 됨
+  app.cheat = { on: false, msg: '', until: 0 };
+  function cheatSay(key, v) {
+    var t = G.T('cheat.' + key, v);
+    if (app.scene === 'play') app.game.toast(t);
+    else { app.cheat.msg = t; app.cheat.until = Date.now() + 2500; }
+  }
+  function markCleared(lv) {
+    var rec = app.account.records[lv.id] || (app.account.records[lv.id] = { clears: 0, tries: 0 });
+    if (!rec.clears) { rec.clears = 1; rec.stars = rec.stars || 0; rec.bestPurity = rec.bestPurity || 0; }
+  }
+  function cheatWorld() { return app.scene === 'play' ? (app.game.level.data.world || app.menuWorld) : app.menuWorld; }
+  function cheatKey(code) {
+    var R = G.Rules, recs = app.account.records, g = app.game, list, i;
+    if (code === 'KeyC' && app.scene === 'play') {
+      if (g.status !== 'ready' && g.status !== 'run') return true;
+      if (g.tutorial) closeTutorial();
+      g.starKeys = g.level.items.filter(function (it) { return it.kind === 'star'; }).map(function (it) { return it.key; });
+      g.rescued = g.total; g.heroIn = true;
+      G.Game.finish(g, 'clear', '');
+      cheatSay('clear');
+    } else if (code === 'KeyI' && app.scene === 'play') {
+      g.ink = g.inkMax; R.rechargeStops(g.stops);
+      cheatSay('full');
+    } else if (code === 'KeyU') {                  // 이 월드에서 잠긴 첫 스테이지를 엶 (월드가 잠겼으면 월드부터)
+      var w = cheatWorld();
+      if (!R.worldUnlocked(app.levels, recs, w)) return cheatKey('KeyO');
+      list = R.worldStages(app.levels, w);
+      for (i = 1; i < list.length && R.stageUnlocked(app.levels, recs, list[i]); i++);
+      if (i >= list.length) { cheatSay('none'); return true; }
+      markCleared(list[i - 1]);
+      cheatSay('stage', { name: list[i].name });
+    } else if (code === 'KeyO') {                  // 잠긴 첫 월드를 엶 (앞 월드 마지막 스테이지를 깬 것으로)
+      var ws = G.DATA.worlds.filter(function (wd) { return !R.worldUnlocked(app.levels, recs, wd.id); })[0];
+      if (!ws) { cheatSay('none'); return true; }
+      for (var p = ws.id - 1; p >= 1; p--) { list = R.worldStages(app.levels, p); if (list.length) { markCleared(list[list.length - 1]); break; } }
+      cheatSay('world', { n: ws.id });
+    } else if (code === 'KeyP') {
+      app.levels.forEach(function (l) { if (l.world) markCleared(l); });
+      cheatSay('all');
+    } else if (code === 'KeyK') {
+      if (confirm('스테이지 기록(별·정화·열림)을 지울까요?')) app.resetAccount();
+      return true;
+    } else return false;
+    persist();
+    G.Debug.refresh(app);
+    return true;
+  }
+
   G.Debug.init(app);
   G.app = app;
 
@@ -122,6 +173,10 @@ var G = G || {};
     var g = app.game;
     G.Sound.unlock();
     if (e.code === 'KeyM' && !e.repeat) { toggleSound(); return; }
+    if (D.cheat.enabled && e.code === 'Backquote' && !e.repeat) {   // 치트 켜고 끄기
+      e.preventDefault(); app.cheat.on = !app.cheat.on; cheatSay(app.cheat.on ? 'on' : 'off'); return;
+    }
+    if (app.cheat.on && !e.repeat && !app.testMode && cheatKey(e.code)) { e.preventDefault(); return; }
     if (app.scene !== 'play') {                    // 메뉴: Esc·Backspace 뒤로, 시작 화면은 스페이스·Enter 로 시작
       if (e.code === 'Space' || e.code === 'Enter') { e.preventDefault(); if (app.scene === 'title' && !e.repeat) menuAct('start'); }
       else if ((e.code === 'Escape' || e.code === 'Backspace') && !e.repeat) { e.preventDefault(); if (app.scene !== 'title') menuAct('back'); }
