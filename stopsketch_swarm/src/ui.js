@@ -597,7 +597,7 @@ G.UI = (function () {
     drawSpeaker(ctx, soundRect(game));
     for (var k = 0; k < game.starsTotal; k++) drawStarIcon(ctx, sx + k * 26 - 4, gy + 20, 11, k < game.starKeys.length);
     ctx.textAlign = 'right'; ctx.font = G.TF('hudSmallSize'); ctx.fillStyle = ink;
-    say(ctx, G.T('hud.stage', { name: lv.name, attempt: game.attempt, time: (game.timeMs / 1000).toFixed(1), purity: Math.round(G.Game.purity(game) * 100) }), V.w - 20, y2);
+    say(ctx, G.T('hud.stage', { name: lv.name, attempt: game.attempt, time: (G.Game.clockMs(game) / 1000).toFixed(1), purity: Math.round(G.Game.purity(game) * 100) }), V.w - 20, y2);
     ctx.textAlign = 'left';
   }
 
@@ -822,7 +822,7 @@ G.UI = (function () {
     } else {
       ctx.font = G.TF('resultRetrySize');
       sayPart(ctx, G.T('result.failInfo', { rescued: game.rescued, total: game.total, attempt: game.attempt }), 'fInfoX', 'fInfoY');
-      sayPart(ctx, G.T('result.time', { time: (game.timeMs / 1000).toFixed(1) }), 'fTimeX', 'fTimeY');
+      sayPart(ctx, G.T('result.time', { time: (G.Game.clockMs(game) / 1000).toFixed(1) }), 'fTimeX', 'fTimeY');
     }
     resultBtns(game).forEach(function (b) { drawButton(ctx, b); });
     ctx.textAlign = 'left';

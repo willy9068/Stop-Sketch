@@ -44,6 +44,7 @@ G.Game = {
     game.entering = [];                            // 잉크병 입구로 뛰어드는 중
     game.enterCdMs = 0;
     game.lastReachMs = 0;
+    game.heroHomeMs = 0;                           // 주인공이 잉크병에 닿은 시각 = 기록 시간 (위 막대 시계도 여기서 멈춤, 사용자 요청 2026-10-27)
     var lowest = G.LevelCheck.lowestTop(lv);           // 비탈이면 낮은 쪽 끝 (사용자 요청 2026-10-21)
     game.failY = lowest + D.physics.failY - 600;
     game.inkMax = lv.ink;                          // 잉크 병은 이 스테이지에서만 늘림 (사용자 결정 2026-10-22: 계정 영구 성장 안 씀)
@@ -482,7 +483,7 @@ G.Game = {
     G.Drop.remove(game.engine, d);
     game.goalQueue.push(d);
     game.lastReachMs = game.timeMs;
-    if (d.hero) { game.heroHome = true; game.toast(G.T('toast.heroHome')); }
+    if (d.hero) { game.heroHome = true; game.heroHomeMs = game.timeMs; game.toast(G.T('toast.heroHome')); }
   },
 
   // 잉크병에 닿았는가: 도착 x 오른쪽이면서 잉크병 높이 안 (사용자 결정 2026-10-20: 도착을 위아래로도 옮김)
@@ -552,6 +553,9 @@ G.Game = {
   // 잉크병 색 비율 0~1: 정화 정도보다 빨리 밝아지게 (^jarCurve). 1 이면 물방울 기본색 그대로 (사용자 요청 2026-10-21, 물방울 색 섞기는 뺌)
   jarMix: function (p) { return G.Rules.jarMix(p, G.DATA.goalEnter.jarCurve); },
 
+  // 보이는 시간·기록 시간: 주인공이 도착하면 멈춤 (대열이 마저 들어가는 동안은 안 셈, 사용자 요청 2026-10-27). timeMs 는 연출용이라 계속 감
+  clockMs: function (game) { return game.heroHomeMs || game.timeMs; },
+
   purity: function (game) { return (game.rescued + (game.heroIn ? 1 : 0)) / (game.total + 1); },
 
   canSkip: function (game) { return G.DATA.goalEnter.skip && game.status === 'run' && game.heroHome; },   // 지금은 꺼짐 (사용자 결정 2026-10-21)
@@ -578,7 +582,7 @@ G.Game = {
     if (status === 'clear') {
       game.result = G.Rules.clearResult({
         stars: game.starKeys, starsTotal: game.starsTotal, rescued: game.rescued, total: game.total, heroIn: game.heroIn,
-        timeMs: game.lastReachMs || game.timeMs
+        timeMs: G.Game.clockMs(game)
       });
     }
     if (game.onFinish) game.onFinish(game);
