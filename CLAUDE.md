@@ -17,7 +17,7 @@
 - **두 갈래 (2026-10-20):** `stopsketch/` = 기존 데모(한 마리 + 색 3종, 이제 참고용) / `stopsketch_swarm/` = **물방울 무리판**(주인공 + 작은 물방울, 떨어지는 선, 물감 5색, 검은 잉크병 정화). 서로 코드가 따로이고 이미지는 `stopsketch/assets` 를 같이 씀. 기록(DEVLOG)은 `stopsketch/DEVLOG.md` 하나에 함께
 - 용어 (사용자 결정 2026-10-20): **스테이지** = 시작 → 도착 한 판, **구간** = 스테이지를 이루는 부분(이동·퍼즐·아이템 구간). 기존 데모 코드·문서의 "구간"은 스테이지를 뜻함
 - `stopsketch/src/` 개발본 (일반 `<script>` 순서 로딩). 모든 수치는 `data.js`, 구간은 `levels.js`(레벨 툴이 저장)
-- 무리판 `stopsketch_swarm/tools/ui_editor.html` + `ui_editor.js` = UI·글자 툴 (게임 화면 글자·크기·색·위치 → `src/uitext.js`, 사용자 요청 2026-10-21). 게임 글자는 코드에 직접 쓰지 말고 `uitext.js` + `G.T()`
+- 무리판 `stopsketch_swarm/tools/ui_editor.html` + `ui_editor.js` = UI·글자 툴 (게임 화면 글자·크기·색·위치 → `src/uitext.js`, 사용자 요청 2026-10-21. 시작·월드·스테이지 화면도 미리보기에서 끌기·휠, 2026-10-27 — `menu.js` 는 그린 것마다 `mark()` 로 자리를 남김). 게임 글자는 코드에 직접 쓰지 말고 `uitext.js` + `G.T()`
 - `stopsketch/tools/level_editor.html` + `editor.js` 레벨 툴, `test.js` 순수 계산 테스트, `sim.js` 물리 시뮬레이션, `build_single.py` 제출본 빌드
 - `stopsketch/assets/` 게임이 쓰는 이미지(파일명 = 이미지 문서 3장 표). 없으면 코드로 그린 임시 모양
 - `stopsketch/assets/sound/` 게임이 쓰는 소리(파일명 = 사운드 문서 4장 표, 2026-10-22). 배경 음악 `bgm_main` + 효과음 22개 (10/23 오전 배경 음악만 → 오후 효과음 다시 넣음, `data.js sound.useSfx: true`). 개발본을 파일로 열면(레벨 툴 테스트 플레이 포함) `<audio>` 로 재생. 없으면 그 소리만 안 남. 소리 장치는 `stopsketch_swarm/src/sound.js` (게임 상태 변화를 보고 소리를 냄, node 시뮬레이션과 무관)

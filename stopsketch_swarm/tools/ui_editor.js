@@ -13,13 +13,17 @@ var G = G || {};
   // 장면: 어떤 글자가 어디서 나오는지 보기 위한 게임 상태
   var SCENES = [
     ['ready', '출발 전'], ['run', '달리는 중'], ['stop', '정지 중'], ['pause', '일시 정지 (Esc)'], ['toast', '알림 문구'],
-    ['clear', '클리어 결과'], ['fail', '실패 결과']
+    ['clear', '클리어 결과'], ['fail', '실패 결과'],
+    ['title', '시작 화면'], ['worlds', '월드 선택'], ['stages', '스테이지 선택']   // 메뉴 화면 (사용자 요청 2026-10-27)
   ];
+  var MENU = { title: 1, worlds: 1, stages: 1 };
   // 글자 묶음: 이름 앞부분 → [제목, 장면]
   var GROUPS = [
     ['hud', '위 막대', 'run'], ['shelf', '아래 물감 선반', 'run'], ['ink', '물감 이름', 'run'], ['stop', '정지 화면', 'stop'], ['pause', '일시 정지 창 (Esc)', 'pause'],
     ['ready', '출발 전 화면', 'ready'], ['skip', '스킵 버튼 (지금 꺼짐: data.js goalEnter.skip)', 'run'], ['result', '결과 창', 'clear'], ['fail', '실패 이유 (결과 창 제목)', 'fail'],
-    ['toast', '알림 문구 (화면 가운데 빨간 글자)', 'toast']
+    ['toast', '알림 문구 (화면 가운데 빨간 글자)', 'toast'],
+    ['title', '시작 화면', 'title'], ['menu', '메뉴 공통', 'worlds'], ['worlds', '월드 선택 화면', 'worlds'], ['world', '월드 카드 이름·설명', 'worlds'],
+    ['stages', '스테이지 선택 화면', 'stages']
   ];
   var LABEL = {
     'hud.ink': '잉크 글자', 'hud.inkInf': '잉크 무제한일 때', 'hud.stop': '정지 글자', 'hud.stopInf': '정지 무제한일 때',
@@ -34,6 +38,14 @@ var G = G || {};
     'toast.noStops': '정지 횟수 없음', 'toast.inkLocked': '못 쓰는 색을 고름', 'toast.stopUp': '정지 +1 획득', 'toast.inkUp': '잉크 병 획득',
     'toast.heroHome': '주인공 도착', 'toast.short': '선이 너무 짧음', 'toast.noCrystal': '노랑: 지울 선 없음', 'toast.noSuck': '빨아들일 선 없음',
     'toast.noInk': '잉크 없음', 'toast.soundOn': '소리 켬', 'toast.soundOff': '소리 끔', 'toast.test': '레벨 툴 테스트 시작',
+    'result.menu': '스테이지 목록 버튼', 'pause.menu': '스테이지 목록 버튼',
+    'title.name': '게임 제목 (제목 그림이 없을 때)', 'title.sub': '부제', 'title.start': '시작 버튼', 'title.help': '시작 버튼 아래 안내',
+    'menu.back': '뒤로 버튼 (그림이 있으면 ← 는 빠짐)', 'menu.unlockAll': '확인용 모두 열림 표시',
+    'worlds.title': '화면 제목', 'worlds.stars': '카드 별 합계', 'worlds.locked': '잠긴 월드 안내 (마우스를 올렸을 때)',
+    'world.1.name': '월드 1 이름', 'world.1.desc': '월드 1 설명', 'world.2.name': '월드 2 이름', 'world.2.desc': '월드 2 설명',
+    'world.3.name': '월드 3 이름', 'world.3.desc': '월드 3 설명', 'world.4.name': '월드 4 이름', 'world.4.desc': '월드 4 설명',
+    'world.5.name': '월드 5 이름', 'world.5.desc': '월드 5 설명', 'world.6.name': '월드 6 이름', 'world.6.desc': '월드 6 설명',
+    'stages.title': '화면 제목', 'stages.inks': '물감 줄 앞 글자', 'stages.boss': '마지막 칸 표시', 'stages.purity': '칸 아래 정화', 'stages.locked': '잠긴 칸 안내 (마우스를 올렸을 때)',
     'ink.black': '검정', 'ink.red': '빨강', 'ink.blue': '파랑', 'ink.green': '초록', 'ink.yellow': '노랑'
   };
   var STYLE = [   // [이름, 설명, 장면]
@@ -79,15 +91,32 @@ var G = G || {};
     ['menuRetryX', '클리어: 스테이지 목록 버튼 x (왼쪽)', 'clear'], ['menuRetryY', '클리어: 스테이지 목록 버튼 y (위)', 'clear'],
     ['failMenuX', '실패: 스테이지 목록 버튼 x', 'fail'], ['failMenuY', '실패: 스테이지 목록 버튼 y', 'fail'],
     ['pauseMenuX', '일시 정지: 스테이지 목록 x', 'pause'], ['pauseMenuY', '일시 정지: 스테이지 목록 y', 'pause'],
-    // 시작·월드·스테이지 화면 (2차 데모, 2026-10-23) — 이 툴에서는 미리보기 없이 숫자만 (게임에서 확인)
-    ['titleY', '시작 화면: 제목 y', 'run'], ['titleSize', '시작 화면: 제목 크기', 'run'], ['titleLogoW', '시작 화면: 제목 그림 폭', 'run'],
-    ['titleSubY', '시작 화면: 부제 y', 'run'], ['titleSubSize', '시작 화면: 부제 크기', 'run'], ['titleStartY', '시작 화면: 시작 버튼 y', 'run'],
-    ['menuBtnW', '메뉴 버튼 폭', 'run'], ['menuBtnH', '메뉴 버튼 높이', 'run'], ['menuBtnSize', '메뉴 버튼 글자 크기', 'run'], ['menuSmallSize', '메뉴 작은 글자 크기', 'run'],
-    ['menuTitleY', '월드·스테이지 화면 제목 y', 'run'], ['menuTitleSize', '월드·스테이지 화면 제목 크기', 'run'],
-    ['menuBackX', '뒤로 버튼 x', 'run'], ['menuBackY', '뒤로 버튼 y', 'run'], ['menuBackW', '뒤로 버튼 폭', 'run'], ['menuBackH', '뒤로 버튼 높이', 'run'],
-    ['worldCardY', '월드 카드 y (위)', 'run'], ['worldCardW', '월드 카드 폭', 'run'], ['worldCardH', '월드 카드 높이', 'run'], ['worldCardGap', '월드 카드 간격', 'run'],
-    ['worldNameSize', '월드 이름 크기', 'run'], ['worldDescSize', '월드 설명·별 글자 크기', 'run'],
-    ['stageTileY', '스테이지 칸 y (위)', 'run'], ['stageTileSize', '스테이지 칸 크기', 'run'], ['stageTileGap', '스테이지 칸 간격', 'run'], ['stageNumSize', '스테이지 번호 크기', 'run'],
+    // 시작·월드·스테이지 화면 (2차 데모 2026-10-23, 미리보기에서 끌기·휠 2026-10-27). 글자 x = 가운데, 버튼·카드 줄 x = 가운데
+    //   카드·칸 안의 것: DX = 카드(칸) 가운데에서 옆으로, Y = 카드(칸) 위에서 아래로 (모든 카드·칸이 같은 값)
+    ['titleX', '시작: 제목 x (가운데)', 'title'], ['titleY', '시작: 제목 y', 'title'], ['titleSize', '시작: 제목 글자 크기', 'title'], ['titleLogoW', '시작: 제목 그림 폭 (title_logo)', 'title'],
+    ['titleSubX', '시작: 부제 x', 'title'], ['titleSubY', '시작: 부제 y', 'title'], ['titleSubSize', '시작: 부제 크기', 'title'],
+    ['titleStartX', '시작: 시작 버튼 x (가운데)', 'title'], ['titleStartY', '시작: 시작 버튼 y (위)', 'title'],
+    ['titleHelpX', '시작: 안내 x', 'title'], ['titleHelpY', '시작: 안내 y', 'title'], ['titleHelpSize', '시작: 안내 크기', 'title'],
+    ['menuBtnW', '메뉴 버튼 폭 (시작 버튼)', 'title'], ['menuBtnH', '메뉴 버튼 높이', 'title'], ['menuBtnSize', '메뉴 버튼 글자 크기', 'title'],
+    ['menuBackX', '뒤로 버튼 x', 'worlds'], ['menuBackY', '뒤로 버튼 y', 'worlds'], ['menuBackW', '뒤로 버튼 폭', 'worlds'], ['menuBackH', '뒤로 버튼 높이', 'worlds'], ['menuBackSize', '뒤로 버튼 글자 크기', 'worlds'],
+    ['menuTitleSize', '월드·스테이지 화면 제목 크기', 'worlds'], ['menuSmallSize', '안내 글자·물감 줄 글자 크기', 'worlds'],
+    ['worldsTitleX', '월드: 제목 x', 'worlds'], ['worldsTitleY', '월드: 제목 y', 'worlds'],
+    ['worldCardsX', '월드: 카드 줄 가운데 x', 'worlds'], ['worldCardY', '월드: 카드 y (위)', 'worlds'], ['worldCardW', '월드: 카드 폭', 'worlds'], ['worldCardH', '월드: 카드 높이', 'worlds'], ['worldCardGap', '월드: 카드 간격', 'worlds'],
+    ['worldIconDX', '월드: 아이콘 DX', 'worlds'], ['worldIconY', '월드: 아이콘 Y (가운데)', 'worlds'], ['worldIconSize', '월드: 아이콘 크기', 'worlds'],
+    ['worldNameDX', '월드: 이름 DX', 'worlds'], ['worldNameY', '월드: 이름 Y', 'worlds'], ['worldNameSize', '월드: 이름 크기', 'worlds'],
+    ['worldDescDX', '월드: 설명 DX', 'worlds'], ['worldDescY', '월드: 설명 Y', 'worlds'], ['worldDescSize', '월드: 설명 크기', 'worlds'],
+    ['worldStarsDX', '월드: 별 합계 DX', 'worlds'], ['worldStarsY', '월드: 별 합계 Y', 'worlds'], ['worldStarSize', '월드: 별 그림 크기', 'worlds'], ['worldStarsSize', '월드: 별 합계 글자 크기', 'worlds'],
+    ['worldLockDX', '월드: 자물쇠 DX', 'worlds'], ['worldLockY', '월드: 자물쇠 Y (가운데)', 'worlds'], ['worldLockSize', '월드: 자물쇠 크기', 'worlds'],
+    ['worldsHintX', '월드: 잠김 안내 x', 'worlds'], ['worldsHintY', '월드: 잠김 안내 y', 'worlds'],
+    ['stagesTitleX', '스테이지: 제목 x', 'stages'], ['stagesTitleY', '스테이지: 제목 y', 'stages'],
+    ['stagesInksX', '스테이지: 물감 방울 줄 가운데 x', 'stages'], ['stagesInksY', '스테이지: 물감 줄 y', 'stages'], ['stagesInkSize', '스테이지: 물감 방울 크기', 'stages'], ['stagesInkGap', '스테이지: 물감 방울 간격', 'stages'],
+    ['stageTilesX', '스테이지: 칸 줄 가운데 x', 'stages'], ['stageTileY', '스테이지: 칸 y (위)', 'stages'], ['stageTileSize', '스테이지: 칸 크기', 'stages'], ['stageTileGap', '스테이지: 칸 간격', 'stages'],
+    ['stageNumDX', '스테이지: 번호 DX', 'stages'], ['stageNumY', '스테이지: 번호 Y', 'stages'], ['stageNumSize', '스테이지: 번호 크기', 'stages'],
+    ['stageBossDX', '스테이지: "도전" DX', 'stages'], ['stageBossY', '스테이지: "도전" Y', 'stages'], ['stageBossSize', '스테이지: "도전" 크기', 'stages'],
+    ['stageStarsDX', '스테이지: 별 줄 DX', 'stages'], ['stageStarsY', '스테이지: 별 줄 Y', 'stages'], ['stageStarSize', '스테이지: 별 크기', 'stages'], ['stageStarGap', '스테이지: 별 간격', 'stages'],
+    ['stagePurityDX', '스테이지: 정화 DX', 'stages'], ['stagePurityY', '스테이지: 정화 Y (칸 아래)', 'stages'], ['stagePuritySize', '스테이지: 정화 크기', 'stages'],
+    ['stageLockDX', '스테이지: 자물쇠 DX', 'stages'], ['stageLockY', '스테이지: 자물쇠 Y (가운데)', 'stages'], ['stageLockSize', '스테이지: 자물쇠 크기', 'stages'],
+    ['stagesHintX', '스테이지: 이름·잠김 안내 x', 'stages'], ['stagesHintY', '스테이지: 이름·잠김 안내 y', 'stages'],
     // 사운드 (사용자 결정 2026-10-22): 0 ~ 1
     ['musicVolume', '배경 음악 음량 (0~1)', 'run'], ['sfxVolume', '효과음 음량 (0~1)', 'run']
   ];
@@ -95,7 +124,19 @@ var G = G || {};
   // ---------- 미리보기 게임 ----------
   function stageData() { return G.LEVELS.filter(function (l) { return !l.test; })[0] || G.LEVELS[0]; }
   function steps(g, n) { for (var i = 0; i < n && g.status === 'run'; i++) G.Game.update(g, G.DATA.loop.stepMs); }
+  // 메뉴 화면 미리보기: 게임의 app 과 같은 모양. 월드 선택은 1~3 열림, 스테이지 선택은 깬 칸 + 열린 칸 + 잠긴 칸이 보이게
+  function menuApp(scene) {
+    var levels = G.Rules.playOrder(G.LEVELS.filter(function (l) { return !l.test; })), rec = {}, mw = S.menuWorld || 1;
+    function clear(l, stars, purity) { rec[l.id] = { clears: 1, stars: stars, bestPurity: purity }; }
+    levels.forEach(function (l) { if (scene === 'worlds' ? l.world < 3 : l.world < mw) clear(l, 3, 1); });
+    var cur = G.Rules.worldStages(levels, scene === 'worlds' ? 3 : mw);
+    if (cur[0]) clear(cur[0], 3, 1);
+    if (cur[1] && cur.length > 2) clear(cur[1], 2, 0.8);
+    return { scene: scene, levels: levels, menuWorld: mw, unlockAll: false, showHints: true, account: { records: rec, worldSeen: { 1: 1, 2: 1, 3: 1, 4: 1, 5: 1, 6: 1 } } };
+  }
   function makeScene(scene) {
+    if (MENU[scene]) { S.app = menuApp(scene); S.scene = scene; buildScenes(); return; }
+    S.app = null;
     var g = G.Game.create('A', stageData(), { inkBonus: 0, bottles: {}, records: {} });
     G.UI.resetCamera();
     g.hasNext = true;
@@ -122,7 +163,11 @@ var G = G || {};
     } else g.messages = [];
   }
   function frame() {
-    if (S.game) {
+    if (S.app) {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      G.Menu.render(ctx, S.app);
+      drawHover();
+    } else if (S.game) {
       liveText(S.game);
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       G.UI.render(ctx, S.game, { showBoxes: false });
@@ -134,9 +179,15 @@ var G = G || {};
   function buildScenes() {
     $('scenes').innerHTML = '미리보기 장면: ' + SCENES.map(function (s) {
       return '<button data-scene="' + s[0] + '"' + (S.scene === s[0] ? ' class="on"' : '') + '>' + s[1] + '</button>';
-    }).join('');
+    }).join('') + (S.scene === 'stages' ? '<br>월드: ' + G.DATA.worlds.map(function (w) {
+      return '<button data-world="' + w.id + '"' + ((S.menuWorld || 1) === w.id ? ' class="on"' : '') + '>' + w.id + '</button>';
+    }).join('') : '');
   }
-  $('scenes').addEventListener('click', function (e) { var s = e.target.getAttribute('data-scene'); if (s) makeScene(s); });
+  $('scenes').addEventListener('click', function (e) {
+    var s = e.target.getAttribute('data-scene'), w = e.target.getAttribute('data-world');
+    if (w) { S.menuWorld = +w; makeScene('stages'); }
+    else if (s) makeScene(s);
+  });
 
   // ---------- 왼쪽 칸 ----------
   function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
@@ -188,6 +239,7 @@ var G = G || {};
     if (!f) return;
     var sc = f.getAttribute('data-scene'), fk = f.getAttribute('data-fail');
     if (fk) S.failKey = fk;
+    if (sc === S.scene || (MENU[sc] && sc === 'worlds' && S.scene === 'stages' && /^menu/.test(f.querySelector('small').textContent))) return;   // 메뉴 공통 칸은 스테이지 화면에서도 그대로
     if (sc && sc !== S.scene) makeScene(sc);
   });
   $('side').addEventListener('click', function (e) {
@@ -288,7 +340,17 @@ var G = G || {};
   // 미리보기에서 결과 창 버튼을 끌어 옮기기 (사용자 요청 2026-10-21: 다시 하기·다음 스테이지 위치 조절). 마우스를 올리면 강조색
   function viewPt(e) { var r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) * 1280 / r.width, y: (e.clientY - r.top) * 720 / r.height }; }
   //   버튼마다 자기 칸에 저장 (클리어·마지막 스테이지·실패의 다시 하기는 따로). 버튼 밖 바탕을 끌면 바탕 크기 (가운데 기준)
+  //   메뉴 화면: 마우스를 올린 것(파란 점선)을 끌면 위치, 휠을 굴리면 크기 (사용자 요청 2026-10-27)
+  function menuHit(p) {
+    var ps = S.app ? G.Menu.layout().filter(function (q) { return inR(p, q); }) : [];
+    return ps[ps.length - 1] || null;               // 나중에 그린(위에 있는) 것 먼저
+  }
   cv.addEventListener('mousedown', function (e) {
+    if (S.app) {
+      var mp = viewPt(e), q = menuHit(mp), sm = G.UITEXT.style;
+      if (q) { S.btnDrag = { kx: q.keys[0], ky: q.keys[1], p: mp, x: sm[q.keys[0]], y: sm[q.keys[1]] }; e.preventDefault(); }
+      return;
+    }
     var p = viewPt(e), lay = S.game && G.UI.resultLayout(S.game);
     if (!lay) return;
     var b = hitPart(lay, p), st = G.UITEXT.style;   // 버튼 → 결과 창 안의 것(물방울 그림·별·글자·막대) 순서로
@@ -315,7 +377,26 @@ var G = G || {};
     }
     S.dirty = true; status();
   });
-  window.addEventListener('mouseup', function () { if (S.btnDrag) { S.btnDrag = null; buildSide(); } });
+  window.addEventListener('mouseup', function () {
+    if (!S.btnDrag) return;
+    var k = S.btnDrag.kx;
+    S.btnDrag = null; buildSide();
+    var f = S.app && document.querySelector('[data-k="style:' + k + '"]');   // 메뉴 화면: 왼쪽 칸을 끈 것의 칸으로 넘겨 보여 줌
+    if (f) f.scrollIntoView({ block: 'center' });
+  });
+  cv.addEventListener('wheel', function (e) {
+    var q = S.app && menuHit(viewPt(e)), sm = G.UITEXT.style;
+    if (!q || !q.size.length) return;
+    e.preventDefault();
+    var up = e.deltaY < 0;                           // 위로 = 크게. 묶인 크기 값(폭·높이·글자)을 같은 비율로 (작은 값도 1씩은 바뀜)
+    q.size.forEach(function (key) {
+      var v = sm[key], n = Math.round(v * (up ? 1.05 : 1 / 1.05));
+      if (n === v) n = v + (up ? 1 : -1);
+      sm[key] = Math.max(4, n);
+    });
+    S.dirty = true; status();
+    clearTimeout(S.wheelT); S.wheelT = setTimeout(buildSide, 250);
+  }, { passive: false });
   function inR(p, q) { return p.x >= q.x && p.x <= q.x + q.w && p.y >= q.y && p.y <= q.y + q.h; }
   function hitPart(lay, p) {
     var b = lay.btns.filter(function (q) { return inR(p, q); })[0];
@@ -325,6 +406,18 @@ var G = G || {};
   }
   // 미리보기: 마우스를 올린 것에 점선 상자 (끌 수 있는 것 표시)
   function drawHover() {
+    if (S.app) {                                    // 메뉴 화면: 점선 상자 + 끌면 바뀌는 값 이름
+      var mq = S.hoverPt && (S.btnDrag ? null : menuHit(S.hoverPt));
+      if (!mq) return;
+      ctx.save(); ctx.setLineDash([6, 4]); ctx.lineWidth = 2; ctx.strokeStyle = '#1F6FE0';
+      ctx.strokeRect(mq.x - 3, mq.y - 3, mq.w + 6, mq.h + 6);
+      ctx.setLineDash([]); ctx.font = '13px sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+      var tip = mq.keys.join(' · ') + (mq.size.length ? '  (휠: ' + mq.size.join(' · ') + ')' : ''), tw = ctx.measureText(tip).width, ty = mq.y - 6 < 20 ? mq.y + mq.h + 24 : mq.y - 6;
+      ctx.fillStyle = 'rgba(255,255,255,0.9)'; ctx.fillRect(mq.x - 3, ty - 17, tw + 8, 19);
+      ctx.fillStyle = '#1F6FE0'; ctx.fillText(tip, mq.x + 1, ty);
+      ctx.restore();
+      return;
+    }
     var lay = S.game && G.UI.resultLayout(S.game), hp = S.hoverPt;
     if (!lay || !hp) return;
     var q = S.btnDrag && !S.btnDrag.size ? null : hitPart(lay, hp);

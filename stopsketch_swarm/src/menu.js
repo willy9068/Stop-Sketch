@@ -1,10 +1,11 @@
 // 시작 화면 → 월드 선택 → 스테이지 선택 (사용자 결정 2026-10-23, 업무가이드 11-9: 클릭하는 판, 월드 → 번호 칸 구조)
 //   그림(이미지 문서 16장)이 있으면 그림으로, 없으면 코드로 그린 임시 모양. 글자는 uitext.js (UI 툴), 위치·크기도 uitext.js style
+//   그린 것마다 자리(parts)를 남겨 UI 툴 미리보기에서 끌어 옮기고 휠로 크기를 바꿈 (사용자 요청 2026-10-27)
 //   열림: 스테이지를 깨면 다음 스테이지, 월드 마지막을 깨면 다음 월드 (rules.js worldUnlocked / stageUnlocked)
 var G = G || {};
 
 G.Menu = (function () {
-  var V = G.DATA.view, C = G.DATA.colors, R = G.Rules, hoverPt = null, btns = [], t0 = Date.now();
+  var V = G.DATA.view, C = G.DATA.colors, R = G.Rules, hoverPt = null, btns = [], parts = [], t0 = Date.now();
 
   function S(k) { return G.TS(k); }
   function img(n) { return G.Assets.get(n); }
@@ -15,6 +16,14 @@ G.Menu = (function () {
   function unlockedW(app, w) { return app.unlockAll || R.worldUnlocked(app.levels, app.account.records, w); }
   function unlockedS(app, lv) { return app.unlockAll || R.stageUnlocked(app.levels, app.account.records, lv); }
 
+  // UI 툴이 끌 수 있는 자리: 위치 값 둘(kx, ky)과 휠로 바꿀 크기 값들(size)
+  function mark(kx, ky, x, y, w, h, size) { parts.push({ keys: [kx, ky], x: x, y: y, w: w, h: h, size: size || [] }); }
+  function markText(ctx, kx, ky, s, x, y, size, bold, align, sk) {
+    ctx.font = (bold ? 'bold ' : '') + size + 'px ' + S('font');
+    var ls = String(s).split('\n'), w = Math.max.apply(null, ls.map(function (l) { return ctx.measureText(l).width; })), h = size * (1 + (ls.length - 1) * 1.25);
+    var x0 = align === 'right' ? x - w : align === 'left' ? x : x - w / 2;
+    mark(kx, ky, x0, y - size / 2, w, h, sk);
+  }
   function rr(ctx, x, y, w, h, r) { ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(x, y, w, h, r); else ctx.rect(x, y, w, h); }
   function text(ctx, s, x, y, size, color, bold, align) {
     ctx.font = (bold ? 'bold ' : '') + size + 'px ' + S('font');
@@ -118,41 +127,52 @@ G.Menu = (function () {
     G.UI.drawBackground(ctx, 'bg_plain', (Date.now() - t0) * 0.02);
   }
   function backButton() {
-    return { act: 'back', x: S('menuBackX'), y: S('menuBackY'), w: S('menuBackW'), h: S('menuBackH'), label: G.T('menu.back'), size: S('menuSmallSize'), icon: 'ui_back' };
+    var b = { act: 'back', x: S('menuBackX'), y: S('menuBackY'), w: S('menuBackW'), h: S('menuBackH'), label: G.T('menu.back'), size: S('menuBackSize'), icon: 'ui_back' };
+    mark('menuBackX', 'menuBackY', b.x, b.y, b.w, b.h, ['menuBackW', 'menuBackH', 'menuBackSize']);
+    return b;
   }
 
   // ---- 화면 셋 ----
   function drawTitle(ctx, app) {
     paperBg(ctx, 'title_bg');
-    var logo = img('title_logo'), ty = S('titleY');
-    if (logo) { var lw = S('titleLogoW'), lh = lw * logo.height / logo.width; ctx.drawImage(logo, V.w / 2 - lw / 2, ty - lh / 2, lw, lh); }
-    else {
+    var logo = img('title_logo'), tx = S('titleX'), ty = S('titleY');
+    if (logo) {
+      var lw = S('titleLogoW'), lh = lw * logo.height / logo.width;
+      ctx.drawImage(logo, tx - lw / 2, ty - lh / 2, lw, lh);
+      mark('titleX', 'titleY', tx - lw / 2, ty - lh / 2, lw, lh, ['titleLogoW']);
+    } else {
+      markText(ctx, 'titleX', 'titleY', G.T('title.name'), tx, ty, S('titleSize'), true, 'center', ['titleSize']);
       ctx.save(); ctx.lineJoin = 'round'; ctx.font = 'bold ' + S('titleSize') + 'px ' + S('font'); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.lineWidth = 10; ctx.strokeStyle = '#FFFDF6'; ctx.strokeText(G.T('title.name'), V.w / 2, ty);
-      ctx.fillStyle = S('textColor'); ctx.fillText(G.T('title.name'), V.w / 2, ty); ctx.restore();
+      ctx.lineWidth = 10; ctx.strokeStyle = '#FFFDF6'; ctx.strokeText(G.T('title.name'), tx, ty);
+      ctx.fillStyle = S('textColor'); ctx.fillText(G.T('title.name'), tx, ty); ctx.restore();
       // 제목 아래 다섯 색 물감 줄
       var cols = ['black', 'blue', 'red', 'green', 'yellow'], lw2 = 90;
       cols.forEach(function (c, i) {
         ctx.save(); ctx.strokeStyle = C[c]; ctx.lineWidth = 9; ctx.lineCap = 'round';
-        var x0 = V.w / 2 - (cols.length * lw2) / 2 + i * lw2 + 8, y0 = ty + S('titleSize') * 0.62 + Math.sin(i * 1.7) * 4;
+        var x0 = tx - (cols.length * lw2) / 2 + i * lw2 + 8, y0 = ty + S('titleSize') * 0.62 + Math.sin(i * 1.7) * 4;
         ctx.beginPath(); ctx.moveTo(x0, y0); ctx.quadraticCurveTo(x0 + lw2 / 2, y0 + (i % 2 ? 8 : -8), x0 + lw2 - 16, y0); ctx.stroke(); ctx.restore();
       });
     }
-    text(ctx, G.T('title.sub'), V.w / 2, S('titleSubY'), S('titleSubSize'), null, false);
-    btns = [{ act: 'start', x: V.w / 2 - S('menuBtnW') / 2, y: S('titleStartY'), w: S('menuBtnW'), h: S('menuBtnH'), label: G.T('title.start') }];
-    btns.forEach(function (b) { drawButton(ctx, b); });
-    text(ctx, G.T('title.help'), V.w / 2, S('titleStartY') + S('menuBtnH') + 30, S('menuSmallSize'), 'rgba(43,33,24,0.6)');
+    text(ctx, G.T('title.sub'), S('titleSubX'), S('titleSubY'), S('titleSubSize'), null, false);
+    markText(ctx, 'titleSubX', 'titleSubY', G.T('title.sub'), S('titleSubX'), S('titleSubY'), S('titleSubSize'), false, 'center', ['titleSubSize']);
+    btns = [{ act: 'start', x: S('titleStartX') - S('menuBtnW') / 2, y: S('titleStartY'), w: S('menuBtnW'), h: S('menuBtnH'), label: G.T('title.start') }];   // titleStartX = 버튼 가운데
+    btns.forEach(function (b) { drawButton(ctx, b); mark('titleStartX', 'titleStartY', b.x, b.y, b.w, b.h, ['menuBtnW', 'menuBtnH', 'menuBtnSize']); });
+    text(ctx, G.T('title.help'), S('titleHelpX'), S('titleHelpY'), S('titleHelpSize'), 'rgba(43,33,24,0.6)');
+    markText(ctx, 'titleHelpX', 'titleHelpY', G.T('title.help'), S('titleHelpX'), S('titleHelpY'), S('titleHelpSize'), false, 'center', ['titleHelpSize']);
   }
 
   function cardRects() {
-    var n = G.DATA.worlds.length, w = S('worldCardW'), h = S('worldCardH'), gap = S('worldCardGap'), x0 = (V.w - (n * w + (n - 1) * gap)) / 2;
+    var n = G.DATA.worlds.length, w = S('worldCardW'), h = S('worldCardH'), gap = S('worldCardGap'), x0 = S('worldCardsX') - (n * w + (n - 1) * gap) / 2;   // worldCardsX = 카드 줄 가운데
     return G.DATA.worlds.map(function (wd, i) { return { act: 'world:' + wd.id, x: x0 + i * (w + gap), y: S('worldCardY'), w: w, h: h, world: wd }; });
   }
   function drawWorlds(ctx, app) {
     paperBg(ctx, 'bg_plain');
-    text(ctx, G.T('worlds.title'), V.w / 2, S('menuTitleY'), S('menuTitleSize'), null, true);
+    text(ctx, G.T('worlds.title'), S('worldsTitleX'), S('worldsTitleY'), S('menuTitleSize'), null, true);
+    markText(ctx, 'worldsTitleX', 'worldsTitleY', G.T('worlds.title'), S('worldsTitleX'), S('worldsTitleY'), S('menuTitleSize'), true, 'center', ['menuTitleSize']);
     btns = [backButton()];
     cardRects().forEach(function (b) {
+      var cx = b.x + b.w / 2;
+      mark('worldCardsX', 'worldCardY', b.x, b.y, b.w, b.h, ['worldCardW', 'worldCardH']);
       var w = b.world, open = unlockedW(app, w.id), list = R.worldStages(app.levels, w.id), h = open && hot(b);
       ctx.save();
       var tilt = ((w.id * 37) % 7 - 3) * 0.006;
@@ -165,15 +185,27 @@ G.Menu = (function () {
         ctx.fillStyle = 'rgba(255,233,168,0.85)'; ctx.fillRect(b.x + b.w / 2 - 34, b.y - 10, 68, 22);   // 테이프
       }
       ctx.fillStyle = w.color; ctx.fillRect(b.x + 14, b.y + (card ? 34 : 14), b.w - 28, 8);   // 월드 색 띠 (카드 그림이면 테이프 아래)
-      drawWorldIcon(ctx, w, b.x + b.w / 2, b.y + b.h * 0.36, b.w * 0.62);
-      text(ctx, G.T('world.' + w.id + '.name'), b.x + b.w / 2, b.y + b.h * 0.66, S('worldNameSize'), null, true);
-      text(ctx, G.T('world.' + w.id + '.desc'), b.x + b.w / 2, b.y + b.h * 0.76, S('worldDescSize'), 'rgba(43,33,24,0.7)');
-      var st = R.worldStars(app.levels, app.account.records, w.id, starsOf);
-      drawStar(ctx, b.x + b.w / 2 - 34, b.y + b.h * 0.89, 11, st.got > 0);
-      text(ctx, G.T('worlds.stars', { got: st.got, total: st.total, n: list.length }), b.x + b.w / 2 + 10, b.y + b.h * 0.89, S('worldDescSize'), null, true);
+      // 카드 안의 것: 카드 가운데·위에서 떨어진 거리(px). 여섯 카드가 같은 값을 씀
+      var is = S('worldIconSize'), ix = cx + S('worldIconDX'), iy = b.y + S('worldIconY');
+      drawWorldIcon(ctx, w, ix, iy, is);
+      mark('worldIconDX', 'worldIconY', ix - is / 2, iy - is / 2, is, is, ['worldIconSize']);
+      var nm = G.T('world.' + w.id + '.name'), ds = G.T('world.' + w.id + '.desc');
+      text(ctx, nm, cx + S('worldNameDX'), b.y + S('worldNameY'), S('worldNameSize'), null, true);
+      markText(ctx, 'worldNameDX', 'worldNameY', nm, cx + S('worldNameDX'), b.y + S('worldNameY'), S('worldNameSize'), true, 'center', ['worldNameSize']);
+      text(ctx, ds, cx + S('worldDescDX'), b.y + S('worldDescY'), S('worldDescSize'), 'rgba(43,33,24,0.7)');
+      markText(ctx, 'worldDescDX', 'worldDescY', ds, cx + S('worldDescDX'), b.y + S('worldDescY'), S('worldDescSize'), false, 'center', ['worldDescSize']);
+      var st = R.worldStars(app.levels, app.account.records, w.id, starsOf), sx = cx + S('worldStarsDX'), sy = b.y + S('worldStarsY'), sr = S('worldStarSize') / 2;
+      var stx = G.T('worlds.stars', { got: st.got, total: st.total, n: list.length }), sts = S('worldStarsSize');
+      drawStar(ctx, sx - 34, sy, sr, st.got > 0);
+      text(ctx, stx, sx + 10, sy, sts, null, true);
+      ctx.font = 'bold ' + sts + 'px ' + S('font');
+      var stw = ctx.measureText(stx).width, sh = Math.max(sr * 2, sts);
+      mark('worldStarsDX', 'worldStarsY', sx - 34 - sr, sy - sh / 2, 44 + sr + stw / 2, sh, ['worldStarSize', 'worldStarsSize']);
       if (!open) {
         rr(ctx, b.x, b.y, b.w, b.h, 14); ctx.fillStyle = 'rgba(120,112,104,0.55)'; ctx.fill();
-        drawLock(ctx, b.x + b.w / 2, b.y + b.h * 0.42, b.w * 0.42);
+        var ls = S('worldLockSize'), lx = cx + S('worldLockDX'), ly = b.y + S('worldLockY');
+        drawLock(ctx, lx, ly, ls);
+        mark('worldLockDX', 'worldLockY', lx - ls / 2, ly - ls / 2, ls, ls, ['worldLockSize']);
       }
       ctx.restore();
       btns.push(b);
@@ -184,25 +216,34 @@ G.Menu = (function () {
     btns.forEach(function (b) { if (b.world) drawBurst(ctx, b); });
     drawButton(ctx, btns[0]);
     var hb = btns.filter(function (b) { return b.world && hot(b); })[0];
-    if (hb && !unlockedW(app, hb.world.id)) text(ctx, G.T('worlds.locked'), V.w / 2, S('worldCardY') + S('worldCardH') + 46, S('menuSmallSize'), C.outline);
+    if ((hb && !unlockedW(app, hb.world.id)) || app.showHints) {   // showHints: UI 툴 미리보기에서 늘 보이게
+      text(ctx, G.T('worlds.locked'), S('worldsHintX'), S('worldsHintY'), S('menuSmallSize'), C.outline);
+      markText(ctx, 'worldsHintX', 'worldsHintY', G.T('worlds.locked'), S('worldsHintX'), S('worldsHintY'), S('menuSmallSize'), false, 'center', ['menuSmallSize']);
+    }
   }
 
   function tileRects(app) {
-    var list = R.worldStages(app.levels, app.menuWorld), s = S('stageTileSize'), gap = S('stageTileGap'), x0 = (V.w - (list.length * s + (list.length - 1) * gap)) / 2;
+    var list = R.worldStages(app.levels, app.menuWorld), s = S('stageTileSize'), gap = S('stageTileGap'), x0 = S('stageTilesX') - (list.length * s + (list.length - 1) * gap) / 2;   // stageTilesX = 칸 줄 가운데
     return list.map(function (lv, i) { return { act: 'stage:' + lv.id, x: x0 + i * (s + gap), y: S('stageTileY'), w: s, h: s, lv: lv, n: i + 1, last: i === list.length - 1 && list.length > 1 }; });
   }
   function drawStages(ctx, app) {
     var w = worldOf(app.menuWorld);
     paperBg(ctx, w.bg && img(w.bg) ? w.bg : 'bg_plain');
     if (!img(w.bg) && w.tint) { ctx.save(); ctx.globalCompositeOperation = 'multiply'; ctx.fillStyle = w.tint.paper; ctx.fillRect(0, 0, V.w, V.h); ctx.restore(); }   // 월드 배경 그림이 없으면 종이에 월드 색
-    text(ctx, G.T('stages.title', { n: w.id, name: G.T('world.' + w.id + '.name') }), V.w / 2, S('menuTitleY'), S('menuTitleSize'), null, true);
-    // 쓸 수 있는 물감
-    var iy = S('menuTitleY') + 58, gapI = 44, ix = V.w / 2 - ((w.inks.length - 1) * gapI) / 2 + 60;
-    text(ctx, G.T('stages.inks'), ix - 80, iy, S('menuSmallSize'), null, false, 'right');
-    w.inks.forEach(function (c, i) { inkDot(ctx, ix + i * gapI - 40, iy, 13, C[c]); });
+    var tt = G.T('stages.title', { n: w.id, name: G.T('world.' + w.id + '.name') });
+    text(ctx, tt, S('stagesTitleX'), S('stagesTitleY'), S('menuTitleSize'), null, true);
+    markText(ctx, 'stagesTitleX', 'stagesTitleY', tt, S('stagesTitleX'), S('stagesTitleY'), S('menuTitleSize'), true, 'center', ['menuTitleSize']);
+    // 쓸 수 있는 물감: stagesInksX = 물감 방울 줄 가운데, 글자는 첫 방울 왼쪽
+    var iy = S('stagesInksY'), gapI = S('stagesInkGap'), ir = S('stagesInkSize') / 2, ix = S('stagesInksX') - ((w.inks.length - 1) * gapI) / 2, ts = S('menuSmallSize');
+    text(ctx, G.T('stages.inks'), ix - ir - 27, iy, ts, null, false, 'right');
+    w.inks.forEach(function (c, i) { inkDot(ctx, ix + i * gapI, iy, ir, C[c]); });
+    ctx.font = ts + 'px ' + S('font');
+    var lx = ix - ir - 27 - ctx.measureText(G.T('stages.inks')).width, ih = Math.max(ir * 2, ts);
+    mark('stagesInksX', 'stagesInksY', lx, iy - ih / 2, ix + (w.inks.length - 1) * gapI + ir - lx, ih, ['stagesInkSize', 'stagesInkGap']);
     btns = [backButton()];
     tileRects(app).forEach(function (b) {
       var open = unlockedS(app, b.lv), rec = app.account.records[b.lv.id], h = open && hot(b), cx = b.x + b.w / 2;
+      mark('stageTilesX', 'stageTileY', b.x, b.y, b.w, b.h, ['stageTileSize']);
       ctx.save();
       ctx.translate(cx, b.y + b.h / 2); ctx.rotate(((b.n * 53) % 5 - 2) * 0.012); if (h) ctx.scale(1.07, 1.07); ctx.translate(-cx, -b.y - b.h / 2);
       var tile = img(b.last ? 'stage_tile_boss' : 'stage_tile') || (b.last && img('stage_tile'));
@@ -212,21 +253,43 @@ G.Menu = (function () {
         ctx.lineWidth = b.last ? 6 : 4; ctx.strokeStyle = b.last ? w.color : C.outline; ctx.stroke();
         ctx.fillStyle = 'rgba(43,33,24,0.08)'; ctx.beginPath(); ctx.moveTo(b.x + b.w - 30, b.y + b.h); ctx.lineTo(b.x + b.w, b.y + b.h - 30); ctx.lineTo(b.x + b.w, b.y + b.h); ctx.fill();
       }
-      text(ctx, w.id + '-' + b.n, cx, b.y + b.h * 0.42, S('stageNumSize'), b.last ? w.color : null, true);
-      if (b.last) text(ctx, G.T('stages.boss'), cx, b.y + b.h * 0.16, S('worldDescSize'), w.color, true);
-      var total = starsOf(b.lv), got = rec ? Math.min(total, rec.stars || 0) : 0, sr = 13, ts = tile ? G.DATA.art.tileStars : { y: 0.74, dx: 0 };   // 그림 칸이면 접힌 귀퉁이를 피해서
-      for (var k = 0; k < total; k++) drawStar(ctx, cx + b.w * ts.dx + (k - (total - 1) / 2) * (sr * 2.3), b.y + b.h * ts.y, sr, k < got);
-      if (rec && rec.clears) text(ctx, G.T('stages.purity', { purity: Math.round((rec.bestPurity || 0) * 100) }), cx, b.y + b.h + 22, S('worldDescSize'), 'rgba(43,33,24,0.7)');
-      if (!open) { rr(ctx, b.x, b.y, b.w, b.h, 10); ctx.fillStyle = 'rgba(120,112,104,0.55)'; ctx.fill(); drawLock(ctx, cx, b.y + b.h / 2, b.w * 0.5); }
+      // 칸 안의 것: 칸 가운데·위에서 떨어진 거리(px). 모든 칸이 같은 값을 씀
+      var num = w.id + '-' + b.n;
+      text(ctx, num, cx + S('stageNumDX'), b.y + S('stageNumY'), S('stageNumSize'), b.last ? w.color : null, true);
+      markText(ctx, 'stageNumDX', 'stageNumY', num, cx + S('stageNumDX'), b.y + S('stageNumY'), S('stageNumSize'), true, 'center', ['stageNumSize']);
+      if (b.last) {
+        text(ctx, G.T('stages.boss'), cx + S('stageBossDX'), b.y + S('stageBossY'), S('stageBossSize'), w.color, true);
+        markText(ctx, 'stageBossDX', 'stageBossY', G.T('stages.boss'), cx + S('stageBossDX'), b.y + S('stageBossY'), S('stageBossSize'), true, 'center', ['stageBossSize']);
+      }
+      // 별 줄 (그림 칸의 오른쪽 아래 접힌 귀퉁이를 피해서 조금 왼쪽 위)
+      var total = starsOf(b.lv), got = rec ? Math.min(total, rec.stars || 0) : 0, sr = S('stageStarSize') / 2, sg = S('stageStarGap'), scx = cx + S('stageStarsDX'), scy = b.y + S('stageStarsY');
+      for (var k = 0; k < total; k++) drawStar(ctx, scx + (k - (total - 1) / 2) * sg, scy, sr, k < got);
+      mark('stageStarsDX', 'stageStarsY', scx - (total - 1) / 2 * sg - sr, scy - sr, (total - 1) * sg + sr * 2, sr * 2, ['stageStarSize', 'stageStarGap']);
+      if (rec && rec.clears) {
+        var pt = G.T('stages.purity', { purity: Math.round((rec.bestPurity || 0) * 100) });
+        text(ctx, pt, cx + S('stagePurityDX'), b.y + S('stagePurityY'), S('stagePuritySize'), 'rgba(43,33,24,0.7)');
+        markText(ctx, 'stagePurityDX', 'stagePurityY', pt, cx + S('stagePurityDX'), b.y + S('stagePurityY'), S('stagePuritySize'), false, 'center', ['stagePuritySize']);
+      }
+      if (!open) {
+        rr(ctx, b.x, b.y, b.w, b.h, 10); ctx.fillStyle = 'rgba(120,112,104,0.55)'; ctx.fill();
+        var ks = S('stageLockSize'), kx = cx + S('stageLockDX'), ky = b.y + S('stageLockY');
+        drawLock(ctx, kx, ky, ks);
+        mark('stageLockDX', 'stageLockY', kx - ks / 2, ky - ks / 2, ks, ks, ['stageLockSize']);
+      }
       ctx.restore();
       btns.push(b);
     });
     drawButton(ctx, btns[0]);
     var hb = btns.filter(function (b) { return b.lv && hot(b); })[0];
-    if (hb) text(ctx, unlockedS(app, hb.lv) ? hb.lv.name : G.T('stages.locked'), V.w / 2, S('stageTileY') + S('stageTileSize') + 70, S('menuSmallSize'), C.outline);
+    var hint = hb ? (unlockedS(app, hb.lv) ? hb.lv.name : G.T('stages.locked')) : app.showHints ? G.T('stages.locked') : null;   // 마우스를 올린 칸의 이름 또는 잠김 안내
+    if (hint) {
+      text(ctx, hint, S('stagesHintX'), S('stagesHintY'), S('menuSmallSize'), C.outline);
+      markText(ctx, 'stagesHintX', 'stagesHintY', hint, S('stagesHintX'), S('stagesHintY'), S('menuSmallSize'), false, 'center', ['menuSmallSize']);
+    }
   }
 
   function render(ctx, app) {
+    parts = [];
     if (app.scene === 'title') drawTitle(ctx, app);
     else if (app.scene === 'worlds') drawWorlds(ctx, app);
     else drawStages(ctx, app);
@@ -244,5 +307,8 @@ G.Menu = (function () {
   }
   function hover(x, y) { hoverPt = { x: x, y: y }; }
 
-  return { render: render, click: click, hover: hover, worldOf: worldOf };
+  // UI 툴: 마지막으로 그린 화면의 끌 수 있는 자리 (나중에 그린 것이 뒤)
+  function layout() { return parts; }
+
+  return { render: render, click: click, hover: hover, worldOf: worldOf, layout: layout };
 })();

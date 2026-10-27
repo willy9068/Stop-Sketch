@@ -225,7 +225,6 @@ G.DATA = {
     // 월드 카드 (8차 이미지 적용, Claude 2026-10-24): world_card.png 는 위아래가 투명한 가로 카드라 세로 칸(uitext worldCardW×H)에 맞춘다
     //   cardCrop = 실제 카드가 있는 영역 [x, y, 폭, 높이] (이미지를 바꾸면 다시 잼) · cardEnds = 늘리지 않는 위(테이프)·아래 높이(원본 px), 가운데만 늘림
     cardCrop: [2, 75, 380, 329], cardEnds: [70, 40],
-    tileStars: { y: 0.66, dx: -0.08 },   // stage_tile 그림 위 별 줄 위치 (칸 높이 비율, 가운데에서 칸 폭 비율만큼 옮김) — 오른쪽 아래 접힌 귀퉁이를 피함
     unlockFx: { ms: 1200, size: 1.6 },   // fx_unlock: 새 월드가 처음 열린 걸 월드 선택 화면에서 볼 때 카드 위에 퍼지는 효과 (시간, 카드 폭의 배)
     panelHull: null,
     startHole: { size: 190, up: 70 },
