@@ -292,6 +292,16 @@ var G = G || {};
     G.UI.drawGoal(ctx, l.goal.x, l.goal.y);
     label('도착', l.goal.x + 4, l.goal.y - D.art.goalJar.h - 8, '#1FA655');
     l.props.forEach(function (p) { if (p.type === 'drop' || p.type === 'star' || p.type === 'stopup' || p.type === 'inkup') P.draw(ctx, p, { editor: true }); });
+    l.props.forEach(function (p) {                   // 점선 힌트: 그림 + 크기·위치 점선 상자 (그리기 목록에 빠져 안 보이던 문제, 사용자 요청 2026-10-27)
+      if (p.type !== 'hint') return;
+      P.draw(ctx, p, { editor: true });
+      var pad = 6 / z, bh = Math.max(3, p.h) + pad * 2;
+      ctx.save(); ctx.translate(p.x + p.w / 2, p.y + p.h / 2); ctx.rotate((p.angle || 0) * Math.PI / 180);
+      ctx.setLineDash([6 / z, 4 / z]); ctx.lineWidth = 1.5 / z; ctx.strokeStyle = D.colors[p.ink || 'black'] || D.colors.ink;
+      ctx.strokeRect(-p.w / 2, -bh / 2, p.w, bh);
+      ctx.restore();
+      label('힌트 ' + Math.round(p.w) + '×' + Math.round(p.h), p.x, p.y - pad - 6 / z, D.colors[p.ink || 'black'] || D.colors.ink);
+    });
     drawStart(l);
 
     // 땅 만들기 중
