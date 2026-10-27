@@ -36,12 +36,8 @@ G.Menu = (function () {
     var im = img('ui_button'), h = hot(b), ic = b.icon && img(b.icon), label = b.label, size = b.size || S('menuBtnSize'), tx = b.x + b.w / 2;
     ctx.save();
     if (h) { ctx.translate(b.x + b.w / 2, b.y + b.h / 2); ctx.scale(1.04, 1.04); ctx.translate(-b.x - b.w / 2, -b.y - b.h / 2); }
-    if (im) {
-      var e = Math.min(im.width / 3, im.height * 0.5), eh = b.h * e / im.height;
-      ctx.drawImage(im, 0, 0, e, im.height, b.x, b.y, eh, b.h);
-      ctx.drawImage(im, e, 0, im.width - 2 * e, im.height, b.x + eh, b.y, b.w - 2 * eh, b.h);
-      ctx.drawImage(im, im.width - e, 0, e, im.height, b.x + b.w - eh, b.y, eh, b.h);
-    } else {
+    if (im) strip3(ctx, im, b);
+    else {
       rr(ctx, b.x, b.y, b.w, b.h, 12); ctx.fillStyle = h ? S('resultBtnHot') : S('resultBtnBg'); ctx.fill();
       ctx.lineWidth = 3; ctx.strokeStyle = C.outline; ctx.stroke();
     }
@@ -54,6 +50,27 @@ G.Menu = (function () {
     }
     text(ctx, label, tx, b.y + b.h / 2, size, null, true);
     ctx.restore();
+  }
+  // 가로로 긴 그림을 양 끝은 비율대로, 가운데만 늘려 그림 (버튼·제목 패널)
+  function strip3(ctx, im, b) {
+    var e = Math.min(im.width / 3, im.height * 0.5), eh = Math.min(b.h * e / im.height, b.w / 2);
+    ctx.drawImage(im, 0, 0, e, im.height, b.x, b.y, eh, b.h);
+    ctx.drawImage(im, e, 0, im.width - 2 * e, im.height, b.x + eh, b.y, b.w - 2 * eh, b.h);
+    ctx.drawImage(im, im.width - e, 0, e, im.height, b.x + b.w - eh, b.y, eh, b.h);
+  }
+  // 화면 제목 + 뒤 패널 (사용자 요청 2026-10-27: 배경 그림 위에서 글자만으로는 잘 안 보임). 패널 크기 = 글자 폭 + 여백
+  //   그림은 버튼과 같은 ui_button (종이 테이프), 없으면 종이색 둥근 사각형. titlePanelOn 0 이면 안 그림
+  function drawTitle2(ctx, s, kx, ky) {
+    var x = S(kx), y = S(ky), size = S('menuTitleSize');
+    if (S('titlePanelOn')) {
+      ctx.font = 'bold ' + size + 'px ' + S('font');
+      var w = ctx.measureText(s).width + S('titlePanelPadX') * 2, h = size + S('titlePanelPadY') * 2, b = { x: x - w / 2, y: y - h / 2 + S('titlePanelDY'), w: w, h: h }, im = img('ui_button');
+      if (im) strip3(ctx, im, b);
+      else { rr(ctx, b.x, b.y, b.w, b.h, 14); ctx.fillStyle = S('resultBtnBg'); ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = C.outline; ctx.stroke(); }
+      mark(kx, ky, b.x, b.y, b.w, b.h, ['menuTitleSize', 'titlePanelPadX', 'titlePanelPadY']);
+    }
+    text(ctx, s, x, y, size, null, true);
+    if (!S('titlePanelOn')) markText(ctx, kx, ky, s, x, y, size, true, 'center', ['menuTitleSize']);
   }
   // 월드 카드 그림: 실제 카드 영역(data.js art.cardCrop)만 잘라 위(테이프)·아래는 비율대로, 가운데만 늘려 세로 칸에 맞춤
   function drawCard(ctx, im, b) {
@@ -167,8 +184,7 @@ G.Menu = (function () {
   }
   function drawWorlds(ctx, app) {
     paperBg(ctx, img('bg_worlds') ? 'bg_worlds' : 'bg_plain');   // 월드 선택 배경 (9차 이미지), 없으면 빈 종이
-    text(ctx, G.T('worlds.title'), S('worldsTitleX'), S('worldsTitleY'), S('menuTitleSize'), null, true);
-    markText(ctx, 'worldsTitleX', 'worldsTitleY', G.T('worlds.title'), S('worldsTitleX'), S('worldsTitleY'), S('menuTitleSize'), true, 'center', ['menuTitleSize']);
+    drawTitle2(ctx, G.T('worlds.title'), 'worldsTitleX', 'worldsTitleY');
     btns = [backButton()];
     cardRects().forEach(function (b) {
       var cx = b.x + b.w / 2;
@@ -233,8 +249,7 @@ G.Menu = (function () {
     paperBg(ctx, sbg);
     if (sbg === 'bg_plain' && w.tint) { ctx.save(); ctx.globalCompositeOperation = 'multiply'; ctx.fillStyle = w.tint.paper; ctx.fillRect(0, 0, V.w, V.h); ctx.restore(); }   // 월드 배경 그림이 없으면 종이에 월드 색
     var tt = G.T('stages.title', { n: w.id, name: G.T('world.' + w.id + '.name') });
-    text(ctx, tt, S('stagesTitleX'), S('stagesTitleY'), S('menuTitleSize'), null, true);
-    markText(ctx, 'stagesTitleX', 'stagesTitleY', tt, S('stagesTitleX'), S('stagesTitleY'), S('menuTitleSize'), true, 'center', ['menuTitleSize']);
+    drawTitle2(ctx, tt, 'stagesTitleX', 'stagesTitleY');
     // 쓸 수 있는 물감: stagesInksX = 물감 방울 줄 가운데, 글자는 첫 방울 왼쪽
     var iy = S('stagesInksY'), gapI = S('stagesInkGap'), ir = S('stagesInkSize') / 2, ix = S('stagesInksX') - ((w.inks.length - 1) * gapI) / 2, ts = S('menuSmallSize');
     text(ctx, G.T('stages.inks'), ix - ir - 27, iy, ts, null, false, 'right');

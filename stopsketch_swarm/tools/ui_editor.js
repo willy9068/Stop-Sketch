@@ -111,6 +111,7 @@ var G = G || {};
     ['worldLockDX', '월드: 자물쇠 DX', 'worlds'], ['worldLockY', '월드: 자물쇠 Y (가운데)', 'worlds'], ['worldLockSize', '월드: 자물쇠 크기', 'worlds'],
     ['worldsHintX', '월드: 잠김 안내 x', 'worlds'], ['worldsHintY', '월드: 잠김 안내 y', 'worlds'],
     ['stagesTitleX', '스테이지: 제목 x', 'stages'], ['stagesTitleY', '스테이지: 제목 y', 'stages'],
+    ['titlePanelOn', '월드·스테이지 제목 뒤 패널 (1 = 켬, 0 = 끔)', 'worlds'], ['titlePanelPadX', '제목 패널 좌우 여백', 'worlds'], ['titlePanelPadY', '제목 패널 위아래 여백', 'worlds'], ['titlePanelDY', '제목 패널 위아래 옮김', 'worlds'],
     ['stagesInksX', '스테이지: 물감 방울 줄 가운데 x', 'stages'], ['stagesInksY', '스테이지: 물감 줄 y', 'stages'], ['stagesInkSize', '스테이지: 물감 방울 크기', 'stages'], ['stagesInkGap', '스테이지: 물감 방울 간격', 'stages'],
     ['stageTilesX', '스테이지: 칸 줄 가운데 x', 'stages'], ['stageTileY', '스테이지: 칸 y (위)', 'stages'], ['stageTileSize', '스테이지: 칸 크기', 'stages'], ['stageTileGap', '스테이지: 칸 간격', 'stages'],
     ['stageNumDX', '스테이지: 번호 DX', 'stages'], ['stageNumY', '스테이지: 번호 Y', 'stages'], ['stageNumSize', '스테이지: 번호 크기', 'stages'],
