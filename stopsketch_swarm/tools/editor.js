@@ -24,11 +24,29 @@ var G = G || {};
     mouse: { x: 0, y: 0, sx: 0, sy: 0 },
     spaceDown: false
   };
+  // 왼쪽 도구 (사용자 요청 2026-10-27: 같은 종류는 하나로 묶고 종류를 골라 놓음). 묶음 = { group, name, items }, 키는 종류마다 그대로
   var TOOLS = [
-    ['select', '선택', 'V'], ['ground', '땅', 'G'], ['wall', '벽', 'W'], ['platform', '발판', 'P'],
-    ['drop', '물방울', 'B'], ['spike', '가시', 'K'], ['crystal', '배치된 선', 'L'], ['star', '별', 'S'], ['stopup', '정지 +1', 'Z'], ['inkup', '잉크 병', 'I'], ['shooter', '발사기', 'O'], ['segment', '구간 경계', 'J'],
-    ['deco', '장식', 'C'], ['text', '글자', 'T'], ['hint', '점선 힌트', 'H']
+    ['select', '선택', 'V'], ['ground', '땅', 'G'],
+    { group: 'terrain', name: '지형·장애물', items: [['wall', '벽', 'W'], ['platform', '발판', 'P'], ['spike', '가시', 'K'], ['crystal', '배치된 선', 'L'], ['shooter', '발사기', 'O']] },
+    ['drop', '물방울', 'B'],
+    { group: 'item', name: '아이템', items: [['star', '별', 'S'], ['stopup', '정지 +1', 'Z'], ['inkup', '잉크 병', 'I']] },
+    { group: 'decor', name: '꾸미기', items: [['deco', '장식 그림', 'C'], ['text', '글자', 'T'], ['hint', '점선 힌트', 'H']] },
+    ['segment', '구간 경계', 'J']
   ];
+  var TOOL_LIST = [];                                // 묶음을 푼 목록 [이름, 글자, 키, 묶음]
+  TOOLS.forEach(function (t) { if (t.group) t.items.forEach(function (it) { TOOL_LIST.push(it.concat(t.group)); }); else TOOL_LIST.push(t.concat(null)); });
+  function groupOf(tool) { var t = TOOL_LIST.filter(function (x) { return x[0] === tool; })[0]; return t && t[3]; }
+  // 놓은 뒤 "종류"로 바꿀 수 있는 것 (모양 값이 같은 것끼리): 상자(벽·발판·가시), 아이템(별·정지 +1·잉크 병)
+  var KIND_SWAP = { wall: 'box', platform: 'box', spike: 'box', star: 'item', stopup: 'item', inkup: 'item' };
+  function decoName(n) { return (D.art.decoNames && D.art.decoNames[n]) || n; }
+  // 장식 그림 고르기: 그림 칸 목록 (누르면 data-deco). 놓을 그림·선택한 장식의 그림 바꾸기에 같이 씀
+  function decoPicker(cur) {
+    return '<div class="decoGrid">' + D.art.decos.map(function (n) {
+      var im = G.Assets.get(n);
+      return '<button data-deco="' + n + '" title="' + esc(decoName(n)) + '"' + (n === cur ? ' class="on"' : '') + '>' +
+        (im ? '<img src="' + im.src + '" alt="">' : '<span>' + esc(decoName(n)) + '</span>') + '</button>';
+    }).join('') + '</div>';
+  }
   var GRID = 10, HANDLE = 7;
 
   function lv() { return S.levels[S.cur]; }
@@ -486,7 +504,7 @@ var G = G || {};
     }
     else if (tool === 'inkup') p = { type: 'inkup', x: snap(w.x), y: snap(w.y), size: d.size };   // 잉크 양은 선택 칸에서 (기본 data.js ink.upAmount)
     else if (tool === 'shooter') p = { type: 'shooter', x: snap(w.x - d.w / 2), y: snap(w.y - d.h / 2), w: d.w, h: d.h, aim: d.aim, periodMs: d.periodMs, speed: d.speed, firstMs: d.firstMs, shot: d.shot };
-    else if (tool === 'deco') p = { type: 'deco', x: snap(w.x), y: snap(w.y), size: d.size, img: S.decoImg };
+    else if (tool === 'deco') p = { type: 'deco', x: snap(w.x), y: snap(w.y), size: S.decoImg.indexOf('stk_') === 0 ? 110 : d.size, img: S.decoImg };   // 스티커는 원본이 작아 110 으로
     else if (tool === 'text') p = { type: 'text', x: snap(w.x), y: snap(w.y), size: d.size, text: d.text };
     l.props.push(p);
     S.sel = { kind: 'prop', i: l.props.length - 1 };
@@ -715,7 +733,7 @@ var G = G || {};
     if ((k === 'q' || k === 'e') && S.sel && !e.ctrlKey && !e.metaKey) { e.preventDefault(); rotateSel(k === 'q' ? -1 : 1, e.shiftKey); return; }
     if (e.key.indexOf('Arrow') === 0 && S.sel) { e.preventDefault(); nudge(e.key, e.shiftKey ? 10 : 1); return; }
     if (e.ctrlKey || e.metaKey || e.altKey) return;
-    TOOLS.forEach(function (t) { if (k === t[2].toLowerCase()) setTool(t[0]); });
+    TOOL_LIST.forEach(function (t) { if (k === t[2].toLowerCase()) setTool(t[0]); });
   });
   window.addEventListener('keyup', function (e) { if (e.code === 'Space') { S.spaceDown = false; cv.style.cursor = 'default'; } });
 
@@ -785,15 +803,32 @@ var G = G || {};
   }
 
   // ---------- 화면 왼쪽 도구 ----------
-  function setTool(t) { S.tool = t; buildTools(); updateCursor(S.mouse); }
+  function setTool(t) {
+    S.tool = t;
+    var g = groupOf(t);
+    if (g) (S.groupLast || (S.groupLast = {}))[g] = t;   // 묶음 단추를 다시 누르면 마지막에 쓴 종류
+    buildTools(); updateCursor(S.mouse);
+    if (!S.sel) buildSelForm();                      // 장식 그림: 오른쪽에 놓을 그림 고르기
+  }
+  //   묶음: 단추 하나(지금 고른 종류를 작게 표시) + 그 묶음을 쓰는 동안 아래에 종류 단추들
   function buildTools() {
     $('tools').innerHTML = TOOLS.map(function (t) {
-      return '<button data-tool="' + t[0] + '"' + (S.tool === t[0] ? ' class="on"' : '') + '>' + t[1] + '<small>' + t[2] + '</small></button>';
+      if (!t.group) return '<button data-tool="' + t[0] + '"' + (S.tool === t[0] ? ' class="on"' : '') + '>' + t[1] + '<small>' + t[2] + '</small></button>';
+      var on = groupOf(S.tool) === t.group, last = (S.groupLast && S.groupLast[t.group]) || t.items[0][0];
+      var cur = t.items.filter(function (it) { return it[0] === last; })[0];
+      var h = '<button data-group="' + t.group + '"' + (on ? ' class="on"' : '') + '>' + t.name + '<small>' + cur[1] + ' ▾</small></button>';
+      if (on) h += '<div class="sub">' + t.items.map(function (it) {
+        return '<button data-tool="' + it[0] + '"' + (S.tool === it[0] ? ' class="on"' : '') + '>' + it[1] + '<small>' + it[2] + '</small></button>';
+      }).join('') + '</div>';
+      return h;
     }).join('');
   }
   $('tools').addEventListener('click', function (e) {
     var b = e.target.closest('button');
-    if (b) setTool(b.getAttribute('data-tool'));
+    if (!b) return;
+    var g = b.getAttribute('data-group');
+    if (g) { var t = TOOLS.filter(function (x) { return x.group === g; })[0]; setTool((S.groupLast && S.groupLast[g]) || t.items[0][0]); }
+    else setTool(b.getAttribute('data-tool'));
   });
 
   // ---------- 오른쪽 패널 ----------
@@ -860,7 +895,11 @@ var G = G || {};
 
   function buildSelForm() {
     var o = selObj(), s = S.sel, h = '', many = selList().length;
-    if (!o) { $('selForm').innerHTML = '없음 (클릭해서 선택 · Ctrl+클릭으로 여러 개)'; return; }
+    if (!o) {
+      $('selForm').innerHTML = '없음 (클릭해서 선택 · Ctrl+클릭으로 여러 개)' +
+        (S.tool === 'deco' ? '<div class="hint" style="margin-left:0">놓을 장식 그림: ' + esc(decoName(S.decoImg)) + ' (화면을 클릭하면 놓임)</div>' + decoPicker(S.decoImg) : '');
+      return;
+    }
     if (many > 1) {                                  // 여러 개 선택 (사용자 요청 2026-10-21)
       $('selForm').innerHTML = '<b>' + many + '개 선택</b><div class="hint" style="margin-left:0">끌면 모두 함께 옮겨짐 · 방향키 1px(Shift 10px) · Ctrl+클릭으로 더하기/빼기 · Ctrl+빈 곳 드래그로 상자 선택 · Esc 해제</div>' +
         '<div class="row"><button data-act="del">모두 삭제 (Delete)</button></div>';
@@ -911,15 +950,14 @@ var G = G || {};
         h += '<div class="hint">같은 색으로 그린 선에만 막혀요 (다른 색은 통과). 땅·벽·발판·가시·배치된 선에도 막힘. 주인공이 맞으면 실패, 작은 물방울은 잃음. ' +
              '방향: 0 = 오른쪽, 90 = 아래, 180 = 왼쪽, −90 = 위 · 포구 쪽 손잡이를 끌거나 Q/E (15도, Shift = 1도). 첫 발 = 출발 뒤 게임 시간 (정지 중엔 안 흐름) · 점선 = 날아가는 길</div>';
       } else if (d.box) {
-        h += '<div class="f"><label>종류</label><select id="f_type">' + opts([['wall', '벽'], ['platform', '발판'], ['spike', '가시']], o.type) + '</select></div>';
+        if (KIND_SWAP[o.type]) h += '<div class="f"><label>종류</label><select id="f_type">' + opts([['wall', '벽'], ['platform', '발판'], ['spike', '가시']], o.type) + '</select></div>';
         h += num('f_x', 'x (왼쪽)', o.x) + num('f_y', 'y (위)', o.y) + num('f_w', '폭', o.w) + num('f_h', '높이', o.h) + num('f_angle', '각도 (도)', o.angle || 0);
       } else {
+        if (KIND_SWAP[o.type] === 'item') h += '<div class="f"><label>종류</label><select id="f_type">' + opts([['star', '별'], ['stopup', '정지 +1'], ['inkup', '잉크 병']], o.type) + '</select></div>';
         h += num('f_x', 'x', o.x) + num('f_y', 'y', o.y) + num('f_size', o.type === 'text' ? '글자 크기' : '크기', o.size || d.size) + num('f_angle', '각도 (도)', o.angle || 0);
       }
-      if (o.type === 'deco') {
-        var list = D.art.decos.map(function (n) { return [n, n + (G.Assets.get(n) ? '' : ' (그림 없음)')]; });
-        if (D.art.decos.indexOf(o.img) < 0) list.push([o.img, o.img]);
-        h += '<div class="f"><label>그림</label><select id="f_img">' + opts(list, o.img) + '</select></div>';
+      if (o.type === 'deco') {                       // 장식 그림: 그림 칸에서 고름 (사용자 요청 2026-10-27, 스티커)
+        h += '<div class="f"><label>그림</label><div>' + esc(decoName(o.img)) + (D.art.decos.indexOf(o.img) < 0 ? ' (목록에 없음)' : '') + '</div></div>' + decoPicker(o.img);
       }
       if (o.type === 'inkup') h += num('f_amount', '잉크 양', o.amount || D.ink.upAmount) + '<div class="hint">먹으면 이 스테이지에서만 최대량·남은 잉크가 이만큼 늘어요 (다시 하면 다시 나타남)</div>';
       if (o.type === 'text') h += '<div class="f"><label>문구</label><textarea id="f_text" rows="2">' + esc(o.text) + '</textarea></div>';
@@ -1004,7 +1042,10 @@ var G = G || {};
     else if (o) {
       var f = id.slice(2);
       if (S.sel.kind === 'ground' && t.type === 'number') { setGround(o, f, r1(+t.value)); changed(false); return; }
-      if (f === 'type') { o.type = v; }
+      if (f === 'type') {                            // 종류 바꾸기: 아이템은 크기를 새 종류 기본값으로 (잉크 병 양은 지움)
+        if (KIND_SWAP[o.type] === 'item') { o.size = P.def(v).size; delete o.amount; }
+        o.type = v;
+      }
       else if (f === 'img' || f === 'text' || f === 'pin' || f === 'shot' || f === 'ink') o[f] = v;
       else if (f === 'aim') o.aim = normDeg(v) === -180 ? 180 : normDeg(v);
       else if (f === 'speed') o.speed = Math.max(0.5, Math.round(+t.value * 10) / 10);
@@ -1034,6 +1075,13 @@ var G = G || {};
     if (a) act(a);
   });
   $('selForm').addEventListener('click', function (e) {
+    var db = e.target.closest('[data-deco]');
+    if (db) {                                        // 장식 그림 고르기: 선택한 장식이면 그 그림을 바꾸고, 아니면 놓을 그림
+      var n = db.getAttribute('data-deco'), so = S.sel && S.sel.kind === 'prop' && lv().props[S.sel.i];
+      S.decoImg = n;
+      if (so && so.type === 'deco') { pushUndo(); so.img = n; changed(); } else buildSelForm();
+      return;
+    }
     var a = e.target.getAttribute('data-act');
     if (a === 'del') removeSel(); else if (a === 'dup') duplicate(); else if (a === 'front' || a === 'back') reorder(a);
   });

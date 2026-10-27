@@ -207,11 +207,20 @@ G.DATA = {
       'ui_lock', 'stage_tile', 'stage_tile_boss', 'ui_button', 'ui_back', 'fx_unlock',
       'tut_w1', 'tut_w2', 'tut_w3', 'tut_w4', 'tut_w5',
       // 9차 이미지 요청 (이미지 문서 17장, 2026-10-27): 월드 선택 배경, 스테이지 선택 배경(월드마다, 플레이 배경 bg_wN 과 따로). 없으면 전처럼
-      'bg_worlds', 'bg_stage_w1', 'bg_stage_w2', 'bg_stage_w3', 'bg_stage_w4', 'bg_stage_w5', 'bg_stage_w6'
+      'bg_worlds', 'bg_stage_w1', 'bg_stage_w2', 'bg_stage_w3', 'bg_stage_w4', 'bg_stage_w5', 'bg_stage_w6',
+      // 낙서 없는 플레이 배경 (사용자 요청 2026-10-27, stopsketch_Image/bg_collection_round10/play_no_doodle) — 레벨 툴 배경에서 고름
+      'bg_w1_clean', 'bg_w2_clean', 'bg_w3_clean', 'bg_w4_clean', 'bg_w5_clean', 'bg_w6_clean',
+      // 장식 스티커 32개 (사용자 요청 2026-10-27, bg_collection_round10/doodle_sheets 에서 비슷한 것을 빼고 골라 자름)
+      'stk_pencil', 'stk_pencil_blue', 'stk_crayon', 'stk_brush', 'stk_ruler', 'stk_eraser', 'stk_ink_bottle', 'stk_cookie_palette', 'stk_ladder', 'stk_bridge', 'stk_arrow_up', 'stk_plane', 'stk_spiral', 'stk_spring', 'stk_trampoline', 'stk_grass', 'stk_balloon', 'stk_sprout_balloon', 'stk_crystal', 'stk_star', 'stk_heart_red', 'stk_heart_yellow', 'stk_crit_black', 'stk_crit_blue', 'stk_crit_red', 'stk_crit_green', 'stk_crit_yellow', 'stk_drop_friend', 'stk_drop_brush', 'stk_drop_flag', 'stk_blue_friend', 'stk_red_friend'
     ],
     backgrounds: { world: '월드 배경 (월드마다)', bg_a: '종이 + 구름', bg_b: '줄 노트', bg_plain: '빈 종이', none: '단색 종이',
-                   bg_w1: '월드 1 모눈종이', bg_w2: '월드 2 줄 노트', bg_w3: '월드 3 여백 줄', bg_w4: '월드 4 방안지', bg_w5: '월드 5 크라프트지', bg_w6: '월드 6 수채화지' },
-    decos: ['deco_cloud_1', 'deco_cloud_2', 'deco_cloud_3'],
+                   bg_w1: '월드 1 모눈종이', bg_w2: '월드 2 줄 노트', bg_w3: '월드 3 여백 줄', bg_w4: '월드 4 방안지', bg_w5: '월드 5 크라프트지', bg_w6: '월드 6 수채화지',
+                   bg_w1_clean: '월드 1 모눈종이 (낙서 없음)', bg_w2_clean: '월드 2 줄 노트 (낙서 없음)', bg_w3_clean: '월드 3 여백 줄 (낙서 없음)',
+                   bg_w4_clean: '월드 4 방안지 (낙서 없음)', bg_w5_clean: '월드 5 크라프트지 (낙서 없음)', bg_w6_clean: '월드 6 수채화지 (낙서 없음)' },
+    // 장식 그림 (레벨 툴 "꾸미기 → 장식 그림"에서 그림을 골라 놓음). decoNames = 레벨 툴에 보이는 이름
+    decos: ['deco_cloud_1', 'deco_cloud_2', 'deco_cloud_3',
+      'stk_pencil', 'stk_pencil_blue', 'stk_crayon', 'stk_brush', 'stk_ruler', 'stk_eraser', 'stk_ink_bottle', 'stk_cookie_palette', 'stk_ladder', 'stk_bridge', 'stk_arrow_up', 'stk_plane', 'stk_spiral', 'stk_spring', 'stk_trampoline', 'stk_grass', 'stk_balloon', 'stk_sprout_balloon', 'stk_crystal', 'stk_star', 'stk_heart_red', 'stk_heart_yellow', 'stk_crit_black', 'stk_crit_blue', 'stk_crit_red', 'stk_crit_green', 'stk_crit_yellow', 'stk_drop_friend', 'stk_drop_brush', 'stk_drop_flag', 'stk_blue_friend', 'stk_red_friend'],
+    decoNames: { deco_cloud_1: '구름 1', deco_cloud_2: '구름 2', deco_cloud_3: '구름 3', stk_pencil: '연필', stk_pencil_blue: '파란 색연필', stk_crayon: '크레용', stk_brush: '붓', stk_ruler: '자', stk_eraser: '지우개', stk_ink_bottle: '잉크병', stk_cookie_palette: '팔레트', stk_ladder: '사다리', stk_bridge: '다리', stk_arrow_up: '화살표', stk_plane: '종이비행기', stk_spiral: '소용돌이', stk_spring: '용수철', stk_trampoline: '트램펄린', stk_grass: '풀', stk_balloon: '풍선', stk_sprout_balloon: '새싹 풍선', stk_crystal: '결정', stk_star: '별', stk_heart_red: '빨간 하트', stk_heart_yellow: '노란 하트', stk_crit_black: '검정 물방울', stk_crit_blue: '파랑 물방울', stk_crit_red: '빨강 물방울', stk_crit_green: '초록 물방울', stk_crit_yellow: '노랑 물방울', stk_drop_friend: '흰 물방울', stk_drop_brush: '붓 든 물방울', stk_drop_flag: '깃발 물방울', stk_blue_friend: '파란 친구', stk_red_friend: '빨간 친구' },
     charSize: 3.2,
     charFace: { char_run: -1 },  // 그림이 바라보는 방향 (-1 = 왼쪽). 진행 방향에 맞춰 뒤집음 (사용자 요청 2026-10-20)
     walk: { stride: 1.6, bob: 0.16, sway: 0.09, lean: 0.06, squash: 0.08 },  // 코드 걷기: 걸음 길이(반지름 배)·튀는 높이(반지름 배)·기울기(rad)·앞으로 숙임·눌림
